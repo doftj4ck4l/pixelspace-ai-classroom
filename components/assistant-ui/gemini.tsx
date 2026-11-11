@@ -32,7 +32,10 @@ import {
 import { type FC, useState } from "react";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
-import { CloneThreadShell } from "@/components/assistant-ui/clone-thread-shell";
+import {
+  CloneThreadShell,
+  useSidebarSection,
+} from "@/components/assistant-ui/clone-thread-shell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,7 +88,19 @@ export const Gemini: FC = () => {
 const ghostBtnClass =
   "flex shrink-0 items-center justify-center rounded-full text-[#444746] transition-colors hover:bg-[#444746]/8 hover:text-[#1f1f1f] dark:text-[#c4c7c5] dark:hover:bg-[#c4c7c5]/10 dark:hover:text-[#e3e3e3]";
 
+const SECTION_PLACEHOLDERS: Record<string, string> = {
+  all: "Ask Pixelspace AI Classroom",
+  slides: "What slide do you want to generate?",
+  reports: "Ready to write a report?",
+  flashcards: "What flashcards do you want to create?",
+  audio: "Ready to write an audio overview?",
+};
+
 const Composer: FC = () => {
+  const section = useSidebarSection();
+  const placeholder =
+    SECTION_PLACEHOLDERS[section] ?? "Ask Pixelspace AI Classroom";
+
   return (
     <ComposerPrimitive.Root className="mx-auto flex w-full max-w-2xl flex-col rounded-4xl bg-white p-3 dark:bg-[#1e1f20]">
       <AuiIf condition={(s) => s.composer.attachments.length > 0}>
@@ -100,7 +115,7 @@ const Composer: FC = () => {
         <GeminiPlusMenu />
         <ComposerPrimitive.Input
           rows={1}
-          placeholder="Ask Pixelspace AI Classroom"
+          placeholder={placeholder}
           className="max-h-40 flex-1 resize-none bg-transparent px-2 py-1.5 text-[17px] leading-6 text-[#1f1f1f] outline-none placeholder:text-[#575b5f] dark:text-[#e3e3e3] dark:placeholder:text-[#9aa0a6]"
         />
         <GeminiModelPicker />

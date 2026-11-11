@@ -42,12 +42,18 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
+  createContext,
+  useContext,
   useEffect,
   useState,
   type FC,
   type MouseEvent,
   type ReactNode,
 } from "react";
+
+export const SidebarSectionContext = createContext("all");
+
+export const useSidebarSection = () => useContext(SidebarSectionContext);
 
 type CloneThreadShellProps = {
   children: ReactNode;
@@ -66,35 +72,14 @@ type NavItem = {
   id: string;
   label: string;
   Icon: LucideIcon;
-  prompt?: string;
 };
 
 const NAV_ITEMS: NavItem[] = [
   { id: "all", label: "All", Icon: Columns3Icon },
-  {
-    id: "slides",
-    label: "Slides",
-    Icon: PresentationIcon,
-    prompt: "Make a slide deck about: ",
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    Icon: FileTextIcon,
-    prompt: "Write a report about: ",
-  },
-  {
-    id: "flashcards",
-    label: "Flashcards",
-    Icon: LayersIcon,
-    prompt: "Create flashcards about: ",
-  },
-  {
-    id: "audio",
-    label: "Audio",
-    Icon: AudioLinesIcon,
-    prompt: "Write an audio overview script about: ",
-  },
+  { id: "slides", label: "Slides", Icon: PresentationIcon },
+  { id: "reports", label: "Reports", Icon: FileTextIcon },
+  { id: "flashcards", label: "Flashcards", Icon: LayersIcon },
+  { id: "audio", label: "Audio", Icon: AudioLinesIcon },
 ];
 
 const ThemeToggle: FC = () => {
@@ -144,7 +129,6 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
 
   const selectSection = (item: NavItem) => {
     setSection(item.id);
-    if (item.prompt) aui.composer.setText(item.prompt);
   };
 
   // A controlled value means the caller renders the chrome that drives it, so
@@ -194,7 +178,8 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const newThread = spaceView ? createRow : newChatRow;
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden">
+    <SidebarSectionContext.Provider value={section}>
+      <div className="relative flex h-full w-full overflow-hidden">
       <div
         data-slot="aui-app-rail"
         className="bg-muted/30 hidden h-full w-12 shrink-0 flex-col items-center gap-1 py-2 md:flex"
@@ -413,6 +398,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
       </Sheet>
 
       <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
-    </div>
+      </div>
+    </SidebarSectionContext.Provider>
   );
 };
