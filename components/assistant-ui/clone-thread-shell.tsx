@@ -24,13 +24,30 @@ import {
 import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
+  AudioLinesIcon,
+  Columns3Icon,
+  FileTextIcon,
   HomeIcon,
+  LayersIcon,
+  LayoutGridIcon,
   MenuIcon,
+  MoonIcon,
   PanelLeftIcon,
+  PlusIcon,
+  PresentationIcon,
   SearchIcon,
   SquarePenIcon,
+  SunIcon,
+  type LucideIcon,
 } from "lucide-react";
-import { useState, type FC, type MouseEvent, type ReactNode } from "react";
+import { useTheme } from "next-themes";
+import {
+  useEffect,
+  useState,
+  type FC,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 
 type CloneThreadShellProps = {
   children: ReactNode;
@@ -43,6 +60,65 @@ type CloneThreadShellProps = {
   sheetTitle?: ReactNode | undefined;
   showSearch?: boolean | undefined;
   wrapNewThreadTooltip?: boolean | undefined;
+};
+
+type NavItem = {
+  id: string;
+  label: string;
+  Icon: LucideIcon;
+  prompt?: string;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { id: "all", label: "All", Icon: Columns3Icon },
+  {
+    id: "slides",
+    label: "Slides",
+    Icon: PresentationIcon,
+    prompt: "Make a slide deck about: ",
+  },
+  {
+    id: "reports",
+    label: "Reports",
+    Icon: FileTextIcon,
+    prompt: "Write a report about: ",
+  },
+  {
+    id: "flashcards",
+    label: "Flashcards",
+    Icon: LayersIcon,
+    prompt: "Create flashcards about: ",
+  },
+  {
+    id: "audio",
+    label: "Audio",
+    Icon: AudioLinesIcon,
+    prompt: "Write an audio overview script about: ",
+  },
+];
+
+const ThemeToggle: FC = () => {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === "dark";
+
+  return (
+    <TooltipIconButton
+      variant="ghost"
+      size="icon"
+      tooltip={isDark ? "Light mode" : "Dark mode"}
+      side="right"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      className="size-8"
+    >
+      {isDark ? (
+        <SunIcon className="size-4" />
+      ) : (
+        <MoonIcon className="size-4" />
+      )}
+    </TooltipIconButton>
+  );
 };
 
 export const CloneThreadShell: FC<CloneThreadShellProps> = ({
@@ -61,8 +137,15 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [section, setSection] = useState("all");
+  const [spaceView, setSpaceView] = useState(false);
   const hasThreads = useAuiState((s) => s.threads.threadIds.length > 0);
   const aui = useAui();
+
+  const selectSection = (item: NavItem) => {
+    setSection(item.id);
+    if (item.prompt) aui.composer.setText(item.prompt);
+  };
 
   // A controlled value means the caller renders the chrome that drives it, so
   // the shell omits its own toggle / trigger and forwards changes instead.
@@ -94,20 +177,21 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
     }
   };
 
-  const newThread = (
-    <ThreadListNew
-      className={cn(
-        "overflow-hidden transition-all duration-200",
-        sidebarCollapsed
-          ? "w-8 gap-0 px-2 has-[>svg]:px-2"
-          : "w-full gap-2 px-3 has-[>svg]:px-3",
-      )}
-      labelClassName={cn(
-        "overflow-hidden transition-all duration-200",
-        sidebarCollapsed ? "max-w-0 opacity-0" : "max-w-24 opacity-100",
-      )}
-    />
+  const createRow = (
+    <ThreadListNew className="h-9 w-full gap-2 px-3 text-sm has-[>svg]:px-3">
+      <PlusIcon className="size-4 shrink-0" />
+      <span className="whitespace-nowrap">Create</span>
+    </ThreadListNew>
   );
+
+  const newChatRow = (
+    <ThreadListNew className="h-9 w-full gap-2 px-3 has-[>svg]:px-3">
+      <SquarePenIcon className="size-4 shrink-0" />
+      <span className="whitespace-nowrap">New chat</span>
+    </ThreadListNew>
+  );
+
+  const newThread = spaceView ? createRow : newChatRow;
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
@@ -115,27 +199,36 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
         data-slot="aui-app-rail"
         className="bg-muted/30 hidden h-full w-12 shrink-0 flex-col items-center gap-1 py-2 md:flex"
       >
-        {!collapsedControlled && (
-          <TooltipIconButton
-            variant="ghost"
-            size="icon"
-            tooltip={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-            side="right"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="size-8"
-          >
-            <PanelLeftIcon className="size-4" />
-          </TooltipIconButton>
-        )}
         <TooltipIconButton
           variant="ghost"
           size="icon"
           tooltip="Home"
           side="right"
-          onClick={() => void aui.threads.switchToNewThread()}
+          onClick={() => {
+            const wasCollapsed = sidebarCollapsed;
+            if (wasCollapsed) setSidebarCollapsed(false);
+            if (spaceView) {
+              setSpaceView(false);
+              return;
+            }
+            if (!wasCollapsed) void aui.threads.switchToNewThread();
+          }}
           className="size-8"
         >
           <HomeIcon className="size-4" />
+        </TooltipIconButton>
+        <TooltipIconButton
+          variant="ghost"
+          size="icon"
+          tooltip="Spaces"
+          side="right"
+          onClick={() => {
+            setSidebarCollapsed(false);
+            setSpaceView((open) => !open);
+          }}
+          className={cn("size-8", spaceView && "bg-muted text-foreground")}
+        >
+          <LayoutGridIcon className="size-4" />
         </TooltipIconButton>
         <TooltipIconButton
           variant="ghost"
@@ -162,10 +255,13 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             <SearchIcon className="size-4" />
           </TooltipIconButton>
         )}
-        <div
-          aria-hidden="true"
-          className="from-[#177e89] to-[#8fd9c8] mt-auto size-8 rounded-full bg-gradient-to-br opacity-80"
-        />
+        <div className="mt-auto flex flex-col items-center gap-1">
+          <ThemeToggle />
+          <div
+            aria-hidden="true"
+            className="from-[#177e89] to-[#8fd9c8] size-8 rounded-full bg-gradient-to-br opacity-80"
+          />
+        </div>
       </div>
 
       <aside
@@ -182,7 +278,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             headerContent
           ) : (
             <span className="flex-1 truncate ps-2 text-sm font-medium">
-              Gemini
+              {spaceView ? "Space" : "Pixelspace AI Classroom"}
             </span>
           )}
           {showSearch && hasThreads && (
@@ -230,7 +326,26 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             newThread
           )}
 
-          {!sidebarCollapsed && (
+          {spaceView ? (
+            <nav className="mt-2 flex flex-col gap-0.5">
+              {NAV_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => selectSection(item)}
+                  className={cn(
+                    "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                    section === item.id
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <item.Icon className="size-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              ))}
+            </nav>
+          ) : (
             <div className="mt-4 flex flex-col">
               <span className="text-muted-foreground px-3 py-1 text-xs font-medium">
                 Projects
@@ -247,8 +362,8 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             </div>
           )}
 
-          {!sidebarCollapsed && hasThreads && (
-            <span className="text-muted-foreground mt-4 px-3 py-1 text-xs font-medium">
+          {hasThreads && (
+            <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
               Recents
             </span>
           )}
@@ -286,7 +401,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
         )}
         <SheetContent side="left" className="flex flex-col p-0">
           <SheetTitle className="flex h-12 shrink-0 items-center px-4 text-sm font-medium">
-            {sheetTitle ?? "Gemini"}
+            {sheetTitle ?? "Pixelspace AI Classroom"}
           </SheetTitle>
           <div
             className="relative flex-1 overflow-y-auto p-3"
