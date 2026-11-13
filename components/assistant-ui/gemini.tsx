@@ -34,8 +34,9 @@ import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
 import {
   CloneThreadShell,
-  useSidebarSection,
+  useSidebarNav,
 } from "@/components/assistant-ui/clone-thread-shell";
+import { SlidesGallery } from "@/components/assistant-ui/slides-gallery";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,7 +48,22 @@ import {
 export const Gemini: FC = () => {
   return (
     <CloneThreadShell>
-      <ThreadPrimitive.Root className="flex h-full flex-col overflow-hidden bg-[#fdfcfc] text-[#1f1f1f] dark:bg-[#0c0c0c] dark:text-[#e3e3e3]">
+      <MainContent />
+    </CloneThreadShell>
+  );
+};
+
+const MainContent: FC = () => {
+  const { view, section } = useSidebarNav();
+  if (view === "space" && section === "slides") {
+    return <SlidesGallery />;
+  }
+  return <ThreadContent />;
+};
+
+const ThreadContent: FC = () => {
+  return (
+    <ThreadPrimitive.Root className="flex h-full flex-col overflow-hidden bg-[#fdfcfc] text-[#1f1f1f] dark:bg-[#0c0c0c] dark:text-[#e3e3e3]">
         <AuiIf condition={(s) => s.thread.messages.length === 0}>
           <div className="relative flex grow flex-col">
             <div className="flex grow flex-col items-center justify-center px-4">
@@ -81,7 +97,6 @@ export const Gemini: FC = () => {
           </ThreadPrimitive.Viewport>
         </AuiIf>
       </ThreadPrimitive.Root>
-    </CloneThreadShell>
   );
 };
 
@@ -97,7 +112,7 @@ const SECTION_PLACEHOLDERS: Record<string, string> = {
 };
 
 const Composer: FC = () => {
-  const section = useSidebarSection();
+  const { section } = useSidebarNav();
   const placeholder =
     SECTION_PLACEHOLDERS[section] ?? "Ask Pixelspace AI Classroom";
 

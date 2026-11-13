@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
   AudioLinesIcon,
+  ClockIcon,
   Columns3Icon,
   FileTextIcon,
   HomeIcon,
@@ -45,15 +46,22 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type FC,
   type MouseEvent,
   type ReactNode,
 } from "react";
 
-export const SidebarSectionContext = createContext("all");
+export type SidebarView = "home" | "space" | "scheduled";
+export type SidebarNav = { view: SidebarView; section: string };
 
-export const useSidebarSection = () => useContext(SidebarSectionContext);
+export const SidebarNavContext = createContext<SidebarNav>({
+  view: "home",
+  section: "all",
+});
+
+export const useSidebarNav = () => useContext(SidebarNavContext);
 
 type CloneThreadShellProps = {
   children: ReactNode;
@@ -123,7 +131,8 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [section, setSection] = useState("all");
-  const [spaceView, setSpaceView] = useState(false);
+  const [view, setView] = useState<SidebarView>("home");
+  const nav = useMemo(() => ({ view, section }), [view, section]);
   const hasThreads = useAuiState((s) => s.threads.threadIds.length > 0);
   const aui = useAui();
 
@@ -175,10 +184,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
     </ThreadListNew>
   );
 
-  const newThread = spaceView ? createRow : newChatRow;
+  const newThread =
+    view === "space" ? createRow : view === "home" ? newChatRow : null;
 
   return (
-    <SidebarSectionContext.Provider value={section}>
+    <SidebarNavContext.Provider value={nav}>
       <div className="relative flex h-full w-full overflow-hidden">
       <div
         data-slot="aui-app-rail"
@@ -192,8 +202,8 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           onClick={() => {
             const wasCollapsed = sidebarCollapsed;
             if (wasCollapsed) setSidebarCollapsed(false);
-            if (spaceView) {
-              setSpaceView(false);
+            if (view !== "home") {
+              setView("home");
               return;
             }
             if (!wasCollapsed) void aui.threads.switchToNewThread();
@@ -209,21 +219,27 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           side="right"
           onClick={() => {
             setSidebarCollapsed(false);
-            setSpaceView((open) => !open);
+            setView(view === "space" ? "home" : "space");
           }}
-          className={cn("size-8", spaceView && "bg-muted text-foreground")}
+          className={cn("size-8", view === "space" && "bg-muted text-foreground")}
         >
           <LayoutGridIcon className="size-4" />
         </TooltipIconButton>
         <TooltipIconButton
           variant="ghost"
           size="icon"
-          tooltip="New chat"
+          tooltip="Scheduled"
           side="right"
-          onClick={() => void aui.threads.switchToNewThread()}
-          className="size-8"
+          onClick={() => {
+            setSidebarCollapsed(false);
+            setView(view === "scheduled" ? "home" : "scheduled");
+          }}
+          className={cn(
+            "size-8",
+            view === "scheduled" && "bg-muted text-foreground",
+          )}
         >
-          <SquarePenIcon className="size-4" />
+          <ClockIcon className="size-4" />
         </TooltipIconButton>
         {showSearch && (
           <TooltipIconButton
@@ -263,7 +279,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             headerContent
           ) : (
             <span className="flex-1 truncate ps-2 text-sm font-medium">
-              {spaceView ? "Space" : "Pixelspace AI Classroom"}
+              {view === "space"
+                ? "Space"
+                : view === "scheduled"
+                  ? "Scheduled"
+                  : "Pixelspace AI Classroom"}
             </span>
           )}
           {showSearch && hasThreads && (
@@ -298,7 +318,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             sidebarCollapsed ? "w-12 overflow-hidden px-2 pt-1" : "w-65 overflow-y-auto p-2",
           )}
         >
-          {wrapNewThreadTooltip ? (
+          {wrapNewThreadTooltip && newThread ? (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger render={newThread} />
@@ -311,7 +331,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             newThread
           )}
 
-          {spaceView ? (
+          {view === "space" ? (
             <nav className="mt-2 flex flex-col gap-0.5">
               {NAV_ITEMS.map((item) => (
                 <button
@@ -330,6 +350,12 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 </button>
               ))}
             </nav>
+          ) : view === "scheduled" ? (
+            <div className="mt-4 flex flex-col">
+              <span className="text-muted-foreground/70 px-3 py-1 text-sm">
+                No scheduled tasks
+              </span>
+            </div>
           ) : (
             <div className="mt-4 flex flex-col">
               <span className="text-muted-foreground px-3 py-1 text-xs font-medium">
@@ -399,6 +425,6 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
 
       <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
       </div>
-    </SidebarSectionContext.Provider>
+    </SidebarNavContext.Provider>
   );
 };
