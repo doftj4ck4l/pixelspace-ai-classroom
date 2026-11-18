@@ -33,13 +33,6 @@ import {
 import { type FC, type PropsWithChildren, useState } from "react";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
-import {
-  Reasoning,
-  ReasoningContent,
-  ReasoningRoot,
-  ReasoningText,
-  ReasoningTrigger,
-} from "@/components/assistant-ui/elements/reasoning.aui";
 import { ToolFallback } from "@/components/assistant-ui/elements/tool-fallback.aui";
 import {
   ToolGroupContent,
@@ -67,11 +60,6 @@ const messageGroupBy = groupPartByType({
 });
 
 type GroupPart = MessagePrimitive.GroupedParts.GroupPart;
-
-const reasoningDuration = (timing: GroupPart["timing"]) =>
-  timing?.completedAt === undefined
-    ? undefined
-    : Math.round((timing.completedAt - timing.startedAt) / 1000);
 
 const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
   group,
@@ -358,24 +346,13 @@ const ChatMessage: FC = () => {
                     return (
                       <ToolCallGroup group={part}>{children}</ToolCallGroup>
                     );
-                  case "group-reasoning": {
-                    const running = part.status.type === "running";
-                    return (
-                      <ReasoningRoot streaming={running}>
-                        <ReasoningTrigger
-                          active={running}
-                          duration={reasoningDuration(part.timing)}
-                        />
-                        <ReasoningContent aria-busy={running}>
-                          <ReasoningText>{children}</ReasoningText>
-                        </ReasoningContent>
-                      </ReasoningRoot>
-                    );
-                  }
+                  case "group-reasoning":
+                  case "reasoning":
+                    // The harness stores thinking but never displays it —
+                    // same as pixelspacev3's transcript.
+                    return null;
                   case "text":
                     return <MarkdownText />;
-                  case "reasoning":
-                    return <Reasoning {...part} />;
                   case "tool-call":
                     return part.toolUI ?? <ToolFallback {...part} />;
                   case "indicator":
