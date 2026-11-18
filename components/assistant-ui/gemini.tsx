@@ -6,6 +6,7 @@ import {
   AuiIf,
   ComposerPrimitive,
   ErrorPrimitive,
+  groupPartByType,
   MessagePrimitive,
   ThreadPrimitive,
   useAuiState,
@@ -29,9 +30,22 @@ import {
   ThumbsUp,
   XIcon,
 } from "lucide-react";
-import { type FC, useState } from "react";
+import { type FC, type PropsWithChildren, useState } from "react";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningRoot,
+  ReasoningText,
+  ReasoningTrigger,
+} from "@/components/assistant-ui/elements/reasoning.aui";
+import { ToolFallback } from "@/components/assistant-ui/elements/tool-fallback.aui";
+import {
+  ToolGroupContent,
+  ToolGroupRoot,
+  ToolGroupTrigger,
+} from "@/components/assistant-ui/elements/tool-group.aui";
 import {
   CloneThreadShell,
   useSidebarNav,
@@ -45,6 +59,39 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const messageGroupBy = groupPartByType({
+  reasoning: ["group-chainOfThought", "group-reasoning"],
+  "tool-call": ["group-chainOfThought", "group-tool"],
+  "standalone-tool-call": [],
+});
+
+type GroupPart = MessagePrimitive.GroupedParts.GroupPart;
+
+const reasoningDuration = (timing: GroupPart["timing"]) =>
+  timing?.completedAt === undefined
+    ? undefined
+    : Math.round((timing.completedAt - timing.startedAt) / 1000);
+
+const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
+  group,
+  children,
+}) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <ToolGroupRoot
+      variant="ghost"
+      open={open || group.counts.requiresAction > 0}
+      onOpenChange={setOpen}
+    >
+      <ToolGroupTrigger
+        count={group.indices.length}
+        active={group.status.type === "running"}
+      />
+      <ToolGroupContent>{children}</ToolGroupContent>
+    </ToolGroupRoot>
+  );
+};
 
 export const Gemini: FC = () => {
   return (
@@ -302,7 +349,49 @@ const ChatMessage: FC = () => {
       <AuiIf condition={(s) => s.message.role === "assistant"}>
         <div className="flex flex-col">
           <div className="wrap-break-word text-[#1f1f1f] dark:text-[#e3e3e3]">
-            <MessagePrimitive.Parts components={{ Text: MarkdownText }} />
+            <MessagePrimitive.GroupedParts groupBy={messageGroupBy}>
+              {({ part, children }) => {
+                switch (part.type) {
+                  case "group-chainOfThought":
+                    return <div>{children}</div>;
+                  case "group-tool":
+                    return (
+                      <ToolCallGroup group={part}>{children}</ToolCallGroup>
+                    );
+                  case "group-reasoning": {
+                    const running = part.status.type === "running";
+                    return (
+                      <ReasoningRoot streaming={running}>
+                        <ReasoningTrigger
+                          active={running}
+                          duration={reasoningDuration(part.timing)}
+                        />
+                        <ReasoningContent aria-busy={running}>
+                          <ReasoningText>{children}</ReasoningText>
+                        </ReasoningContent>
+                      </ReasoningRoot>
+                    );
+                  }
+                  case "text":
+                    return <MarkdownText />;
+                  case "reasoning":
+                    return <Reasoning {...part} />;
+                  case "tool-call":
+                    return part.toolUI ?? <ToolFallback {...part} />;
+                  case "indicator":
+                    return (
+                      <span
+                        className="animate-pulse font-sans"
+                        aria-label="Assistant is working"
+                      >
+                        {"\u25cf"}
+                      </span>
+                    );
+                  default:
+                    return null;
+                }
+              }}
+            </MessagePrimitive.GroupedParts>
           </div>
           <MessagePrimitive.Error>
             <ErrorPrimitive.Root className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">

@@ -100,6 +100,8 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
       let reasoningId: string | null = null;
       let buffer = "";
       let failure: string | null = null;
+      const pendingToolIds = new Map<string, string[]>();
+      let lastToolId: string | null = null;
 
       try {
         for (;;) {
@@ -137,6 +139,58 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
                 id: reasoningId,
                 delta: event.delta,
               });
+            } else if (
+              event.type === "tool_call" &&
+              typeof event.id === "string" &&
+              typeof event.name === "string"
+            ) {
+              lastToolId = event.id;
+              const queued = pendingToolIds.get(event.name) ?? [];
+              queued.push(event.id);
+              pendingToolIds.set(event.name, queued);
+              writer.write({
+                type: "tool-input-start",
+                toolCallId: event.id,
+                toolName: event.name,
+                dynamic: true,
+              });
+              writer.write({
+                type: "tool-input-available",
+                toolCallId: event.id,
+                toolName: event.name,
+                input: event.args ?? {},
+                dynamic: true,
+              });
+            } else if (
+              event.type === "tool_result" &&
+              typeof event.name === "string"
+            ) {
+              const queued = pendingToolIds.get(event.name) ?? [];
+              const toolCallId =
+                typeof event.id === "string"
+                  ? event.id
+                  : (queued.shift() ?? lastToolId);
+              if (toolCallId) {
+                if (event.ok === false) {
+                  writer.write({
+                    type: "tool-output-error",
+                    toolCallId,
+                    errorText: String(event.content ?? "Tool call failed"),
+                    dynamic: true,
+                  });
+                } else {
+                  const content =
+                    typeof event.content === "string"
+                      ? event.content.slice(0, 4000)
+                      : event.content;
+                  writer.write({
+                    type: "tool-output-available",
+                    toolCallId,
+                    output: { content, ms: event.ms, calls: event.calls },
+                    dynamic: true,
+                  });
+                }
+              }
             } else if (
               event.type === "conversation" &&
               typeof event.id === "string" &&
