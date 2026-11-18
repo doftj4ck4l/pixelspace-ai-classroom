@@ -22,6 +22,9 @@ type ChatBody = {
   messages: UIMessage[];
   system?: string;
   tools?: Record<string, { description?: string; parameters: JSONSchema7 }>;
+  /** The chat transport sends the initialized thread's remoteId as `id`. */
+  id?: string;
+  /** Kept for compatibility with callers that pass the thread explicitly. */
   threadId?: string;
 };
 
@@ -59,7 +62,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
   const userText = lastUserText(body.messages);
   if (!userText) return null;
 
-  const threadId = body.threadId;
+  const threadId = body.id ?? body.threadId;
   const thread = threadId ? await registry.get(threadId) : undefined;
 
   let upstream: Response;

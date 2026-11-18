@@ -150,24 +150,19 @@ const threadListAdapter: RemoteThreadListAdapter = {
 
 export const Assistant = () => {
   const runtime = useRemoteThreadListRuntime({
-    runtimeHook: () => {
-      const aui = useAui();
-      return useChatRuntime({
+    runtimeHook: () =>
+      useChatRuntime({
         sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-        transport: new AssistantChatTransport({
-          api: "/api/chat",
-          body: () => ({
-            threadId: aui.threadListItem.getState().remoteId,
-          }),
-        }),
+        // The transport awaits thread initialization and sends the remoteId as
+        // the request `id`, so the server can map it to a pi conversation.
+        transport: new AssistantChatTransport({ api: "/api/chat" }),
         adapters: {
           attachments: new CompositeAttachmentAdapter([
             new SimpleImageAttachmentAdapter(),
             new SimpleTextAttachmentAdapter(),
           ]),
         },
-      });
-    },
+      }),
     adapter: threadListAdapter,
   });
 
