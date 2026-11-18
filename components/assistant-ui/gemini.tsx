@@ -37,6 +37,7 @@ import {
   useSidebarNav,
 } from "@/components/assistant-ui/clone-thread-shell";
 import { SpaceGallery } from "@/components/assistant-ui/space-gallery";
+import type { ModuleKind } from "@/components/assistant-ui/space-gallery";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,13 +54,27 @@ export const Gemini: FC = () => {
   );
 };
 
+const MODULE_SECTIONS = new Set<string>([
+  "flashcards",
+  "quizzes",
+  "mindmaps",
+  "slides",
+  "reports",
+  "infographics",
+  "podcasts",
+  "notes",
+  "transformations",
+]);
+
 const MainContent: FC = () => {
   const { view, section } = useSidebarNav();
-  if (view === "space" && section === "all") {
-    return <SpaceGallery mode="all" />;
-  }
-  if (view === "space" && section === "slides") {
-    return <SpaceGallery mode="slides" />;
+  if (view === "space") {
+    if (section === "all") {
+      return <SpaceGallery mode="all" />;
+    }
+    if (MODULE_SECTIONS.has(section)) {
+      return <SpaceGallery mode={section as ModuleKind} />;
+    }
   }
   return <ThreadContent />;
 };
@@ -108,10 +123,15 @@ const ghostBtnClass =
 
 const SECTION_PLACEHOLDERS: Record<string, string> = {
   all: "Ask Pixelspace AI Classroom",
+  flashcards: "What flashcards do you want to create?",
+  quizzes: "What quiz do you want to generate?",
+  mindmaps: "What mind map do you want to generate?",
   slides: "What slide do you want to generate?",
   reports: "Ready to write a report?",
-  flashcards: "What flashcards do you want to create?",
-  audio: "Ready to write an audio overview?",
+  infographics: "What infographic do you want to generate?",
+  podcasts: "What podcast do you want to generate?",
+  notes: "What notes do you want to create?",
+  transformations: "What content do you want to transform?",
 };
 
 const Composer: FC = () => {

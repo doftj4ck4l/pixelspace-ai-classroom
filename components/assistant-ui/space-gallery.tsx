@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState, type FC } from "react";
 import {
   AlignLeftIcon,
+  ChartColumnIcon,
   CheckIcon,
   ChevronDownIcon,
+  CircleHelpIcon,
   FileTextIcon,
   FolderIcon,
   ImageIcon,
@@ -16,12 +18,17 @@ import {
   PinIcon,
   PinOffIcon,
   PlugIcon,
+  PlusIcon,
+  PodcastIcon,
   PresentationIcon,
   SearchIcon,
   StarIcon,
+  StickyNoteIcon,
   TableIcon,
   Trash2Icon,
   UploadIcon,
+  WandSparklesIcon,
+  WaypointsIcon,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,11 +48,29 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSidebarNav } from "@/components/assistant-ui/clone-thread-shell";
+import {
+  NewPresentationDialog,
+  SlideEditor,
+  TEMPLATES,
+  blankSlide,
+  type SlideData,
+} from "@/components/assistant-ui/slide-editor";
 import { cn } from "@/lib/utils";
 
+export type ModuleKind =
+  | "flashcards"
+  | "quizzes"
+  | "mindmaps"
+  | "slides"
+  | "reports"
+  | "infographics"
+  | "podcasts"
+  | "notes"
+  | "transformations";
+
 type DocType =
+  | ModuleKind
   | "page"
-  | "slide"
   | "pdf"
   | "doc"
   | "site"
@@ -59,58 +84,38 @@ type Doc = {
   type: DocType;
   pinned: boolean;
   favorite: boolean;
+  slides?: SlideData[];
 };
 
-const STORAGE_KEY = "paic-space-docs-v1";
+const STORAGE_KEY = "paic-space-docs-v2";
 
 const SEED_DOCS: Doc[] = [
-  {
-    id: "demo-1",
-    title: "Your guide to pages",
-    type: "page",
-    pinned: false,
-    favorite: true,
-  },
-  {
-    id: "demo-2",
-    title: "Untitled slide",
-    type: "slide",
-    pinned: false,
-    favorite: false,
-  },
-  {
-    id: "demo-3",
-    title: "Weekly Business Review",
-    type: "slide",
-    pinned: false,
-    favorite: false,
-  },
-  {
-    id: "demo-4",
-    title: "Tourism_Malaysia_AI_Avatar_Proposal",
-    type: "pdf",
-    pinned: false,
-    favorite: false,
-  },
-  {
-    id: "demo-5",
-    title: "Silibus_Latihan_Projek_Pelajar",
-    type: "pdf",
-    pinned: false,
-    favorite: false,
-  },
-  {
-    id: "demo-6",
-    title: "Pixelspace_AI_Classroom_Notes",
-    type: "doc",
-    pinned: false,
-    favorite: false,
-  },
+  { id: "demo-1", title: "Your guide to pages", type: "page", pinned: false, favorite: true },
+  { id: "demo-2", title: "Untitled slide", type: "slides", pinned: false, favorite: false },
+  { id: "demo-3", title: "Weekly Business Review", type: "slides", pinned: false, favorite: false },
+  { id: "demo-4", title: "Water Cycle Flashcards", type: "flashcards", pinned: false, favorite: false },
+  { id: "demo-5", title: "Photosynthesis Quiz", type: "quizzes", pinned: false, favorite: false },
+  { id: "demo-6", title: "Ecosystem Mind Map", type: "mindmaps", pinned: false, favorite: false },
+  { id: "demo-7", title: "Class Performance Report", type: "reports", pinned: false, favorite: false },
+  { id: "demo-8", title: "Renewable Energy Infographic", type: "infographics", pinned: false, favorite: false },
+  { id: "demo-9", title: "History of Malaysia Podcast", type: "podcasts", pinned: false, favorite: false },
+  { id: "demo-10", title: "Cell Structure Notes", type: "notes", pinned: false, favorite: false },
+  { id: "demo-11", title: "Chapter 3 Summary Rewrite", type: "transformations", pinned: false, favorite: false },
+  { id: "demo-12", title: "Tourism_Malaysia_AI_Avatar_Proposal", type: "pdf", pinned: false, favorite: false },
+  { id: "demo-13", title: "Pixelspace_AI_Classroom_Notes", type: "doc", pinned: false, favorite: false },
 ];
 
 const TYPE_STYLES: Record<DocType, { Icon: LucideIcon; color: string }> = {
+  flashcards: { Icon: LayersIcon, color: "text-amber-500" },
+  quizzes: { Icon: CircleHelpIcon, color: "text-teal-600" },
+  mindmaps: { Icon: WaypointsIcon, color: "text-violet-500" },
+  slides: { Icon: PresentationIcon, color: "text-yellow-500" },
+  reports: { Icon: FileTextIcon, color: "text-purple-500" },
+  infographics: { Icon: ChartColumnIcon, color: "text-pink-500" },
+  podcasts: { Icon: PodcastIcon, color: "text-red-500" },
+  notes: { Icon: StickyNoteIcon, color: "text-green-600" },
+  transformations: { Icon: WandSparklesIcon, color: "text-blue-500" },
   page: { Icon: FileTextIcon, color: "text-foreground" },
-  slide: { Icon: PresentationIcon, color: "text-yellow-500" },
   pdf: { Icon: FileTextIcon, color: "text-red-500" },
   doc: { Icon: FileTextIcon, color: "text-blue-500" },
   site: { Icon: LayoutGridIcon, color: "text-violet-500" },
@@ -120,8 +125,16 @@ const TYPE_STYLES: Record<DocType, { Icon: LucideIcon; color: string }> = {
 };
 
 const UNTITLED: Record<DocType, string> = {
+  flashcards: "Untitled flashcards",
+  quizzes: "Untitled quiz",
+  mindmaps: "Untitled mind map",
+  slides: "Untitled slide deck",
+  reports: "Untitled report",
+  infographics: "Untitled infographic",
+  podcasts: "Untitled podcast",
+  notes: "Untitled notes",
+  transformations: "Untitled transformation",
   page: "Untitled page",
-  slide: "Untitled slide",
   pdf: "Untitled document",
   doc: "Untitled document",
   site: "Untitled site",
@@ -129,6 +142,36 @@ const UNTITLED: Record<DocType, string> = {
   folder: "Untitled folder",
   space: "Untitled space",
 };
+
+const MODULE_TITLES: Record<ModuleKind | "all", string> = {
+  all: "All",
+  flashcards: "Flashcards",
+  quizzes: "Quizzes",
+  mindmaps: "Mind Maps",
+  slides: "Slides",
+  reports: "Reports",
+  infographics: "Infographics",
+  podcasts: "Podcasts",
+  notes: "Notes",
+  transformations: "Transformations",
+};
+
+const CREATE_MODULE_ITEMS: { type: DocType; label: string; Icon: LucideIcon }[] =
+  [
+    { type: "flashcards", label: "Flashcards", Icon: LayersIcon },
+    { type: "quizzes", label: "Quiz", Icon: CircleHelpIcon },
+    { type: "mindmaps", label: "Mind Map", Icon: WaypointsIcon },
+    { type: "slides", label: "Slide Deck", Icon: PresentationIcon },
+    { type: "reports", label: "Report", Icon: FileTextIcon },
+    { type: "infographics", label: "Infographic", Icon: ChartColumnIcon },
+    { type: "podcasts", label: "Podcast", Icon: PodcastIcon },
+    { type: "notes", label: "Notes", Icon: StickyNoteIcon },
+    {
+      type: "transformations",
+      label: "Transformation",
+      Icon: WandSparklesIcon,
+    },
+  ];
 
 const DocGlyph: FC<{ type: DocType; size?: "sm" | "lg" }> = ({
   type,
@@ -164,102 +207,6 @@ const SORT_OPTIONS = [
 ] as const;
 type Sort = (typeof SORT_OPTIONS)[number]["id"];
 
-type Template = { id: string; title: string; render: FC };
-
-const ProductStrategyThumb: FC = () => (
-  <div className="relative flex size-full flex-col items-center justify-center overflow-hidden bg-[#1e2a5a]">
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 100 60"
-      className="absolute inset-x-0 bottom-0 w-full text-white/10"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="0.4"
-    >
-      <path d="M50 58 L20 20 L80 20 Z" />
-      <path d="M50 58 L35 10 L65 10 Z" />
-    </svg>
-    <span className="relative text-[10px] tracking-[0.35em] text-white/60">
-      2027
-    </span>
-    <span className="relative text-center text-lg leading-tight font-semibold text-white">
-      Product
-      <br />
-      Strategy
-    </span>
-  </div>
-);
-
-const WeeklyReviewThumb: FC = () => (
-  <div className="flex size-full items-center justify-center bg-gradient-to-br from-[#f3e8d8] to-[#e6d5bd]">
-    <div className="h-[82%] w-[78%] rounded-md bg-white p-1.5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-[6px] font-medium text-[#333]">
-          Weekly Business Review
-        </span>
-        <span className="text-[5px] text-[#888]">Alder</span>
-      </div>
-      <p className="mt-0.5 text-[4px] text-[#999]">October 2025</p>
-      <div className="mt-1 h-[58%] rounded-sm bg-gradient-to-br from-[#c9a27a] to-[#8b5e3c]" />
-    </div>
-  </div>
-);
-
-const PhotographyThumb: FC = () => (
-  <div className="flex size-full flex-col items-center justify-center gap-1.5 border bg-white dark:bg-[#1e1f20]">
-    <span className="font-serif text-xs italic text-[#2b2b2b] dark:text-[#e3e3e3]">
-      Luma Studio
-    </span>
-    <div className="flex gap-0.5">
-      <div className="h-8 w-4 rounded-[2px] bg-gradient-to-b from-[#8d8d8d] to-[#4a4a4a]" />
-      <div className="h-8 w-5 rounded-[2px] bg-gradient-to-b from-[#b0a89c] to-[#6b6257]" />
-      <div className="h-8 w-4 rounded-[2px] bg-gradient-to-b from-[#d9d2c8] to-[#9a9187]" />
-    </div>
-  </div>
-);
-
-const NextOsThumb: FC = () => (
-  <div className="flex size-full flex-col items-center justify-end overflow-hidden bg-gradient-to-b from-[#bfe0f5] to-[#eef6fb] pt-2">
-    <p className="max-w-[85%] text-center text-[7px] font-medium text-[#2b3a46]">
-      Introducing our next generation OS
-    </p>
-    <div className="mt-1.5 h-[62%] w-[72%] rounded-t-lg bg-[#3a3a3c] p-1">
-      <div className="size-full rounded-sm bg-gradient-to-b from-[#f5c9a8] via-[#c9b8b0] to-[#9db8d2]" />
-    </div>
-  </div>
-);
-
-const BrandGuideThumb: FC = () => (
-  <div className="flex size-full flex-col justify-between bg-[#e8503a] p-3">
-    <span className="text-base leading-tight font-semibold text-white/95">
-      Brand
-      <br />
-      Guide
-    </span>
-    <span className="text-[5px] text-white/70">2025 ©</span>
-  </div>
-);
-
-const TEMPLATES: Template[] = [
-  {
-    id: "product-strategy",
-    title: "Product Strategy",
-    render: ProductStrategyThumb,
-  },
-  {
-    id: "weekly-review",
-    title: "Weekly Business Review",
-    render: WeeklyReviewThumb,
-  },
-  {
-    id: "photography",
-    title: "Photography Portfolio",
-    render: PhotographyThumb,
-  },
-  { id: "next-os", title: "Next Generation OS", render: NextOsThumb },
-  { id: "brand-guide", title: "Brand Guide", render: BrandGuideThumb },
-];
-
 const newDoc = (type: DocType, title?: string): Doc => ({
   id: crypto.randomUUID(),
   title: title ?? UNTITLED[type],
@@ -288,20 +235,23 @@ const CreateMenu: FC<{
           Create
           <ChevronDownIcon className="size-4" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" side="bottom" className="min-w-56">
+        <DropdownMenuContent
+          align="end"
+          side="bottom"
+          className="max-h-96 min-w-56 overflow-y-auto"
+        >
           <DropdownMenuItem onClick={onStartFromTemplate}>
             <LayoutDashboardIcon className="size-4" />
             Start from template
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => onCreate("page")}>
-            <FileTextIcon className="size-4" />
-            Page
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onCreate("slide")}>
-            <PresentationIcon className="size-4" />
-            Slides
-          </DropdownMenuItem>
+          {CREATE_MODULE_ITEMS.map(({ type, label, Icon }) => (
+            <DropdownMenuItem key={type} onClick={() => onCreate(type)}>
+              <Icon className="size-4" />
+              {label}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
           <DropdownMenuItem disabled>
             <TableIcon className="size-4" />
             Sheet
@@ -309,24 +259,6 @@ const CreateMenu: FC<{
               Coming soon
             </span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onCreate("site")}>
-            <LayoutGridIcon className="size-4" />
-            Site
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onCreate("image")}>
-            <ImageIcon className="size-4" />
-            Image
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => onCreate("folder")}>
-            <FolderIcon className="size-4" />
-            Folder
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onCreate("space")}>
-            <LayersIcon className="size-4" />
-            Space
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => fileRef.current?.click()}>
             <UploadIcon className="size-4" />
             Upload files
@@ -391,9 +323,9 @@ const DocMenu: FC<{
 );
 
 const ALL_TABS = ["Suggested", "Favorites", "Your items", "Shared with you"];
-const SLIDES_TABS = ["All", "Pinned", "Yours", "Shared with you"];
+const MODULE_TABS = ["All", "Pinned", "Favorites", "Shared with you"];
 
-export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
+export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const { setSection } = useSidebarNav();
   const [docs, setDocs] = useState<Doc[] | null>(null);
   const [tab, setTab] = useState<string>(mode === "all" ? "Suggested" : "All");
@@ -401,7 +333,11 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
   const [sort, setSort] = useState<Sort>("newest");
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [pendingDelete, setPendingDelete] = useState<Doc | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showNewPresentation, setShowNewPresentation] = useState(false);
   const templatesRef = useRef<HTMLDivElement>(null);
+
+  const editingDoc = docs?.find((doc) => doc.id === editingId) ?? null;
 
   useEffect(() => {
     try {
@@ -426,7 +362,7 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
     if (!docs) return [];
     const q = query.trim().toLowerCase();
     const result = docs.filter((doc) => {
-      if (mode === "slides" && doc.type !== "slide") return false;
+      if (mode !== "all" && doc.type !== mode) return false;
       if (tab === "Pinned" && !doc.pinned) return false;
       if (tab === "Favorites" && !doc.favorite) return false;
       if (tab === "Shared with you") return false;
@@ -471,6 +407,28 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
     setDocs((prev) => prev?.filter((doc) => doc.id !== id) ?? null);
   };
 
+  const updateDoc = (id: string, patch: Partial<Doc>) => {
+    setDocs(
+      (prev) => prev?.map((doc) => (doc.id === id ? { ...doc, ...patch } : doc)) ?? null,
+    );
+  };
+
+  const openDeck = (doc: Doc) => {
+    if (!doc.slides) {
+      updateDoc(doc.id, {
+        slides: [blankSlide(doc.title === "Untitled slide deck" ? "" : doc.title)],
+      });
+    }
+    setEditingId(doc.id);
+  };
+
+  const createDeck = (title: string, slides: SlideData[]) => {
+    const doc: Doc = { ...newDoc("slides", title), slides };
+    setDocs((prev) => [doc, ...(prev ?? [])]);
+    setShowNewPresentation(false);
+    setEditingId(doc.id);
+  };
+
   const startFromTemplate = () => {
     if (mode === "slides") {
       templatesRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -479,7 +437,7 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
     setSection("slides");
   };
 
-  const tabs = mode === "all" ? ALL_TABS : SLIDES_TABS;
+  const tabs = mode === "all" ? ALL_TABS : MODULE_TABS;
   const emptyMessage =
     tab === "Shared with you"
       ? "Nothing shared with you yet"
@@ -491,13 +449,29 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
             ? "No items match your search"
             : "Nothing here yet — create something to get started";
 
+  if (editingDoc) {
+    return (
+      <SlideEditor
+        title={editingDoc.title}
+        slides={
+          editingDoc.slides ?? [
+            blankSlide(
+              editingDoc.title === "Untitled slide deck" ? "" : editingDoc.title,
+            ),
+          ]
+        }
+        onTitleChange={(title) => updateDoc(editingDoc.id, { title })}
+        onSlidesChange={(slides) => updateDoc(editingDoc.id, { slides })}
+        onClose={() => setEditingId(null)}
+      />
+    );
+  }
+
   return (
     <div className="bg-background flex h-full flex-col overflow-y-auto">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-8 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold">
-            {mode === "all" ? "All" : "Slides"}
-          </h1>
+          <h1 className="text-2xl font-semibold">{MODULE_TITLES[mode]}</h1>
           <div className="flex items-center gap-3">
             <div className="relative">
               <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -510,7 +484,20 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 md:w-64"
               />
             </div>
-            <CreateMenu onStartFromTemplate={startFromTemplate} onCreate={addDoc} />
+            {mode === "slides" ? (
+              <Button
+                onClick={() => setShowNewPresentation(true)}
+                className="h-9 rounded-full px-4 text-sm"
+              >
+                <PlusIcon className="size-4" />
+                New slides
+              </Button>
+            ) : (
+              <CreateMenu
+                onStartFromTemplate={startFromTemplate}
+                onCreate={addDoc}
+              />
+            )}
           </div>
         </div>
 
@@ -598,7 +585,11 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
                 <button
                   key={template.id}
                   type="button"
-                  onClick={() => addDoc("slide", template.title)}
+                  onClick={() =>
+                    createDeck(template.title, [
+                      blankSlide(template.title, "Created from template"),
+                    ])
+                  }
                   className="w-64 shrink-0 text-left"
                 >
                   <div className="border-border/60 aspect-[16/10] overflow-hidden rounded-xl border transition-transform duration-200 hover:scale-[1.02]">
@@ -622,7 +613,11 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
               {filtered.map((doc) => (
                 <div
                   key={doc.id}
-                  className="group border-border/60 bg-card relative rounded-xl border p-3 transition-shadow hover:shadow-md"
+                  onClick={doc.type === "slides" ? () => openDeck(doc) : undefined}
+                  className={cn(
+                    "group border-border/60 bg-card relative rounded-xl border p-3 transition-shadow hover:shadow-md",
+                    doc.type === "slides" && "cursor-pointer",
+                  )}
                 >
                   <div className="flex items-center gap-2 pr-7">
                     <DocGlyph type={doc.type} />
@@ -639,7 +634,10 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
                   <div className="mt-3 flex aspect-[16/10] items-center justify-center">
                     <DocGlyph type={doc.type} size="lg" />
                   </div>
-                  <div className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                  <div
+                    onClick={(event) => event.stopPropagation()}
+                    className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                  >
                     <DocMenu
                       doc={doc}
                       onTogglePin={togglePin}
@@ -655,7 +653,11 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
               {filtered.map((doc) => (
                 <div
                   key={doc.id}
-                  className="group hover:bg-muted/50 relative flex h-11 items-center gap-3 rounded-lg px-3 transition-colors"
+                  onClick={doc.type === "slides" ? () => openDeck(doc) : undefined}
+                  className={cn(
+                    "group hover:bg-muted/50 relative flex h-11 items-center gap-3 rounded-lg px-3 transition-colors",
+                    doc.type === "slides" && "cursor-pointer",
+                  )}
                 >
                   <DocGlyph type={doc.type} />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
@@ -667,7 +669,10 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
                   {doc.favorite && (
                     <StarIcon className="size-3.5 shrink-0 fill-current text-amber-400" />
                   )}
-                  <div className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                  <div
+                    onClick={(event) => event.stopPropagation()}
+                    className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                  >
                     <DocMenu
                       doc={doc}
                       onTogglePin={togglePin}
@@ -686,6 +691,12 @@ export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
           </div>
         )}
       </div>
+
+      <NewPresentationDialog
+        open={showNewPresentation}
+        onOpenChange={setShowNewPresentation}
+        onCreate={createDeck}
+      />
 
       <Dialog
         open={pendingDelete !== null}

@@ -25,7 +25,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
-  AudioLinesIcon,
+  ChartColumnIcon,
+  CircleHelpIcon,
   ClockIcon,
   Columns3Icon,
   FileTextIcon,
@@ -35,11 +36,15 @@ import {
   MenuIcon,
   MoonIcon,
   PanelLeftIcon,
+  PodcastIcon,
   PlusIcon,
   PresentationIcon,
   SearchIcon,
   SquarePenIcon,
+  StickyNoteIcon,
   SunIcon,
+  WandSparklesIcon,
+  WaypointsIcon,
   type LucideIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -59,12 +64,14 @@ export type SidebarNav = {
   view: SidebarView;
   section: string;
   setSection: (section: string) => void;
+  setView: (view: SidebarView) => void;
 };
 
 export const SidebarNavContext = createContext<SidebarNav>({
   view: "home",
   section: "all",
   setSection: () => {},
+  setView: () => {},
 });
 
 export const useSidebarNav = () => useContext(SidebarNavContext);
@@ -90,10 +97,15 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { id: "all", label: "All", Icon: Columns3Icon },
+  { id: "flashcards", label: "Flashcards", Icon: LayersIcon },
+  { id: "quizzes", label: "Quizzes", Icon: CircleHelpIcon },
+  { id: "mindmaps", label: "Mind Maps", Icon: WaypointsIcon },
   { id: "slides", label: "Slides", Icon: PresentationIcon },
   { id: "reports", label: "Reports", Icon: FileTextIcon },
-  { id: "flashcards", label: "Flashcards", Icon: LayersIcon },
-  { id: "audio", label: "Audio", Icon: AudioLinesIcon },
+  { id: "infographics", label: "Infographics", Icon: ChartColumnIcon },
+  { id: "podcasts", label: "Podcasts", Icon: PodcastIcon },
+  { id: "notes", label: "Notes", Icon: StickyNoteIcon },
+  { id: "transformations", label: "Transformations", Icon: WandSparklesIcon },
 ];
 
 const ThemeToggle: FC = () => {
@@ -138,7 +150,10 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const [search, setSearch] = useState("");
   const [section, setSection] = useState("all");
   const [view, setView] = useState<SidebarView>("home");
-  const nav = useMemo(() => ({ view, section, setSection }), [view, section]);
+  const nav = useMemo(
+    () => ({ view, section, setSection, setView }),
+    [view, section],
+  );
   const hasThreads = useAuiState((s) => s.threads.threadIds.length > 0);
   const aui = useAui();
 
