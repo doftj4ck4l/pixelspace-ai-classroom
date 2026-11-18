@@ -7,6 +7,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   DownloadIcon,
+  FileDownIcon,
   FileInputIcon,
   FilePlus2Icon,
   FilePlusIcon,
@@ -257,6 +258,8 @@ export const NewPresentationDialog: FC<{
 export const SlideEditor: FC<{
   title: string;
   slides: SlideData[];
+  /** Companion files the agent shared (e.g. the .pptx and its .pdf). */
+  downloads?: { name: string; url: string }[];
   onTitleChange: (title: string) => void;
   onSlidesChange: (slides: SlideData[]) => void;
   onGenerateWithAi: (topic: string) => void;
@@ -264,6 +267,7 @@ export const SlideEditor: FC<{
 }> = ({
   title,
   slides,
+  downloads,
   onTitleChange,
   onSlidesChange,
   onGenerateWithAi,
@@ -391,6 +395,18 @@ export const SlideEditor: FC<{
           <PlayIcon className="size-4" />
           Present
         </button>
+        {downloads?.map((file) => (
+          <button
+            key={file.url}
+            type="button"
+            onClick={() => window.open(file.url, "_blank")}
+            title={`Download ${file.name}`}
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 items-center gap-1.5 rounded-md px-2 text-sm transition-colors"
+          >
+            <FileDownIcon className="size-4" />
+            {(file.name.split(".").pop() ?? "FILE").toUpperCase()}
+          </button>
+        ))}
         <button
           type="button"
           aria-label="Download"

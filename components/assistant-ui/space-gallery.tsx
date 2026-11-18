@@ -109,6 +109,8 @@ type Doc = {
   artifactId?: string;
   /** Set on local slide copies created from a shared pptx. */
   originArtifactId?: string;
+  /** Companion files (same base name) offered inside the slide editor. */
+  downloads?: { name: string; url: string }[];
 };
 
 type SharedArtifact = {
@@ -117,6 +119,8 @@ type SharedArtifact = {
   type: string;
   url: string;
 };
+
+const baseName = (name: string) => name.replace(/\.[^.]+$/, "").toLowerCase();
 
 const STORAGE_KEY = "paic-space-docs-v2";
 
@@ -355,32 +359,45 @@ const DocMenu: FC<{
 
 const SharedArtifactMenu: FC<{
   doc: Doc;
+  siblings: { name: string; url: string }[];
   onDownload: (doc: Doc) => void;
   onRemove: (artifactId: string) => void;
-}> = ({ doc, onDownload, onRemove }) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger
-      aria-label="File options"
-      className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 items-center justify-center rounded-md transition-colors"
-    >
-      <MoreHorizontalIcon className="size-4" />
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" side="bottom">
-      <DropdownMenuItem onClick={() => onDownload(doc)}>
-        <DownloadIcon className="size-4" />
-        Download
-      </DropdownMenuItem>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem
-        variant="destructive"
-        onClick={() => doc.artifactId && onRemove(doc.artifactId)}
+}> = ({ doc, siblings, onDownload, onRemove }) => {
+  const others = siblings.filter((file) => file.url !== doc.url);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label="File options"
+        className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 items-center justify-center rounded-md transition-colors"
       >
-        <Trash2Icon className="size-4" />
-        Remove from gallery
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+        <MoreHorizontalIcon className="size-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side="bottom">
+        <DropdownMenuItem onClick={() => onDownload(doc)}>
+          <DownloadIcon className="size-4" />
+          Download
+        </DropdownMenuItem>
+        {others.map((file) => (
+          <DropdownMenuItem
+            key={file.url}
+            onClick={() => window.open(file.url, "_blank")}
+          >
+            <DownloadIcon className="size-4" />
+            Download {file.name.split(".").pop()?.toUpperCase() ?? file.name}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() => doc.artifactId && onRemove(doc.artifactId)}
+        >
+          <Trash2Icon className="size-4" />
+          Remove from gallery
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 const ALL_TABS = ["Suggested", "Favorites", "Your items", "Shared with you"];
 const MODULE_TABS = ["All", "Pinned", "Favorites", "Shared with you"];
@@ -526,13 +543,20 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     setEditingId(doc.id);
   };
 
+  const siblingsOf = (doc: Doc) =>
+    sharedArtifacts
+      .filter((artifact) => baseName(artifact.title) === baseName(doc.title))
+      .map((artifact) => ({ name: artifact.title, url: artifact.url }));
+
   const openSharedArtifact = async (doc: Doc) => {
     if (!doc.artifactId || !doc.url) return;
     if (doc.type === "slides") {
+      const downloads = siblingsOf(doc);
       const existing = (docs ?? []).find(
         (entry) => entry.originArtifactId === doc.artifactId,
       );
       if (existing) {
+        updateDoc(existing.id, { downloads });
         setEditingId(existing.id);
         return;
       }
@@ -545,6 +569,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
           const local: Doc = {
             ...newDoc("slides", doc.title),
             originArtifactId: doc.artifactId,
+            downloads,
             slides: data.slides.map((slide) => ({
               id: crypto.randomUUID(),
               title: slide.title,
@@ -701,6 +726,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     return (
       <SlideEditor
         title={editingDoc.title}
+        downloads={editingDoc.downloads}
         slides={
           editingDoc.slides ?? [
             blankSlide(
@@ -919,6 +945,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                     {doc.artifactId ? (
                       <SharedArtifactMenu
                         doc={doc}
+                        siblings={siblingsOf(doc)}
                         onDownload={(entry) =>
                           entry.url && window.open(entry.url, "_blank")
                         }
@@ -980,6 +1007,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                     {doc.artifactId ? (
                       <SharedArtifactMenu
                         doc={doc}
+                        siblings={siblingsOf(doc)}
                         onDownload={(entry) =>
                           entry.url && window.open(entry.url, "_blank")
                         }
