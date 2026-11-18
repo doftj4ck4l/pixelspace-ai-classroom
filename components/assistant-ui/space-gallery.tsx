@@ -122,23 +122,7 @@ type SharedArtifact = {
 
 const baseName = (name: string) => name.replace(/\.[^.]+$/, "").toLowerCase();
 
-const STORAGE_KEY = "paic-space-docs-v2";
-
-const SEED_DOCS: Doc[] = [
-  { id: "demo-1", title: "Your guide to pages", type: "page", pinned: false, favorite: true },
-  { id: "demo-2", title: "Untitled slide", type: "slides", pinned: false, favorite: false },
-  { id: "demo-3", title: "Weekly Business Review", type: "slides", pinned: false, favorite: false },
-  { id: "demo-4", title: "Water Cycle Flashcards", type: "flashcards", pinned: false, favorite: false },
-  { id: "demo-5", title: "Photosynthesis Quiz", type: "quizzes", pinned: false, favorite: false },
-  { id: "demo-6", title: "Ecosystem Mind Map", type: "mindmaps", pinned: false, favorite: false },
-  { id: "demo-7", title: "Class Performance Report", type: "reports", pinned: false, favorite: false },
-  { id: "demo-8", title: "Renewable Energy Infographic", type: "infographics", pinned: false, favorite: false },
-  { id: "demo-9", title: "History of Malaysia Podcast", type: "podcasts", pinned: false, favorite: false },
-  { id: "demo-10", title: "Cell Structure Notes", type: "notes", pinned: false, favorite: false },
-  { id: "demo-11", title: "Chapter 3 Summary Rewrite", type: "transformations", pinned: false, favorite: false },
-  { id: "demo-12", title: "Tourism_Malaysia_AI_Avatar_Proposal", type: "pdf", pinned: false, favorite: false },
-  { id: "demo-13", title: "Pixelspace_AI_Classroom_Notes", type: "doc", pinned: false, favorite: false },
-];
+const STORAGE_KEY = "paic-space-docs-v3";
 
 const TYPE_STYLES: Record<DocType, { Icon: LucideIcon; color: string }> = {
   flashcards: { Icon: LayersIcon, color: "text-amber-500" },
@@ -428,9 +412,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      setDocs(raw ? (JSON.parse(raw) as Doc[]) : SEED_DOCS);
+      setDocs(raw ? (JSON.parse(raw) as Doc[]) : []);
     } catch {
-      setDocs(SEED_DOCS);
+      setDocs([]);
     }
   }, []);
 
