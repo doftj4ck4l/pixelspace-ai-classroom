@@ -8,6 +8,7 @@ import {
   createUIMessageStreamResponse,
   type UIMessage,
 } from "ai";
+import { artifactRegistry } from "@/lib/pi/artifacts";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
 
@@ -64,6 +65,47 @@ const toPiMessages = (messages: UIMessage[]) =>
     .filter((message) => message.content.length > 0);
 
 type PiEvent = { type?: string; [key: string]: unknown };
+
+const WORKSPACE_FILE_URL = /\/api\/workspace\/files\/[^\s)"'<>`]+/g;
+const IMAGE_URL = /\/api\/images\/[A-Za-z0-9._-]+/g;
+const trimTail = (url: string) => url.replace(/[.,;:!?]+$/, "");
+
+/**
+ * Register the files a `share_file` call handed to the user, so they surface
+ * as cards in Spaces. Only explicitly shared files — never a workspace listing,
+ * which would fill the gallery with scratch files.
+ */
+const captureSharedArtifacts = async (threadId: string, content: string) => {
+  const seen = new Set<string>();
+
+  for (const match of content.matchAll(WORKSPACE_FILE_URL)) {
+    const url = trimTail(match[0]);
+    if (seen.has(url)) continue;
+    seen.add(url);
+    const withoutQuery = url.split("?")[0] ?? url;
+    let filePath = withoutQuery.replace("/api/workspace/files/", "");
+    try {
+      filePath = decodeURIComponent(filePath);
+    } catch {
+      // keep the encoded form
+    }
+    const title = filePath.split("/").pop() || filePath;
+    await artifactRegistry.add({ threadId, title, path: filePath, url });
+  }
+
+  for (const match of content.matchAll(IMAGE_URL)) {
+    const url = trimTail(match[0]);
+    if (seen.has(url)) continue;
+    seen.add(url);
+    const imageId = url.replace("/api/images/", "");
+    await artifactRegistry.add({
+      threadId,
+      title: `image-${imageId.slice(0, 8)}.png`,
+      path: imageId,
+      url,
+    });
+  }
+};
 
 /** Relay one turn through the pi harness. Returns null to fall back to the gateway. */
 const piChat = async (req: Request, body: ChatBody): Promise<Response | null> => {
@@ -181,6 +223,14 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
                   : (queued.shift() ?? lastToolId);
               if (toolCallId) {
                 completedToolIds.add(toolCallId);
+                if (
+                  event.name === "share_file" &&
+                  event.ok !== false &&
+                  typeof event.content === "string" &&
+                  threadId
+                ) {
+                  await captureSharedArtifacts(threadId, event.content);
+                }
                 if (event.ok === false) {
                   writer.write({
                     type: "tool-output-error",

@@ -35,6 +35,9 @@ importers:
       cn:
         specifier: ^0.5.0
         version: 0.5.2
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       lucide-react:
         specifier: ^1.61.0
         version: 1.72.0(@types/react@19.3.0)(react@19.3.1)
@@ -1933,6 +1936,9 @@ packages:
 
   extend@3.0.2:
     resolution: {integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==}
+
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   get-nonce@1.0.1:
     resolution: {integrity: sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q==}
@@ -4277,6 +4283,8 @@ snapshots:
   eventsource-parser@3.1.1: {}
 
   extend@3.0.2: {}
+
+  fflate@0.8.3: {}
 
   get-nonce@1.0.1: {}
 

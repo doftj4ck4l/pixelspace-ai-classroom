@@ -7,6 +7,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   CircleHelpIcon,
+  DownloadIcon,
   FileTextIcon,
   FolderIcon,
   ImageIcon,
@@ -102,6 +103,19 @@ type Doc = {
   content?: GeneratedContent;
   sources?: GenerationSource[];
   artifacts?: GenerationArtifact[];
+  /** Present on read-only cards for files the agent shared in chat. */
+  source?: "chat";
+  url?: string;
+  artifactId?: string;
+  /** Set on local slide copies created from a shared pptx. */
+  originArtifactId?: string;
+};
+
+type SharedArtifact = {
+  id: string;
+  title: string;
+  type: string;
+  url: string;
 };
 
 const STORAGE_KEY = "paic-space-docs-v2";
@@ -339,6 +353,35 @@ const DocMenu: FC<{
   </DropdownMenu>
 );
 
+const SharedArtifactMenu: FC<{
+  doc: Doc;
+  onDownload: (doc: Doc) => void;
+  onRemove: (artifactId: string) => void;
+}> = ({ doc, onDownload, onRemove }) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger
+      aria-label="File options"
+      className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 items-center justify-center rounded-md transition-colors"
+    >
+      <MoreHorizontalIcon className="size-4" />
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" side="bottom">
+      <DropdownMenuItem onClick={() => onDownload(doc)}>
+        <DownloadIcon className="size-4" />
+        Download
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
+        variant="destructive"
+        onClick={() => doc.artifactId && onRemove(doc.artifactId)}
+      >
+        <Trash2Icon className="size-4" />
+        Remove from gallery
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
+
 const ALL_TABS = ["Suggested", "Favorites", "Your items", "Shared with you"];
 const MODULE_TABS = ["All", "Pinned", "Favorites", "Shared with you"];
 
@@ -352,6 +395,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const [pendingDelete, setPendingDelete] = useState<Doc | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [sharedArtifacts, setSharedArtifacts] = useState<SharedArtifact[]>([]);
   const [showNewPresentation, setShowNewPresentation] = useState(false);
   const [createKind, setCreateKind] = useState<ModuleKind | null>(null);
   const [generation, setGeneration] = useState<GenerationInput | null>(null);
@@ -374,6 +418,19 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    fetch("/api/pi/artifacts")
+      .then((res) => res.json())
+      .then((data: { artifacts?: SharedArtifact[] }) => {
+        if (!cancelled) setSharedArtifacts(data.artifacts ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (docs) {
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
@@ -383,10 +440,25 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     }
   }, [docs]);
 
+  const artifactDocs = useMemo<Doc[]>(
+    () =>
+      sharedArtifacts.map((artifact) => ({
+        id: artifact.id,
+        title: artifact.title,
+        type: (artifact.type === "other" ? "doc" : artifact.type) as DocType,
+        pinned: false,
+        favorite: false,
+        source: "chat" as const,
+        url: artifact.url,
+        artifactId: artifact.id,
+      })),
+    [sharedArtifacts],
+  );
+
   const filtered = useMemo(() => {
     if (!docs) return [];
     const q = query.trim().toLowerCase();
-    const result = docs.filter((doc) => {
+    const result = [...docs, ...artifactDocs].filter((doc) => {
       if (mode !== "all" && doc.type !== mode) return false;
       if (tab === "Pinned" && !doc.pinned) return false;
       if (tab === "Favorites" && !doc.favorite) return false;
@@ -404,7 +476,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       default:
         return result;
     }
-  }, [docs, mode, tab, query, sort]);
+  }, [docs, artifactDocs, mode, tab, query, sort]);
 
   const addDoc = (type: DocType, title?: string) => {
     setDocs((prev) => [newDoc(type, title), ...(prev ?? [])]);
@@ -452,6 +524,50 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     setDocs((prev) => [doc, ...(prev ?? [])]);
     setShowNewPresentation(false);
     setEditingId(doc.id);
+  };
+
+  const openSharedArtifact = async (doc: Doc) => {
+    if (!doc.artifactId || !doc.url) return;
+    if (doc.type === "slides") {
+      const existing = (docs ?? []).find(
+        (entry) => entry.originArtifactId === doc.artifactId,
+      );
+      if (existing) {
+        setEditingId(existing.id);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/pi/artifacts/${doc.artifactId}/outline`);
+        const data = (await res.json()) as {
+          slides?: { title: string; subtitle: string }[];
+        };
+        if (data.slides && data.slides.length > 0) {
+          const local: Doc = {
+            ...newDoc("slides", doc.title),
+            originArtifactId: doc.artifactId,
+            slides: data.slides.map((slide) => ({
+              id: crypto.randomUUID(),
+              title: slide.title,
+              subtitle: slide.subtitle,
+              notes: "",
+            })),
+          };
+          setDocs((prev) => [local, ...(prev ?? [])]);
+          setEditingId(local.id);
+          return;
+        }
+      } catch {
+        // fall through to download
+      }
+    }
+    window.open(doc.url, "_blank");
+  };
+
+  const removeSharedArtifact = (artifactId: string) => {
+    setSharedArtifacts((prev) => prev.filter((a) => a.id !== artifactId));
+    void fetch(`/api/pi/artifacts/${artifactId}`, { method: "DELETE" }).catch(
+      () => {},
+    );
   };
 
   const finishGeneration = (
@@ -760,15 +876,19 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 <div
                   key={doc.id}
                   onClick={
-                    doc.type === "slides"
-                      ? () => openDeck(doc)
-                      : doc.type === "flashcards"
-                        ? () => setViewingId(doc.id)
-                        : undefined
+                    doc.artifactId
+                      ? () => void openSharedArtifact(doc)
+                      : doc.type === "slides"
+                        ? () => openDeck(doc)
+                        : doc.type === "flashcards"
+                          ? () => setViewingId(doc.id)
+                          : undefined
                   }
                   className={cn(
                     "group border-border/60 bg-card relative rounded-xl border p-3 transition-shadow hover:shadow-md",
-                    (doc.type === "slides" || doc.type === "flashcards") &&
+                    (doc.artifactId ||
+                      doc.type === "slides" ||
+                      doc.type === "flashcards") &&
                       "cursor-pointer",
                   )}
                 >
@@ -777,6 +897,11 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                     <span className="truncate text-sm font-medium">
                       {doc.title}
                     </span>
+                    {doc.source === "chat" && (
+                      <span className="bg-muted text-muted-foreground shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
+                        From chat
+                      </span>
+                    )}
                     {doc.pinned && (
                       <PinIcon className="text-muted-foreground size-3.5 shrink-0" />
                     )}
@@ -791,12 +916,22 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                     onClick={(event) => event.stopPropagation()}
                     className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                   >
-                    <DocMenu
-                      doc={doc}
-                      onTogglePin={togglePin}
-                      onToggleFavorite={toggleFavorite}
-                      onDelete={setPendingDelete}
-                    />
+                    {doc.artifactId ? (
+                      <SharedArtifactMenu
+                        doc={doc}
+                        onDownload={(entry) =>
+                          entry.url && window.open(entry.url, "_blank")
+                        }
+                        onRemove={removeSharedArtifact}
+                      />
+                    ) : (
+                      <DocMenu
+                        doc={doc}
+                        onTogglePin={togglePin}
+                        onToggleFavorite={toggleFavorite}
+                        onDelete={setPendingDelete}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
@@ -807,15 +942,19 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 <div
                   key={doc.id}
                   onClick={
-                    doc.type === "slides"
-                      ? () => openDeck(doc)
-                      : doc.type === "flashcards"
-                        ? () => setViewingId(doc.id)
-                        : undefined
+                    doc.artifactId
+                      ? () => void openSharedArtifact(doc)
+                      : doc.type === "slides"
+                        ? () => openDeck(doc)
+                        : doc.type === "flashcards"
+                          ? () => setViewingId(doc.id)
+                          : undefined
                   }
                   className={cn(
                     "group hover:bg-muted/50 relative flex h-11 items-center gap-3 rounded-lg px-3 transition-colors",
-                    (doc.type === "slides" || doc.type === "flashcards") &&
+                    (doc.artifactId ||
+                      doc.type === "slides" ||
+                      doc.type === "flashcards") &&
                       "cursor-pointer",
                   )}
                 >
@@ -823,6 +962,11 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
                     {doc.title}
                   </span>
+                  {doc.source === "chat" && (
+                    <span className="bg-muted text-muted-foreground shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
+                      From chat
+                    </span>
+                  )}
                   {doc.pinned && (
                     <PinIcon className="text-muted-foreground size-3.5 shrink-0" />
                   )}
@@ -833,12 +977,22 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                     onClick={(event) => event.stopPropagation()}
                     className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                   >
-                    <DocMenu
-                      doc={doc}
-                      onTogglePin={togglePin}
-                      onToggleFavorite={toggleFavorite}
-                      onDelete={setPendingDelete}
-                    />
+                    {doc.artifactId ? (
+                      <SharedArtifactMenu
+                        doc={doc}
+                        onDownload={(entry) =>
+                          entry.url && window.open(entry.url, "_blank")
+                        }
+                        onRemove={removeSharedArtifact}
+                      />
+                    ) : (
+                      <DocMenu
+                        doc={doc}
+                        onTogglePin={togglePin}
+                        onToggleFavorite={toggleFavorite}
+                        onDelete={setPendingDelete}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
