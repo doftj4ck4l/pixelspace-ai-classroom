@@ -8,6 +8,28 @@ type PiMessage = {
   text?: string;
 };
 
+type PiToolRow = {
+  name?: string;
+  args?: unknown;
+  result?: unknown;
+  ms?: number;
+  ok?: boolean;
+};
+
+type HistoryRow = {
+  id: string;
+  parentId: string | null;
+  format: string;
+  content: unknown;
+};
+
+const MAX_RESULT = 4000;
+
+/**
+ * Rebuild the UI message history from pi's transcript, including tool calls
+ * and render_ui blocks (which pi stores as `tool` rows) so a reloaded thread
+ * looks like the one you watched — the same as pixelspacev3's transcript.
+ */
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -23,30 +45,82 @@ export async function GET(
     if (!res.ok) return NextResponse.json({ messages: [] });
     const data = (await res.json()) as { messages?: PiMessage[] };
 
-    const rows = (data.messages ?? [])
-      .filter(
-        (message) =>
-          (message.kind === "user" || message.kind === "assistant") &&
-          typeof message.text === "string" &&
-          message.text.length > 0,
-      )
-      .map((message, index, list) => {
-        const messageId = message.id ?? `${thread.conversationId}-${index}`;
-        const previous = list[index - 1];
-        return {
-          id: messageId,
-          parentId:
-            index > 0
-              ? (previous.id ?? `${thread.conversationId}-${index - 1}`)
-              : null,
-          format: "ai-sdk/v6",
-          content: {
-            role: message.kind,
-            parts: [{ type: "text", text: message.text }],
-          },
-        };
-      });
+    const rows: HistoryRow[] = [];
+    let previousId: string | null = null;
+    let assistantId: string | null = null;
+    let assistantParts: unknown[] = [];
 
+    const flushAssistant = () => {
+      if (assistantId && assistantParts.length > 0) {
+        rows.push({
+          id: assistantId,
+          parentId: previousId,
+          format: "ai-sdk/v6",
+          content: { role: "assistant", parts: assistantParts },
+        });
+        previousId = assistantId;
+      }
+      assistantId = null;
+      assistantParts = [];
+    };
+
+    const ensureAssistant = () => {
+      if (!assistantId) {
+        assistantId = `${thread.conversationId}-a${rows.length}`;
+      }
+      return assistantId;
+    };
+
+    for (const message of data.messages ?? []) {
+      const text = typeof message.text === "string" ? message.text : "";
+      const rowId = message.id ?? `${thread.conversationId}-${rows.length}`;
+
+      if (message.kind === "user") {
+        if (!text) continue;
+        flushAssistant();
+        rows.push({
+          id: rowId,
+          parentId: previousId,
+          format: "ai-sdk/v6",
+          content: { role: "user", parts: [{ type: "text", text }] },
+        });
+        previousId = rowId;
+      } else if (message.kind === "assistant") {
+        if (!text) continue;
+        ensureAssistant();
+        assistantParts.push({ type: "text", text });
+      } else if (message.kind === "tool") {
+        let parsed: PiToolRow | null = null;
+        try {
+          parsed = JSON.parse(text) as PiToolRow;
+        } catch {
+          parsed = null;
+        }
+        if (!parsed?.name) continue;
+        ensureAssistant();
+        const ok = parsed.ok !== false;
+        const result =
+          typeof parsed.result === "string"
+            ? parsed.result.slice(0, MAX_RESULT)
+            : parsed.result;
+        assistantParts.push({
+          type: "dynamic-tool",
+          toolName: parsed.name,
+          toolCallId: rowId,
+          state: ok ? "output-available" : "output-error",
+          input: parsed.args ?? {},
+          ...(ok
+            ? { output: { content: result, ms: parsed.ms } }
+            : {
+                errorText:
+                  typeof result === "string" ? result : "Tool call failed",
+              }),
+        });
+      }
+      // thinking / iteration / anything else draws no row.
+    }
+
+    flushAssistant();
     return NextResponse.json({ messages: rows });
   } catch {
     return NextResponse.json({ messages: [] });

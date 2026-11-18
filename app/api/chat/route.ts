@@ -202,6 +202,25 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
                 }
               }
             } else if (
+              event.type === "ask_user" &&
+              typeof event.id === "string"
+            ) {
+              // The agent has paused the run waiting for a human. The question
+              // id is live-only, so it has to ride a data part to the client.
+              writer.write({
+                type: "data-ask-user",
+                data: {
+                  questionId: event.id,
+                  question:
+                    typeof event.question === "string" ? event.question : "",
+                  options: Array.isArray(event.options)
+                    ? event.options.map((option) => String(option))
+                    : [],
+                  kind: event.kind === "approval" ? "approval" : "question",
+                },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              } as any);
+            } else if (
               event.type === "conversation" &&
               typeof event.id === "string" &&
               threadId
