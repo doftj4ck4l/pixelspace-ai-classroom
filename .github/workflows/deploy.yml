@@ -11,24 +11,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Configure SSH
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "${{ secrets.WEEDAD_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "${{ secrets.WEEDAD_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: Deploy over SSH
-        env:
-          WEEDAD_HOST: ${{ secrets.WEEDAD_HOST }}
-          WEEDAD_USER: ${{ secrets.WEEDAD_USER }}
-          WEEDAD_PORT: ${{ secrets.WEEDAD_PORT }}
-        run: |
-          ssh -i ~/.ssh/id_ed25519 -p "${WEEDAD_PORT}" \
-            -o IdentitiesOnly=yes \
-            -o BatchMode=yes \
-            "${WEEDAD_USER}@${WEEDAD_HOST}"
+      - name: Deploy
+        run: /home/work-station-2/Developer/gemini-clone/scripts/deploy.sh
