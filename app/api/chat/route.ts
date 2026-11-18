@@ -106,9 +106,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
       writer.write({ type: "start-step" });
 
       let textId: string | null = null;
-      let reasoningId: string | null = null;
       let textSeq = 0;
-      let reasoningSeq = 0;
       let buffer = "";
       let failure: string | null = null;
       const pendingToolIds = new Map<string, string[]>();
@@ -120,12 +118,6 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
         if (textId) {
           writer.write({ type: "text-end", id: textId });
           textId = null;
-        }
-      };
-      const closeReasoning = () => {
-        if (reasoningId) {
-          writer.write({ type: "reasoning-end", id: reasoningId });
-          reasoningId = null;
         }
       };
 
@@ -153,26 +145,12 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
               }
               writer.write({ type: "text-delta", id: textId, delta: event.delta });
             } else if (
-              event.type === "reasoning" &&
-              typeof event.delta === "string"
-            ) {
-              if (!reasoningId) {
-                reasoningId = `r${reasoningSeq++}`;
-                writer.write({ type: "reasoning-start", id: reasoningId });
-              }
-              writer.write({
-                type: "reasoning-delta",
-                id: reasoningId,
-                delta: event.delta,
-              });
-            } else if (
               event.type === "tool_call" &&
               typeof event.id === "string" &&
               typeof event.name === "string"
             ) {
-              // Close the current segments so the transcript interleaves like
-              // pixelspacev3's: text segment, tool group, next text segment.
-              closeReasoning();
+              // Close the current text segment so the transcript interleaves
+              // like pixelspacev3's: text segment, tool group, next segment.
               closeText();
               lastToolId = event.id;
               openToolIds.add(event.id);
@@ -257,7 +235,6 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
             });
           }
         }
-        closeReasoning();
         closeText();
       }
 
