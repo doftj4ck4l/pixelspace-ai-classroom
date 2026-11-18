@@ -33,6 +33,7 @@ import {
 import { type FC, type PropsWithChildren, useState } from "react";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
+import { RenderUiBlock } from "@/components/assistant-ui/render-ui";
 import { ToolFallback } from "@/components/assistant-ui/elements/tool-fallback.aui";
 import {
   ToolGroupContent,
@@ -56,6 +57,9 @@ import {
 const messageGroupBy = groupPartByType({
   reasoning: ["group-chainOfThought", "group-reasoning"],
   "tool-call": ["group-chainOfThought", "group-tool"],
+  // The generative-UI tool draws inline in the answer, never inside the
+  // "N tool calls" group — its arguments are the component (like pixelspacev3).
+  "tool-call:render_ui": [],
   "standalone-tool-call": [],
 });
 
@@ -354,6 +358,19 @@ const ChatMessage: FC = () => {
                   case "text":
                     return <MarkdownText />;
                   case "tool-call":
+                    if (part.toolName === "render_ui") {
+                      return (
+                        <RenderUiBlock
+                          args={part.args}
+                          status={part.status.type}
+                          error={
+                            part.status.type === "incomplete"
+                              ? part.status.error
+                              : undefined
+                          }
+                        />
+                      );
+                    }
                     return part.toolUI ?? <ToolFallback {...part} />;
                   case "indicator":
                     return (
