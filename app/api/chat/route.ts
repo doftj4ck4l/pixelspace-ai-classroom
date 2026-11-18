@@ -70,7 +70,9 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
       body: JSON.stringify({
         harnessId: process.env.PI_HARNESS ?? "pi",
         ...(process.env.PI_MODEL ? { modelId: process.env.PI_MODEL } : {}),
-        mode: "chat",
+        // "chat" is the lightweight path with web search; set PI_MODE=work for
+        // the full agent harness with the sandbox toolset.
+        mode: process.env.PI_MODE ?? "chat",
         ...(thread?.conversationId
           ? { conversationId: thread.conversationId }
           : {}),
