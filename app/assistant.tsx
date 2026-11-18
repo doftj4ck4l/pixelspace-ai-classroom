@@ -13,7 +13,6 @@ import {
 } from "@assistant-ui/react";
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/ai-sdk";
 import { createAssistantStream } from "assistant-stream";
-import { lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import { Gemini } from "@/components/assistant-ui/gemini";
 
 type HistoryRow = {
@@ -152,9 +151,8 @@ export const Assistant = () => {
   const runtime = useRemoteThreadListRuntime({
     runtimeHook: () =>
       useChatRuntime({
-        sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-        // The transport awaits thread initialization and sends the remoteId as
-        // the request `id`, so the server can map it to a pi conversation.
+        // No sendAutomaticallyWhen: every tool executes server-side inside the
+        // pi harness, so the client must never auto-continue a run.
         transport: new AssistantChatTransport({ api: "/api/chat" }),
         adapters: {
           attachments: new CompositeAttachmentAdapter([

@@ -28,14 +28,23 @@ type ChatBody = {
   threadId?: string;
 };
 
-const lastUserText = (messages: UIMessage[]) => {
-  const last = [...messages].reverse().find((m) => m.role === "user");
-  if (!last) return "";
-  return last.parts
+const messageText = (message: UIMessage) =>
+  message.parts
     .filter((part): part is { type: "text"; text: string } => part.type === "text")
     .map((part) => part.text)
     .join("\n")
     .trim();
+
+/**
+ * The new user turn is the text of the last message, and only when the last
+ * message IS a user message. A request whose last message is an assistant or
+ * tool continuation has no new turn to run — running it anyway makes the
+ * agent answer an empty message and loop.
+ */
+const newUserText = (messages: UIMessage[]) => {
+  const last = messages[messages.length - 1];
+  if (!last || last.role !== "user") return null;
+  return messageText(last);
 };
 
 /** pi records the transcript but does not replay it — send the full history each turn. */
@@ -59,8 +68,8 @@ type PiEvent = { type?: string; [key: string]: unknown };
 /** Relay one turn through the pi harness. Returns null to fall back to the gateway. */
 const piChat = async (req: Request, body: ChatBody): Promise<Response | null> => {
   if (!piConfigured()) return null;
-  const userText = lastUserText(body.messages);
-  if (!userText) return null;
+  const userText = newUserText(body.messages);
+  if (userText === null || userText.length === 0) return null;
 
   const threadId = body.id ?? body.threadId;
   const thread = threadId ? await registry.get(threadId) : undefined;
@@ -103,6 +112,8 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
       let buffer = "";
       let failure: string | null = null;
       const pendingToolIds = new Map<string, string[]>();
+      const openToolIds = new Set<string>();
+      const completedToolIds = new Set<string>();
       let lastToolId: string | null = null;
 
       const closeText = () => {
@@ -164,6 +175,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
               closeReasoning();
               closeText();
               lastToolId = event.id;
+              openToolIds.add(event.id);
               const queued = pendingToolIds.get(event.name) ?? [];
               queued.push(event.id);
               pendingToolIds.set(event.name, queued);
@@ -190,6 +202,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
                   ? event.id
                   : (queued.shift() ?? lastToolId);
               if (toolCallId) {
+                completedToolIds.add(toolCallId);
                 if (event.ok === false) {
                   writer.write({
                     type: "tool-output-error",
@@ -231,6 +244,19 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
           }
         }
       } finally {
+        // A tool call the client sees without an output is a dangling tool call
+        // — the runtime treats it as pending forever and can auto-continue the
+        // run. Close every one we opened but never completed.
+        for (const toolCallId of openToolIds) {
+          if (!completedToolIds.has(toolCallId)) {
+            writer.write({
+              type: "tool-output-error",
+              toolCallId,
+              errorText: "The tool did not return a result.",
+              dynamic: true,
+            });
+          }
+        }
         closeReasoning();
         closeText();
       }
@@ -256,6 +282,19 @@ export async function POST(req: Request) {
 
   const viaPi = await piChat(req, body);
   if (viaPi) return viaPi;
+
+  if (newUserText(body.messages) === null) {
+    // No new user turn (tool continuation without client tools): finish cleanly.
+    const stream = createUIMessageStream({
+      execute: async ({ writer }) => {
+        writer.write({ type: "start" });
+        writer.write({ type: "start-step" });
+        writer.write({ type: "finish-step" });
+        writer.write({ type: "finish" });
+      },
+    });
+    return createUIMessageStreamResponse({ stream });
+  }
 
   const aiSDKTools = { ...frontendTools(body.tools ?? {}) };
   const result = streamText({
