@@ -98,10 +98,25 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
 
       let textId: string | null = null;
       let reasoningId: string | null = null;
+      let textSeq = 0;
+      let reasoningSeq = 0;
       let buffer = "";
       let failure: string | null = null;
       const pendingToolIds = new Map<string, string[]>();
       let lastToolId: string | null = null;
+
+      const closeText = () => {
+        if (textId) {
+          writer.write({ type: "text-end", id: textId });
+          textId = null;
+        }
+      };
+      const closeReasoning = () => {
+        if (reasoningId) {
+          writer.write({ type: "reasoning-end", id: reasoningId });
+          reasoningId = null;
+        }
+      };
 
       try {
         for (;;) {
@@ -122,7 +137,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
 
             if (event.type === "text" && typeof event.delta === "string") {
               if (!textId) {
-                textId = "0";
+                textId = String(textSeq++);
                 writer.write({ type: "text-start", id: textId });
               }
               writer.write({ type: "text-delta", id: textId, delta: event.delta });
@@ -131,7 +146,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
               typeof event.delta === "string"
             ) {
               if (!reasoningId) {
-                reasoningId = "r0";
+                reasoningId = `r${reasoningSeq++}`;
                 writer.write({ type: "reasoning-start", id: reasoningId });
               }
               writer.write({
@@ -144,6 +159,10 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
               typeof event.id === "string" &&
               typeof event.name === "string"
             ) {
+              // Close the current segments so the transcript interleaves like
+              // pixelspacev3's: text segment, tool group, next text segment.
+              closeReasoning();
+              closeText();
               lastToolId = event.id;
               const queued = pendingToolIds.get(event.name) ?? [];
               queued.push(event.id);
@@ -212,8 +231,8 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
           }
         }
       } finally {
-        if (reasoningId) writer.write({ type: "reasoning-end", id: reasoningId });
-        if (textId) writer.write({ type: "text-end", id: textId });
+        closeReasoning();
+        closeText();
       }
 
       if (failure) throw new Error(failure);
