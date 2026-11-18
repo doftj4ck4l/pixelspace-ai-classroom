@@ -15,10 +15,12 @@ import {
   ArrowUpIcon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   CopyIcon,
   EllipsisVertical,
   ImageIcon,
   Lightbulb,
+  LoaderIcon,
   Mic,
   Paperclip,
   PencilIcon,
@@ -28,16 +30,17 @@ import {
   Telescope,
   ThumbsDown,
   ThumbsUp,
+  WrenchIcon,
   XIcon,
 } from "lucide-react";
 import { type FC, type PropsWithChildren, useState } from "react";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
 import { ToolFallback } from "@/components/assistant-ui/elements/tool-fallback.aui";
+import { CollapsibleTrigger } from "@/components/assistant-ui/elements/collapsible-root";
 import {
   ToolGroupContent,
   ToolGroupRoot,
-  ToolGroupTrigger,
 } from "@/components/assistant-ui/elements/tool-group.aui";
 import {
   CloneThreadShell,
@@ -66,17 +69,41 @@ const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
   children,
 }) => {
   const [open, setOpen] = useState(false);
+  const count = group.indices.length;
+  const running = group.counts.running > 0;
+  const failed = group.counts.incomplete;
+  const status = running
+    ? "running"
+    : failed > 0
+      ? `${failed} failed`
+      : "complete";
+
   return (
     <ToolGroupRoot
       variant="ghost"
+      className="my-3 rounded-xl bg-muted/60"
       open={open || group.counts.requiresAction > 0}
       onOpenChange={setOpen}
     >
-      <ToolGroupTrigger
-        count={group.indices.length}
-        active={group.status.type === "running"}
-      />
-      <ToolGroupContent>{children}</ToolGroupContent>
+      <CollapsibleTrigger className="group/trigger flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none">
+        <span className="flex size-5 shrink-0 items-center justify-center text-muted-foreground">
+          {running ? (
+            <LoaderIcon className="size-3.5 animate-spin" />
+          ) : (
+            <WrenchIcon className="size-3.5" />
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-medium">
+            {count} tool {count === 1 ? "call" : "calls"}
+          </span>
+          <span className="mt-0.5 block text-[0.6875rem] text-muted-foreground">
+            {status}
+          </span>
+        </span>
+        <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform group-data-open/trigger:rotate-90" />
+      </CollapsibleTrigger>
+      <ToolGroupContent className="px-3 pb-3">{children}</ToolGroupContent>
     </ToolGroupRoot>
   );
 };
