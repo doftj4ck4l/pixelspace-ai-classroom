@@ -4,8 +4,8 @@ import { registry } from "@/lib/pi/registry";
 
 type PiMessage = {
   id?: string;
-  role?: string;
-  content?: string;
+  kind?: string;
+  text?: string;
 };
 
 export async function GET(
@@ -26,9 +26,9 @@ export async function GET(
     const rows = (data.messages ?? [])
       .filter(
         (message) =>
-          (message.role === "user" || message.role === "assistant") &&
-          typeof message.content === "string" &&
-          message.content.length > 0,
+          (message.kind === "user" || message.kind === "assistant") &&
+          typeof message.text === "string" &&
+          message.text.length > 0,
       )
       .map((message, index, list) => {
         const messageId = message.id ?? `${thread.conversationId}-${index}`;
@@ -41,8 +41,8 @@ export async function GET(
               : null,
           format: "ai-sdk/v6",
           content: {
-            role: message.role,
-            parts: [{ type: "text", text: message.content }],
+            role: message.kind,
+            parts: [{ type: "text", text: message.text }],
           },
         };
       });
