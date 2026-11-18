@@ -55,11 +55,16 @@ import {
 } from "react";
 
 export type SidebarView = "home" | "space" | "scheduled";
-export type SidebarNav = { view: SidebarView; section: string };
+export type SidebarNav = {
+  view: SidebarView;
+  section: string;
+  setSection: (section: string) => void;
+};
 
 export const SidebarNavContext = createContext<SidebarNav>({
   view: "home",
   section: "all",
+  setSection: () => {},
 });
 
 export const useSidebarNav = () => useContext(SidebarNavContext);
@@ -133,7 +138,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const [search, setSearch] = useState("");
   const [section, setSection] = useState("all");
   const [view, setView] = useState<SidebarView>("home");
-  const nav = useMemo(() => ({ view, section }), [view, section]);
+  const nav = useMemo(() => ({ view, section, setSection }), [view, section]);
   const hasThreads = useAuiState((s) => s.threads.threadIds.length > 0);
   const aui = useAui();
 

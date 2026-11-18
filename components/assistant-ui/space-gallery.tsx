@@ -1,18 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FC } from "react";
+import { useEffect, useMemo, useRef, useState, type FC } from "react";
 import {
   AlignLeftIcon,
   CheckIcon,
+  ChevronDownIcon,
+  FileTextIcon,
+  FolderIcon,
+  ImageIcon,
+  LayersIcon,
+  LayoutDashboardIcon,
   LayoutGridIcon,
   ListIcon,
   MoreHorizontalIcon,
   PinIcon,
   PinOffIcon,
-  PlusIcon,
+  PlugIcon,
   PresentationIcon,
   SearchIcon,
+  StarIcon,
+  TableIcon,
   Trash2Icon,
+  UploadIcon,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,23 +40,121 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSidebarNav } from "@/components/assistant-ui/clone-thread-shell";
 import { cn } from "@/lib/utils";
 
-type SlideDoc = {
+type DocType =
+  | "page"
+  | "slide"
+  | "pdf"
+  | "doc"
+  | "site"
+  | "image"
+  | "folder"
+  | "space";
+
+type Doc = {
   id: string;
   title: string;
+  type: DocType;
   pinned: boolean;
+  favorite: boolean;
 };
 
-const STORAGE_KEY = "paic-slides-v1";
+const STORAGE_KEY = "paic-space-docs-v1";
 
-const SEED_SLIDES: SlideDoc[] = [
-  { id: "demo-1", title: "Untitled slide", pinned: false },
-  { id: "demo-2", title: "Weekly Business Review", pinned: false },
+const SEED_DOCS: Doc[] = [
+  {
+    id: "demo-1",
+    title: "Your guide to pages",
+    type: "page",
+    pinned: false,
+    favorite: true,
+  },
+  {
+    id: "demo-2",
+    title: "Untitled slide",
+    type: "slide",
+    pinned: false,
+    favorite: false,
+  },
+  {
+    id: "demo-3",
+    title: "Weekly Business Review",
+    type: "slide",
+    pinned: false,
+    favorite: false,
+  },
+  {
+    id: "demo-4",
+    title: "Tourism_Malaysia_AI_Avatar_Proposal",
+    type: "pdf",
+    pinned: false,
+    favorite: false,
+  },
+  {
+    id: "demo-5",
+    title: "Silibus_Latihan_Projek_Pelajar",
+    type: "pdf",
+    pinned: false,
+    favorite: false,
+  },
+  {
+    id: "demo-6",
+    title: "Pixelspace_AI_Classroom_Notes",
+    type: "doc",
+    pinned: false,
+    favorite: false,
+  },
 ];
 
-const TABS = ["All", "Pinned", "Yours", "Shared with you"] as const;
-type Tab = (typeof TABS)[number];
+const TYPE_STYLES: Record<DocType, { Icon: LucideIcon; color: string }> = {
+  page: { Icon: FileTextIcon, color: "text-foreground" },
+  slide: { Icon: PresentationIcon, color: "text-yellow-500" },
+  pdf: { Icon: FileTextIcon, color: "text-red-500" },
+  doc: { Icon: FileTextIcon, color: "text-blue-500" },
+  site: { Icon: LayoutGridIcon, color: "text-violet-500" },
+  image: { Icon: ImageIcon, color: "text-pink-500" },
+  folder: { Icon: FolderIcon, color: "text-muted-foreground" },
+  space: { Icon: LayersIcon, color: "text-teal-600" },
+};
+
+const UNTITLED: Record<DocType, string> = {
+  page: "Untitled page",
+  slide: "Untitled slide",
+  pdf: "Untitled document",
+  doc: "Untitled document",
+  site: "Untitled site",
+  image: "Untitled image",
+  folder: "Untitled folder",
+  space: "Untitled space",
+};
+
+const DocGlyph: FC<{ type: DocType; size?: "sm" | "lg" }> = ({
+  type,
+  size = "sm",
+}) => {
+  const { Icon, color } = TYPE_STYLES[type];
+  return (
+    <span className="flex shrink-0 flex-col items-center leading-none">
+      <Icon
+        className={cn(size === "sm" ? "size-4" : "size-12", color)}
+        strokeWidth={1.5}
+      />
+      {type === "pdf" && (
+        <span
+          className={cn(
+            "font-bold tracking-widest",
+            color,
+            size === "sm" ? "text-[5px]" : "text-[10px]",
+          )}
+        >
+          PDF
+        </span>
+      )}
+    </span>
+  );
+};
 
 const SORT_OPTIONS = [
   { id: "newest", label: "Newest first" },
@@ -56,11 +164,7 @@ const SORT_OPTIONS = [
 ] as const;
 type Sort = (typeof SORT_OPTIONS)[number]["id"];
 
-type Template = {
-  id: string;
-  title: string;
-  render: FC;
-};
+type Template = { id: string; title: string; render: FC };
 
 const ProductStrategyThumb: FC = () => (
   <div className="relative flex size-full flex-col items-center justify-center overflow-hidden bg-[#1e2a5a]">
@@ -156,38 +260,129 @@ const TEMPLATES: Template[] = [
   { id: "brand-guide", title: "Brand Guide", render: BrandGuideThumb },
 ];
 
-const newSlide = (title: string): SlideDoc => ({
+const newDoc = (type: DocType, title?: string): Doc => ({
   id: crypto.randomUUID(),
-  title,
+  title: title ?? UNTITLED[type],
+  type,
   pinned: false,
+  favorite: false,
 });
 
-const SlideMenu: FC<{
-  slide: SlideDoc;
+const typeFromFileName = (name: string): DocType => {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  if (ext === "pdf") return "pdf";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return "image";
+  return "doc";
+};
+
+const CreateMenu: FC<{
+  onStartFromTemplate: () => void;
+  onCreate: (type: DocType, title?: string) => void;
+}> = ({ onStartFromTemplate, onCreate }) => {
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="bg-foreground text-background hover:bg-foreground/90 flex h-9 shrink-0 items-center gap-1 rounded-full px-4 text-sm font-medium transition-colors">
+          Create
+          <ChevronDownIcon className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="bottom" className="min-w-56">
+          <DropdownMenuItem onClick={onStartFromTemplate}>
+            <LayoutDashboardIcon className="size-4" />
+            Start from template
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onCreate("page")}>
+            <FileTextIcon className="size-4" />
+            Page
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onCreate("slide")}>
+            <PresentationIcon className="size-4" />
+            Slides
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled>
+            <TableIcon className="size-4" />
+            Sheet
+            <span className="text-muted-foreground ml-auto pl-6 text-xs">
+              Coming soon
+            </span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onCreate("site")}>
+            <LayoutGridIcon className="size-4" />
+            Site
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onCreate("image")}>
+            <ImageIcon className="size-4" />
+            Image
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onCreate("folder")}>
+            <FolderIcon className="size-4" />
+            Folder
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onCreate("space")}>
+            <LayersIcon className="size-4" />
+            Space
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => fileRef.current?.click()}>
+            <UploadIcon className="size-4" />
+            Upload files
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled>
+            <PlugIcon className="size-4" />
+            Connect a plugin
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        hidden
+        onChange={(event) => {
+          for (const file of Array.from(event.target.files ?? [])) {
+            onCreate(typeFromFileName(file.name), file.name);
+          }
+          event.target.value = "";
+        }}
+      />
+    </>
+  );
+};
+
+const DocMenu: FC<{
+  doc: Doc;
   onTogglePin: (id: string) => void;
-  onDelete: (slide: SlideDoc) => void;
-}> = ({ slide, onTogglePin, onDelete }) => (
+  onToggleFavorite: (id: string) => void;
+  onDelete: (doc: Doc) => void;
+}> = ({ doc, onTogglePin, onToggleFavorite, onDelete }) => (
   <DropdownMenu>
     <DropdownMenuTrigger
-      aria-label="Slide options"
+      aria-label="Item options"
       className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 items-center justify-center rounded-md transition-colors"
     >
       <MoreHorizontalIcon className="size-4" />
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" side="bottom">
-      <DropdownMenuItem onClick={() => onTogglePin(slide.id)}>
-        {slide.pinned ? (
+      <DropdownMenuItem onClick={() => onTogglePin(doc.id)}>
+        {doc.pinned ? (
           <PinOffIcon className="size-4" />
         ) : (
           <PinIcon className="size-4" />
         )}
-        {slide.pinned ? "Unpin" : "Pin"}
+        {doc.pinned ? "Unpin" : "Pin"}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => onToggleFavorite(doc.id)}>
+        <StarIcon
+          className={cn("size-4", doc.favorite && "fill-current text-amber-400")}
+        />
+        {doc.favorite ? "Remove favorite" : "Favorite"}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem
-        variant="destructive"
-        onClick={() => onDelete(slide)}
-      >
+      <DropdownMenuItem variant="destructive" onClick={() => onDelete(doc)}>
         <Trash2Icon className="size-4" />
         Delete
       </DropdownMenuItem>
@@ -195,40 +390,47 @@ const SlideMenu: FC<{
   </DropdownMenu>
 );
 
-export const SlidesGallery: FC = () => {
-  const [slides, setSlides] = useState<SlideDoc[] | null>(null);
-  const [tab, setTab] = useState<Tab>("All");
+const ALL_TABS = ["Suggested", "Favorites", "Your items", "Shared with you"];
+const SLIDES_TABS = ["All", "Pinned", "Yours", "Shared with you"];
+
+export const SpaceGallery: FC<{ mode: "all" | "slides" }> = ({ mode }) => {
+  const { setSection } = useSidebarNav();
+  const [docs, setDocs] = useState<Doc[] | null>(null);
+  const [tab, setTab] = useState<string>(mode === "all" ? "Suggested" : "All");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("newest");
   const [layout, setLayout] = useState<"grid" | "list">("grid");
-  const [pendingDelete, setPendingDelete] = useState<SlideDoc | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Doc | null>(null);
+  const templatesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      setSlides(raw ? (JSON.parse(raw) as SlideDoc[]) : SEED_SLIDES);
+      setDocs(raw ? (JSON.parse(raw) as Doc[]) : SEED_DOCS);
     } catch {
-      setSlides(SEED_SLIDES);
+      setDocs(SEED_DOCS);
     }
   }, []);
 
   useEffect(() => {
-    if (slides) {
+    if (docs) {
       try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
       } catch {
         // storage unavailable
       }
     }
-  }, [slides]);
+  }, [docs]);
 
   const filtered = useMemo(() => {
-    if (!slides) return [];
+    if (!docs) return [];
     const q = query.trim().toLowerCase();
-    const result = slides.filter((slide) => {
-      if (tab === "Pinned" && !slide.pinned) return false;
+    const result = docs.filter((doc) => {
+      if (mode === "slides" && doc.type !== "slide") return false;
+      if (tab === "Pinned" && !doc.pinned) return false;
+      if (tab === "Favorites" && !doc.favorite) return false;
       if (tab === "Shared with you") return false;
-      if (q && !slide.title.toLowerCase().includes(q)) return false;
+      if (q && !doc.title.toLowerCase().includes(q)) return false;
       return true;
     });
     switch (sort) {
@@ -241,39 +443,61 @@ export const SlidesGallery: FC = () => {
       default:
         return result;
     }
-  }, [slides, tab, query, sort]);
+  }, [docs, mode, tab, query, sort]);
 
-  const addSlide = (title: string) => {
-    setSlides((prev) => [newSlide(title), ...(prev ?? [])]);
+  const addDoc = (type: DocType, title?: string) => {
+    setDocs((prev) => [newDoc(type, title), ...(prev ?? [])]);
   };
 
   const togglePin = (id: string) => {
-    setSlides(
+    setDocs(
       (prev) =>
-        prev?.map((slide) =>
-          slide.id === id ? { ...slide, pinned: !slide.pinned } : slide,
+        prev?.map((doc) =>
+          doc.id === id ? { ...doc, pinned: !doc.pinned } : doc,
         ) ?? null,
     );
   };
 
-  const removeSlide = (id: string) => {
-    setSlides((prev) => prev?.filter((slide) => slide.id !== id) ?? null);
+  const toggleFavorite = (id: string) => {
+    setDocs(
+      (prev) =>
+        prev?.map((doc) =>
+          doc.id === id ? { ...doc, favorite: !doc.favorite } : doc,
+        ) ?? null,
+    );
   };
 
+  const removeDoc = (id: string) => {
+    setDocs((prev) => prev?.filter((doc) => doc.id !== id) ?? null);
+  };
+
+  const startFromTemplate = () => {
+    if (mode === "slides") {
+      templatesRef.current?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    setSection("slides");
+  };
+
+  const tabs = mode === "all" ? ALL_TABS : SLIDES_TABS;
   const emptyMessage =
     tab === "Shared with you"
       ? "Nothing shared with you yet"
       : tab === "Pinned"
-        ? "No pinned slides"
-        : query
-          ? "No slides match your search"
-          : "No slides yet — create one to get started";
+        ? "No pinned items"
+        : tab === "Favorites"
+          ? "No favorites yet"
+          : query
+            ? "No items match your search"
+            : "Nothing here yet — create something to get started";
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-background">
+    <div className="bg-background flex h-full flex-col overflow-y-auto">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-8 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold">Slides</h1>
+          <h1 className="text-2xl font-semibold">
+            {mode === "all" ? "All" : "Slides"}
+          </h1>
           <div className="flex items-center gap-3">
             <div className="relative">
               <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -282,23 +506,17 @@ export const SlidesGallery: FC = () => {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search"
-                aria-label="Search slides"
+                aria-label="Search"
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 md:w-64"
               />
             </div>
-            <Button
-              onClick={() => addSlide("Untitled slide")}
-              className="h-9 rounded-full px-4 text-sm"
-            >
-              <PlusIcon className="size-4" />
-              New slides
-            </Button>
+            <CreateMenu onStartFromTemplate={startFromTemplate} onCreate={addDoc} />
           </div>
         </div>
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            {TABS.map((item) => (
+            {tabs.map((item) => (
               <button
                 key={item}
                 type="button"
@@ -318,7 +536,7 @@ export const SlidesGallery: FC = () => {
           <div className="flex items-center gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger
-                aria-label="Sort slides"
+                aria-label="Sort"
                 className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-8 items-center justify-center rounded-full transition-colors"
               >
                 <AlignLeftIcon className="size-4" />
@@ -369,57 +587,63 @@ export const SlidesGallery: FC = () => {
           </div>
         </div>
 
-        <div className="mt-8">
-          <h2 className="text-base font-semibold">Create together in Space</h2>
-          <p className="text-muted-foreground text-sm">
-            Choose a template to start working with your team
-          </p>
-          <div className="scrollbar-subtle mt-4 flex gap-4 overflow-x-auto pb-3">
-            {TEMPLATES.map((template) => (
-              <button
-                key={template.id}
-                type="button"
-                onClick={() => addSlide(template.title)}
-                className="w-64 shrink-0 text-left"
-              >
-                <div className="border-border/60 aspect-[16/10] overflow-hidden rounded-xl border transition-transform duration-200 hover:scale-[1.02]">
-                  <template.render />
-                </div>
-                <p className="mt-2.5 text-center text-sm font-medium">
-                  {template.title}
-                </p>
-                <p className="text-muted-foreground text-center text-xs">
-                  Slides
-                </p>
-              </button>
-            ))}
+        {mode === "slides" && (
+          <div className="mt-8" ref={templatesRef}>
+            <h2 className="text-base font-semibold">Create together in Space</h2>
+            <p className="text-muted-foreground text-sm">
+              Choose a template to start working with your team
+            </p>
+            <div className="scrollbar-subtle mt-4 flex gap-4 overflow-x-auto pb-3">
+              {TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  onClick={() => addDoc("slide", template.title)}
+                  className="w-64 shrink-0 text-left"
+                >
+                  <div className="border-border/60 aspect-[16/10] overflow-hidden rounded-xl border transition-transform duration-200 hover:scale-[1.02]">
+                    <template.render />
+                  </div>
+                  <p className="mt-2.5 text-center text-sm font-medium">
+                    {template.title}
+                  </p>
+                  <p className="text-muted-foreground text-center text-xs">
+                    Slides
+                  </p>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {slides !== null &&
+        {docs !== null &&
           (layout === "grid" ? (
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((slide) => (
+              {filtered.map((doc) => (
                 <div
-                  key={slide.id}
+                  key={doc.id}
                   className="group border-border/60 bg-card relative rounded-xl border p-3 transition-shadow hover:shadow-md"
                 >
                   <div className="flex items-center gap-2 pr-7">
-                    <PresentationIcon className="size-4 shrink-0 text-red-500" />
+                    <DocGlyph type={doc.type} />
                     <span className="truncate text-sm font-medium">
-                      {slide.title}
+                      {doc.title}
                     </span>
-                    {slide.pinned && (
+                    {doc.pinned && (
                       <PinIcon className="text-muted-foreground size-3.5 shrink-0" />
                     )}
+                    {doc.favorite && (
+                      <StarIcon className="size-3.5 shrink-0 fill-current text-amber-400" />
+                    )}
                   </div>
-                  <div className="bg-muted/40 mt-3 flex aspect-[16/10] items-center justify-center rounded-lg">
-                    <PresentationIcon className="size-10 text-red-500/30" />
+                  <div className="mt-3 flex aspect-[16/10] items-center justify-center">
+                    <DocGlyph type={doc.type} size="lg" />
                   </div>
                   <div className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                    <SlideMenu
-                      slide={slide}
+                    <DocMenu
+                      doc={doc}
                       onTogglePin={togglePin}
+                      onToggleFavorite={toggleFavorite}
                       onDelete={setPendingDelete}
                     />
                   </div>
@@ -428,22 +652,26 @@ export const SlidesGallery: FC = () => {
             </div>
           ) : (
             <div className="mt-6 flex flex-col">
-              {filtered.map((slide) => (
+              {filtered.map((doc) => (
                 <div
-                  key={slide.id}
+                  key={doc.id}
                   className="group hover:bg-muted/50 relative flex h-11 items-center gap-3 rounded-lg px-3 transition-colors"
                 >
-                  <PresentationIcon className="size-4 shrink-0 text-red-500" />
+                  <DocGlyph type={doc.type} />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                    {slide.title}
+                    {doc.title}
                   </span>
-                  {slide.pinned && (
+                  {doc.pinned && (
                     <PinIcon className="text-muted-foreground size-3.5 shrink-0" />
                   )}
+                  {doc.favorite && (
+                    <StarIcon className="size-3.5 shrink-0 fill-current text-amber-400" />
+                  )}
                   <div className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-                    <SlideMenu
-                      slide={slide}
+                    <DocMenu
+                      doc={doc}
                       onTogglePin={togglePin}
+                      onToggleFavorite={toggleFavorite}
                       onDelete={setPendingDelete}
                     />
                   </div>
@@ -452,7 +680,7 @@ export const SlidesGallery: FC = () => {
             </div>
           ))}
 
-        {slides !== null && filtered.length === 0 && (
+        {docs !== null && filtered.length === 0 && (
           <div className="text-muted-foreground py-12 text-center text-sm">
             {emptyMessage}
           </div>
@@ -467,7 +695,7 @@ export const SlidesGallery: FC = () => {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete slide?</DialogTitle>
+            <DialogTitle>Delete item?</DialogTitle>
             <DialogDescription>
               &ldquo;{pendingDelete?.title}&rdquo; will be permanently deleted.
               This can&rsquo;t be undone.
@@ -480,7 +708,7 @@ export const SlidesGallery: FC = () => {
             <Button
               variant="destructive"
               onClick={() => {
-                if (pendingDelete) removeSlide(pendingDelete.id);
+                if (pendingDelete) removeDoc(pendingDelete.id);
                 setPendingDelete(null);
               }}
             >

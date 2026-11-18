@@ -36,7 +36,7 @@ import {
   CloneThreadShell,
   useSidebarNav,
 } from "@/components/assistant-ui/clone-thread-shell";
-import { SlidesGallery } from "@/components/assistant-ui/slides-gallery";
+import { SpaceGallery } from "@/components/assistant-ui/space-gallery";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,8 +55,11 @@ export const Gemini: FC = () => {
 
 const MainContent: FC = () => {
   const { view, section } = useSidebarNav();
+  if (view === "space" && section === "all") {
+    return <SpaceGallery mode="all" />;
+  }
   if (view === "space" && section === "slides") {
-    return <SlidesGallery />;
+    return <SpaceGallery mode="slides" />;
   }
   return <ThreadContent />;
 };
