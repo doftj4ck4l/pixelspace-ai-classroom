@@ -177,7 +177,7 @@ export const NewPresentationDialog: FC<{
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-3xl sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FilePlusIcon className="size-4" />
@@ -189,7 +189,7 @@ export const NewPresentationDialog: FC<{
           <button
             type="button"
             onClick={() => onCreate("Untitled slide", [blankSlide()])}
-            className="bg-muted/60 hover:bg-muted flex flex-col items-center gap-2 rounded-xl px-4 py-6 text-sm transition-colors"
+            className="bg-muted/60 hover:bg-muted flex flex-col items-center gap-2 rounded-lg px-4 py-5 text-sm whitespace-nowrap transition-colors"
           >
             <FilePlus2Icon className="size-5" />
             Start from scratch
@@ -197,7 +197,7 @@ export const NewPresentationDialog: FC<{
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="bg-muted/60 hover:bg-muted flex flex-col items-center gap-2 rounded-xl px-4 py-6 text-sm transition-colors"
+            className="bg-muted/60 hover:bg-muted flex flex-col items-center gap-2 rounded-lg px-4 py-5 text-sm whitespace-nowrap transition-colors"
           >
             <FileInputIcon className="size-5" />
             Create from a file
@@ -205,7 +205,7 @@ export const NewPresentationDialog: FC<{
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="bg-muted/60 hover:bg-muted flex flex-col items-center gap-2 rounded-xl px-4 py-6 text-sm transition-colors"
+            className="bg-muted/60 hover:bg-muted flex flex-col items-center gap-2 rounded-lg px-4 py-5 text-sm whitespace-nowrap transition-colors"
           >
             <FolderInputIcon className="size-5" />
             Upload
@@ -217,7 +217,7 @@ export const NewPresentationDialog: FC<{
             <LayoutGridIcon className="size-4" />
             Start with a template
           </p>
-          <div className="scrollbar-subtle mt-3 grid max-h-72 grid-cols-3 gap-4 overflow-y-auto pr-1">
+          <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-5">
             {TEMPLATES.map((template) => (
               <button
                 key={template.id}
@@ -232,7 +232,9 @@ export const NewPresentationDialog: FC<{
                 <div className="border-border/60 aspect-[16/10] overflow-hidden rounded-lg border transition-transform duration-200 hover:scale-[1.02]">
                   <template.render />
                 </div>
-                <p className="mt-1.5 text-center text-sm">{template.title}</p>
+                <p className="mt-2 truncate text-center text-sm">
+                  {template.title}
+                </p>
               </button>
             ))}
           </div>
