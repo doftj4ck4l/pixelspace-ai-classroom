@@ -35,6 +35,22 @@ const lastUserText = (messages: UIMessage[]) => {
     .trim();
 };
 
+/** pi records the transcript but does not replay it — send the full history each turn. */
+const toPiMessages = (messages: UIMessage[]) =>
+  messages
+    .filter((message) => message.role === "user" || message.role === "assistant")
+    .map((message) => ({
+      role: message.role,
+      content: message.parts
+        .filter(
+          (part): part is { type: "text"; text: string } => part.type === "text",
+        )
+        .map((part) => part.text)
+        .join("\n")
+        .trim(),
+    }))
+    .filter((message) => message.content.length > 0);
+
 type PiEvent = { type?: string; [key: string]: unknown };
 
 /** Relay one turn through the pi harness. Returns null to fall back to the gateway. */
@@ -58,7 +74,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
         ...(thread?.conversationId
           ? { conversationId: thread.conversationId }
           : {}),
-        messages: [{ role: "user", content: userText }],
+        messages: toPiMessages(body.messages),
       }),
       signal: req.signal,
     });
