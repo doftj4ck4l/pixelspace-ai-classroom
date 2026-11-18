@@ -8,6 +8,7 @@ import {
   ThreadListSearch,
 } from "@/components/assistant-ui/elements/thread-list.aui";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
+import { ProfileMenu } from "@/components/assistant-ui/profile-menu";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -190,240 +191,242 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   return (
     <SidebarNavContext.Provider value={nav}>
       <div className="relative flex h-full w-full overflow-hidden">
-      <div
-        data-slot="aui-app-rail"
-        className="bg-muted/30 hidden h-full w-12 shrink-0 flex-col items-center gap-1 py-2 md:flex"
-      >
-        <TooltipIconButton
-          variant="ghost"
-          size="icon"
-          tooltip="Home"
-          side="right"
-          onClick={() => {
-            const wasCollapsed = sidebarCollapsed;
-            if (wasCollapsed) setSidebarCollapsed(false);
-            if (view !== "home") {
-              setView("home");
-              return;
-            }
-            if (!wasCollapsed) void aui.threads.switchToNewThread();
-          }}
-          className="size-8"
+        <div
+          data-slot="aui-app-rail"
+          className="bg-muted/30 hidden h-full w-12 shrink-0 flex-col items-center gap-1 py-2 md:flex"
         >
-          <HomeIcon className="size-4" />
-        </TooltipIconButton>
-        <TooltipIconButton
-          variant="ghost"
-          size="icon"
-          tooltip="Spaces"
-          side="right"
-          onClick={() => {
-            setSidebarCollapsed(false);
-            setView(view === "space" ? "home" : "space");
-          }}
-          className={cn("size-8", view === "space" && "bg-muted text-foreground")}
-        >
-          <LayoutGridIcon className="size-4" />
-        </TooltipIconButton>
-        <TooltipIconButton
-          variant="ghost"
-          size="icon"
-          tooltip="Scheduled"
-          side="right"
-          onClick={() => {
-            setSidebarCollapsed(false);
-            setView(view === "scheduled" ? "home" : "scheduled");
-          }}
-          className={cn(
-            "size-8",
-            view === "scheduled" && "bg-muted text-foreground",
-          )}
-        >
-          <ClockIcon className="size-4" />
-        </TooltipIconButton>
-        {showSearch && (
           <TooltipIconButton
             variant="ghost"
             size="icon"
-            tooltip="Search chats"
+            tooltip="Home"
             side="right"
             onClick={() => {
-              setSidebarCollapsed(false);
-              setSearchOpen(true);
+              const wasCollapsed = sidebarCollapsed;
+              if (wasCollapsed) setSidebarCollapsed(false);
+              if (view !== "home") {
+                setView("home");
+                return;
+              }
+              if (!wasCollapsed) void aui.threads.switchToNewThread();
             }}
             className="size-8"
           >
-            <SearchIcon className="size-4" />
+            <HomeIcon className="size-4" />
           </TooltipIconButton>
-        )}
-        <div className="mt-auto flex flex-col items-center gap-1">
-          <ThemeToggle />
-          <div
-            aria-hidden="true"
-            className="from-[#177e89] to-[#8fd9c8] size-8 rounded-full bg-gradient-to-br opacity-80"
-          />
-        </div>
-      </div>
-
-      <aside
-        inert={sidebarCollapsed}
-        aria-hidden={sidebarCollapsed}
-        className={cn(
-          "bg-muted/30 hidden h-full shrink-0 flex-col overflow-hidden transition-[width] duration-200 md:flex",
-          railClassName,
-          sidebarCollapsed ? "w-0" : "w-65 border-r",
-        )}
-      >
-        <div className="flex h-12 shrink-0 items-center gap-0.5 overflow-hidden px-2">
-          {headerContent !== undefined ? (
-            headerContent
-          ) : (
-            <span className="flex-1 truncate ps-2 text-sm font-medium">
-              {view === "space"
-                ? "Space"
-                : view === "scheduled"
-                  ? "Scheduled"
-                  : "Pixelspace AI Classroom"}
-            </span>
-          )}
-          {showSearch && hasThreads && (
+          <TooltipIconButton
+            variant="ghost"
+            size="icon"
+            tooltip="Spaces"
+            side="right"
+            onClick={() => {
+              setSidebarCollapsed(false);
+              setView(view === "space" ? "home" : "space");
+            }}
+            className={cn(
+              "size-8",
+              view === "space" && "bg-muted text-foreground",
+            )}
+          >
+            <LayoutGridIcon className="size-4" />
+          </TooltipIconButton>
+          <TooltipIconButton
+            variant="ghost"
+            size="icon"
+            tooltip="Scheduled"
+            side="right"
+            onClick={() => {
+              setSidebarCollapsed(false);
+              setView(view === "scheduled" ? "home" : "scheduled");
+            }}
+            className={cn(
+              "size-8",
+              view === "scheduled" && "bg-muted text-foreground",
+            )}
+          >
+            <ClockIcon className="size-4" />
+          </TooltipIconButton>
+          {showSearch && (
             <TooltipIconButton
               variant="ghost"
               size="icon"
-              tooltip="Search"
-              side="bottom"
-              onClick={() => setSearchOpen((open) => !open)}
+              tooltip="Search chats"
+              side="right"
+              onClick={() => {
+                setSidebarCollapsed(false);
+                setSearchOpen(true);
+              }}
               className="size-8"
             >
               <SearchIcon className="size-4" />
             </TooltipIconButton>
           )}
-          {!collapsedControlled && (
-            <TooltipIconButton
-              variant="ghost"
-              size="icon"
-              tooltip="Hide sidebar"
-              side="bottom"
-              onClick={() => setSidebarCollapsed(true)}
-              className="size-8"
-            >
-              <PanelLeftIcon className="size-4" />
-            </TooltipIconButton>
-          )}
+          <div className="mt-auto flex flex-col items-center gap-1">
+            <ThemeToggle />
+            <ProfileMenu />
+          </div>
         </div>
 
-        <ThreadListRoot
+        <aside
+          inert={sidebarCollapsed}
+          aria-hidden={sidebarCollapsed}
           className={cn(
-            "relative flex-1 transition-[padding,width] duration-200",
-            sidebarCollapsed ? "w-12 overflow-hidden px-2 pt-1" : "w-65 overflow-y-auto p-2",
+            "bg-muted/30 hidden h-full shrink-0 flex-col overflow-hidden transition-[width] duration-200 md:flex",
+            railClassName,
+            sidebarCollapsed ? "w-0" : "w-65 border-r",
           )}
         >
-          {wrapNewThreadTooltip && newThread ? (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger render={newThread} />
-                {sidebarCollapsed && (
-                  <TooltipContent side="right">New chat</TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            newThread
-          )}
-
-          {view === "space" ? (
-            <nav className="mt-2 flex flex-col gap-0.5">
-              {NAV_ITEMS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => selectSection(item)}
-                  className={cn(
-                    "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
-                    section === item.id
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                  )}
-                >
-                  <item.Icon className="size-4 shrink-0" />
-                  <span className="truncate">{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          ) : view === "scheduled" ? (
-            <div className="mt-4 flex flex-col">
-              <span className="text-muted-foreground/70 px-3 py-1 text-sm">
-                No scheduled tasks
+          <div className="flex h-12 shrink-0 items-center gap-0.5 overflow-hidden px-2">
+            {headerContent !== undefined ? (
+              headerContent
+            ) : (
+              <span className="flex-1 truncate ps-2 text-sm font-medium">
+                {view === "space"
+                  ? "Space"
+                  : view === "scheduled"
+                    ? "Scheduled"
+                    : "Pixelspace AI Classroom"}
               </span>
-            </div>
-          ) : (
-            <div className="mt-4 flex flex-col">
-              <span className="text-muted-foreground px-3 py-1 text-xs font-medium">
-                Projects
-              </span>
-              <span className="text-muted-foreground/70 px-3 py-1 text-sm">
-                No projects
-              </span>
-            </div>
-          )}
-
-          {searchOpen && !sidebarCollapsed && hasThreads && (
-            <div className="pt-1 pb-1">
-              <ThreadListSearch value={search} onValueChange={setSearch} />
-            </div>
-          )}
-
-          {hasThreads && (
-            <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
-              Recents
-            </span>
-          )}
-
-          <ThreadListItems
-            searchQuery={searchOpen && hasThreads ? search : ""}
-            aria-hidden={sidebarCollapsed}
-            inert={sidebarCollapsed}
-            className={cn(
-              "transition-[opacity,transform] duration-150",
-              sidebarCollapsed
-                ? "pointer-events-none opacity-0"
-                : "translate-x-0 opacity-100",
             )}
-          />
-        </ThreadListRoot>
-      </aside>
-
-      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        {!mobileControlled && (
-          <div className="absolute top-2 left-2 z-20 md:hidden">
-            <SheetTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="bg-background/70 size-8"
-                >
-                  <MenuIcon className="size-4" />
-                  <span className="sr-only">Open chat history</span>
-                </Button>
-              }
-            />
+            {showSearch && hasThreads && (
+              <TooltipIconButton
+                variant="ghost"
+                size="icon"
+                tooltip="Search"
+                side="bottom"
+                onClick={() => setSearchOpen((open) => !open)}
+                className="size-8"
+              >
+                <SearchIcon className="size-4" />
+              </TooltipIconButton>
+            )}
+            {!collapsedControlled && (
+              <TooltipIconButton
+                variant="ghost"
+                size="icon"
+                tooltip="Hide sidebar"
+                side="bottom"
+                onClick={() => setSidebarCollapsed(true)}
+                className="size-8"
+              >
+                <PanelLeftIcon className="size-4" />
+              </TooltipIconButton>
+            )}
           </div>
-        )}
-        <SheetContent side="left" className="flex flex-col p-0">
-          <SheetTitle className="flex h-12 shrink-0 items-center px-4 text-sm font-medium">
-            {sheetTitle ?? "Pixelspace AI Classroom"}
-          </SheetTitle>
-          <div
-            className="relative flex-1 overflow-y-auto p-3"
-            onClick={closeMobileSidebarAfterNavigation}
+
+          <ThreadListRoot
+            className={cn(
+              "relative flex-1 transition-[padding,width] duration-200",
+              sidebarCollapsed
+                ? "w-12 overflow-hidden px-2 pt-1"
+                : "w-65 overflow-y-auto p-2",
+            )}
           >
-            <ThreadList />
-          </div>
-        </SheetContent>
-      </Sheet>
+            {wrapNewThreadTooltip && newThread ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger render={newThread} />
+                  {sidebarCollapsed && (
+                    <TooltipContent side="right">New chat</TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              newThread
+            )}
 
-      <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
+            {view === "space" ? (
+              <nav className="mt-2 flex flex-col gap-0.5">
+                {NAV_ITEMS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => selectSection(item)}
+                    className={cn(
+                      "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                      section === item.id
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <item.Icon className="size-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+            ) : view === "scheduled" ? (
+              <div className="mt-4 flex flex-col">
+                <span className="text-muted-foreground/70 px-3 py-1 text-sm">
+                  No scheduled tasks
+                </span>
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-col">
+                <span className="text-muted-foreground px-3 py-1 text-xs font-medium">
+                  Projects
+                </span>
+                <span className="text-muted-foreground/70 px-3 py-1 text-sm">
+                  No projects
+                </span>
+              </div>
+            )}
+
+            {searchOpen && !sidebarCollapsed && hasThreads && (
+              <div className="pt-1 pb-1">
+                <ThreadListSearch value={search} onValueChange={setSearch} />
+              </div>
+            )}
+
+            {hasThreads && (
+              <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
+                Recents
+              </span>
+            )}
+
+            <ThreadListItems
+              searchQuery={searchOpen && hasThreads ? search : ""}
+              aria-hidden={sidebarCollapsed}
+              inert={sidebarCollapsed}
+              className={cn(
+                "transition-[opacity,transform] duration-150",
+                sidebarCollapsed
+                  ? "pointer-events-none opacity-0"
+                  : "translate-x-0 opacity-100",
+              )}
+            />
+          </ThreadListRoot>
+        </aside>
+
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          {!mobileControlled && (
+            <div className="absolute top-2 left-2 z-20 md:hidden">
+              <SheetTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="bg-background/70 size-8"
+                  >
+                    <MenuIcon className="size-4" />
+                    <span className="sr-only">Open chat history</span>
+                  </Button>
+                }
+              />
+            </div>
+          )}
+          <SheetContent side="left" className="flex flex-col p-0">
+            <SheetTitle className="flex h-12 shrink-0 items-center px-4 text-sm font-medium">
+              {sheetTitle ?? "Pixelspace AI Classroom"}
+            </SheetTitle>
+            <div
+              className="relative flex-1 overflow-y-auto p-3"
+              onClick={closeMobileSidebarAfterNavigation}
+            >
+              <ThreadList />
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
       </div>
     </SidebarNavContext.Provider>
   );
