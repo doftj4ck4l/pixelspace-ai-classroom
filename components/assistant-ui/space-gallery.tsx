@@ -22,6 +22,7 @@ import {
   PodcastIcon,
   PresentationIcon,
   SearchIcon,
+  SparklesIcon,
   StarIcon,
   StickyNoteIcon,
   TableIcon,
@@ -48,6 +49,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSidebarNav } from "@/components/assistant-ui/clone-thread-shell";
+import {
+  CreateDialog,
+  type CreateDialogInput,
+} from "@/components/assistant-ui/create-dialog";
+import { FlashcardViewer } from "@/components/assistant-ui/flashcard-viewer";
+import { GenerationView } from "@/components/assistant-ui/generation-view";
+import {
+  streamGeneration,
+  type GeneratedContent,
+  type GenerationArtifact,
+  type GenerationInput,
+  type GenerationSource,
+} from "@/components/assistant-ui/harness";
 import {
   NewPresentationDialog,
   SlideEditor,
@@ -85,6 +99,9 @@ type Doc = {
   pinned: boolean;
   favorite: boolean;
   slides?: SlideData[];
+  content?: GeneratedContent;
+  sources?: GenerationSource[];
+  artifacts?: GenerationArtifact[];
 };
 
 const STORAGE_KEY = "paic-space-docs-v2";
@@ -334,10 +351,18 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [pendingDelete, setPendingDelete] = useState<Doc | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [showNewPresentation, setShowNewPresentation] = useState(false);
+  const [createKind, setCreateKind] = useState<ModuleKind | null>(null);
+  const [generation, setGeneration] = useState<GenerationInput | null>(null);
+  const [genSteps, setGenSteps] = useState<string[]>([]);
+  const [genError, setGenError] = useState<string | null>(null);
+  const genAbortRef = useRef<AbortController | null>(null);
+  const genTargetRef = useRef<string | null>(null);
   const templatesRef = useRef<HTMLDivElement>(null);
 
   const editingDoc = docs?.find((doc) => doc.id === editingId) ?? null;
+  const viewingDoc = docs?.find((doc) => doc.id === viewingId) ?? null;
 
   useEffect(() => {
     try {
@@ -429,6 +454,88 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     setEditingId(doc.id);
   };
 
+  const finishGeneration = (
+    input: GenerationInput,
+    content: GeneratedContent,
+    sources: GenerationSource[],
+    artifacts: GenerationArtifact[],
+  ) => {
+    const slides =
+      content.kind === "slides"
+        ? content.slides.map((slide) => ({
+            id: crypto.randomUUID(),
+            title: slide.title,
+            subtitle: slide.subtitle,
+            notes: "",
+          }))
+        : undefined;
+    const targetId = genTargetRef.current;
+    genTargetRef.current = null;
+
+    if (targetId) {
+      updateDoc(targetId, {
+        title: input.topic,
+        content,
+        sources,
+        artifacts,
+        ...(slides ? { slides } : {}),
+      });
+      setEditingId(targetId);
+    } else {
+      const doc: Doc = {
+        ...newDoc(input.kind, input.topic),
+        content,
+        sources,
+        artifacts,
+        ...(slides ? { slides } : {}),
+      };
+      setDocs((prev) => [doc, ...(prev ?? [])]);
+      if (input.kind === "slides") setEditingId(doc.id);
+      else setViewingId(doc.id);
+    }
+
+    setGeneration(null);
+    setGenSteps([]);
+    setGenError(null);
+    genAbortRef.current = null;
+  };
+
+  const startGeneration = (input: GenerationInput, targetDocId?: string) => {
+    genAbortRef.current?.abort();
+    const controller = new AbortController();
+    genAbortRef.current = controller;
+    genTargetRef.current = targetDocId ?? null;
+    setCreateKind(null);
+    setGeneration(input);
+    setGenSteps([]);
+    setGenError(null);
+    void streamGeneration(
+      input,
+      (event) => {
+        if (event.type === "step") {
+          setGenSteps((prev) => [...prev, event.label]);
+        } else if (event.type === "done") {
+          finishGeneration(input, event.content, event.sources, event.artifacts);
+        } else {
+          setGenError(event.message);
+        }
+      },
+      controller.signal,
+    ).catch((error: unknown) => {
+      if ((error as Error)?.name !== "AbortError") {
+        setGenError(error instanceof Error ? error.message : "Generation failed");
+      }
+    });
+  };
+
+  const cancelGeneration = () => {
+    genAbortRef.current?.abort();
+    genAbortRef.current = null;
+    setGeneration(null);
+    setGenSteps([]);
+    setGenError(null);
+  };
+
   const startFromTemplate = () => {
     if (mode === "slides") {
       templatesRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -449,6 +556,31 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
             ? "No items match your search"
             : "Nothing here yet — create something to get started";
 
+  if (generation) {
+    return (
+      <GenerationView
+        kind={generation.kind}
+        topic={generation.topic}
+        steps={genSteps}
+        error={genError}
+        onCancel={cancelGeneration}
+        onRetry={() => startGeneration(generation, genTargetRef.current ?? undefined)}
+      />
+    );
+  }
+
+  if (viewingDoc) {
+    const cards =
+      viewingDoc.content?.kind === "flashcards" ? viewingDoc.content.cards : [];
+    return (
+      <FlashcardViewer
+        title={viewingDoc.title}
+        cards={cards}
+        onClose={() => setViewingId(null)}
+      />
+    );
+  }
+
   if (editingDoc) {
     return (
       <SlideEditor
@@ -462,6 +594,12 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         }
         onTitleChange={(title) => updateDoc(editingDoc.id, { title })}
         onSlidesChange={(slides) => updateDoc(editingDoc.id, { slides })}
+        onGenerateWithAi={(topic) =>
+          startGeneration(
+            { kind: "slides", topic, language: "both", files: [] },
+            editingDoc.id,
+          )
+        }
         onClose={() => setEditingId(null)}
       />
     );
@@ -484,7 +622,12 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 md:w-64"
               />
             </div>
-            {mode === "slides" ? (
+            {mode === "all" ? (
+              <CreateMenu
+                onStartFromTemplate={startFromTemplate}
+                onCreate={addDoc}
+              />
+            ) : mode === "slides" ? (
               <Button
                 onClick={() => setShowNewPresentation(true)}
                 className="h-9 rounded-full px-4 text-sm"
@@ -493,10 +636,13 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 New slides
               </Button>
             ) : (
-              <CreateMenu
-                onStartFromTemplate={startFromTemplate}
-                onCreate={addDoc}
-              />
+              <Button
+                onClick={() => setCreateKind(mode)}
+                className="h-9 rounded-full px-4 text-sm"
+              >
+                <SparklesIcon className="size-4" />
+                New {MODULE_TITLES[mode].toLowerCase()}
+              </Button>
             )}
           </div>
         </div>
@@ -613,10 +759,17 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
               {filtered.map((doc) => (
                 <div
                   key={doc.id}
-                  onClick={doc.type === "slides" ? () => openDeck(doc) : undefined}
+                  onClick={
+                    doc.type === "slides"
+                      ? () => openDeck(doc)
+                      : doc.type === "flashcards"
+                        ? () => setViewingId(doc.id)
+                        : undefined
+                  }
                   className={cn(
                     "group border-border/60 bg-card relative rounded-xl border p-3 transition-shadow hover:shadow-md",
-                    doc.type === "slides" && "cursor-pointer",
+                    (doc.type === "slides" || doc.type === "flashcards") &&
+                      "cursor-pointer",
                   )}
                 >
                   <div className="flex items-center gap-2 pr-7">
@@ -653,10 +806,17 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
               {filtered.map((doc) => (
                 <div
                   key={doc.id}
-                  onClick={doc.type === "slides" ? () => openDeck(doc) : undefined}
+                  onClick={
+                    doc.type === "slides"
+                      ? () => openDeck(doc)
+                      : doc.type === "flashcards"
+                        ? () => setViewingId(doc.id)
+                        : undefined
+                  }
                   className={cn(
                     "group hover:bg-muted/50 relative flex h-11 items-center gap-3 rounded-lg px-3 transition-colors",
-                    doc.type === "slides" && "cursor-pointer",
+                    (doc.type === "slides" || doc.type === "flashcards") &&
+                      "cursor-pointer",
                   )}
                 >
                   <DocGlyph type={doc.type} />
@@ -696,6 +856,29 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         open={showNewPresentation}
         onOpenChange={setShowNewPresentation}
         onCreate={createDeck}
+      />
+
+      <CreateDialog
+        open={createKind !== null}
+        label={
+          createKind ? MODULE_TITLES[createKind].toLowerCase() : "item"
+        }
+        supported={
+          createKind === "slides" || createKind === "flashcards"
+        }
+        onOpenChange={(open) => {
+          if (!open) setCreateKind(null);
+        }}
+        onGenerate={(input: CreateDialogInput) =>
+          startGeneration({
+            kind: createKind === "flashcards" ? "flashcards" : "slides",
+            ...input,
+          })
+        }
+        onCreateEmpty={() => {
+          if (createKind) addDoc(createKind);
+          setCreateKind(null);
+        }}
       />
 
       <Dialog

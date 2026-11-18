@@ -23,8 +23,6 @@ import {
   Undo2Icon,
   XIcon,
 } from "lucide-react";
-import { useAui } from "@assistant-ui/react";
-import { useSidebarNav } from "@/components/assistant-ui/clone-thread-shell";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -261,10 +259,16 @@ export const SlideEditor: FC<{
   slides: SlideData[];
   onTitleChange: (title: string) => void;
   onSlidesChange: (slides: SlideData[]) => void;
+  onGenerateWithAi: (topic: string) => void;
   onClose: () => void;
-}> = ({ title, slides, onTitleChange, onSlidesChange, onClose }) => {
-  const aui = useAui();
-  const { setView } = useSidebarNav();
+}> = ({
+  title,
+  slides,
+  onTitleChange,
+  onSlidesChange,
+  onGenerateWithAi,
+  onClose,
+}) => {
   const [current, setCurrent] = useState(0);
   const [renaming, setRenaming] = useState(false);
   const [zoom, setZoom] = useState(100);
@@ -300,8 +304,8 @@ export const SlideEditor: FC<{
   const sendToChat = () => {
     const text = chatText.trim();
     if (!text) return;
-    aui.composer.setText(text);
-    setView("home");
+    setChatText("");
+    onGenerateWithAi(text);
   };
 
   return (
