@@ -11,7 +11,7 @@ import {
 import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 const gateway = createOpenAI({
   baseURL: `${(process.env.AI_CHAT_BASE_URL ?? "https://model.arasintegrasi.ai").replace(/\/+$/, "")}/v1`,
@@ -73,9 +73,9 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
       body: JSON.stringify({
         harnessId: process.env.PI_HARNESS ?? "pi",
         ...(process.env.PI_MODEL ? { modelId: process.env.PI_MODEL } : {}),
-        // "chat" is the lightweight path with web search; set PI_MODE=work for
-        // the full agent harness with the sandbox toolset.
-        mode: process.env.PI_MODE ?? "chat",
+        // The full agent harness: sandbox tools (file/shell), web search, and
+        // document generation — never the lightweight chat-only path.
+        mode: "work",
         ...(thread?.conversationId
           ? { conversationId: thread.conversationId }
           : {}),
