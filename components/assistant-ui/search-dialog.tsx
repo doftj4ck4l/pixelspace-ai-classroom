@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, type FC } from "react";
 import { MessageCircleIcon, SearchIcon, XIcon } from "lucide-react";
-import { useAui, useAuiState } from "@assistant-ui/react";
+import { useRouter } from "next/navigation";
+import { useAuiState } from "@assistant-ui/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 /**
@@ -13,7 +14,7 @@ export const SearchDialog: FC<{
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }> = ({ open, onOpenChange }) => {
-  const aui = useAui();
+  const router = useRouter();
   const threadItems = useAuiState((s) => s.threads.threadItems);
   const [query, setQuery] = useState("");
 
@@ -49,7 +50,7 @@ export const SearchDialog: FC<{
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && results[0]) {
-                void aui.threads.switchToThread(results[0].id);
+                router.push(`/chat/${results[0].remoteId ?? results[0].id}`);
                 onOpenChange(false);
               }
             }}
@@ -76,7 +77,7 @@ export const SearchDialog: FC<{
               key={thread.id}
               type="button"
               onClick={() => {
-                void aui.threads.switchToThread(thread.id);
+                router.push(`/chat/${thread.remoteId ?? thread.id}`);
                 onOpenChange(false);
               }}
               className="hover:bg-muted/60 flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors"

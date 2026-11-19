@@ -16,6 +16,23 @@ import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/ai-sdk";
 import { createAssistantStream } from "assistant-stream";
 import { CloneThreadShell } from "@/components/assistant-ui/clone-thread-shell";
 
+/** Keeps the URL on the active thread: bare /chat becomes /chat/<remoteId>. */
+const ThreadUrlSync = () => {
+  const router = useRouter();
+  useEffect(() => {
+    const onId = (id: string) => {
+      if (window.location.pathname === "/chat") {
+        router.replace(`/chat/${id}`);
+      }
+    };
+    threadIdListeners.add(onId);
+    return () => {
+      threadIdListeners.delete(onId);
+    };
+  }, [router]);
+  return null;
+};
+
 type HistoryRow = {
   id: string;
   parentId: string | null;
@@ -72,6 +89,12 @@ function useThreadListAdapters() {
   return useMemo(() => ({ history }), [history]);
 }
 
+/* New threads get their remote id only when initialized (first send). */
+const threadIdListeners = new Set<(id: string) => void>();
+const emitThreadId = (id: string) => {
+  for (const listener of threadIdListeners) listener(id);
+};
+
 const threadListAdapter: RemoteThreadListAdapter = {
   async list() {
     const data = (await fetch("/api/pi/threads").then((r) => r.json())) as {
@@ -92,6 +115,7 @@ const threadListAdapter: RemoteThreadListAdapter = {
     const { id } = (await fetch("/api/pi/threads", { method: "POST" }).then(
       (r) => r.json(),
     )) as { id: string };
+    emitThreadId(id);
     return { remoteId: id };
   },
   async rename(remoteId, title) {
@@ -197,6 +221,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <div className="h-dvh w-full overflow-hidden">
+        <ThreadUrlSync />
         <CloneThreadShell>{children}</CloneThreadShell>
       </div>
     </AssistantRuntimeProvider>
