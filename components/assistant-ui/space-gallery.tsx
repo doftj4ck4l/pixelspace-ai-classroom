@@ -433,7 +433,7 @@ const DeckCard: FC<{
       </div>
 
       <div className="p-4">
-        <p className="line-clamp-2 text-base leading-snug font-semibold">
+        <p className="truncate text-base font-semibold" title={doc.title}>
           {doc.title}
         </p>
         <div className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs">
