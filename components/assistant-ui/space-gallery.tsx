@@ -193,6 +193,65 @@ const MODULE_TITLES: Record<ModuleKind | "all", string> = {
   transformations: "Transformations",
 };
 
+/** Header block per module: glyph, tint and one-line subtitle. */
+const MODULE_HEADER: Record<
+  ModuleKind | "all",
+  { Icon: LucideIcon; color: string; subtitle: string }
+> = {
+  all: {
+    Icon: LayoutGridIcon,
+    color: "text-foreground",
+    subtitle:
+      "Semua hasil kerja anda dalam satu tempat — kad imbas, kuiz, slaid, laporan dan banyak lagi.",
+  },
+  flashcards: {
+    Icon: LayersIcon,
+    color: "text-amber-500",
+    subtitle: "Buat, ulang kaji dan kuasai topik dengan kad imbas pintar.",
+  },
+  quizzes: {
+    Icon: CircleHelpIcon,
+    color: "text-teal-600",
+    subtitle:
+      "Uji kefahaman dengan kuiz pintar — pilihan, benar/palsu, isi tempat kosong dan soalan terbuka.",
+  },
+  mindmaps: {
+    Icon: WaypointsIcon,
+    color: "text-violet-500",
+    subtitle: "Susun idea dan konsep dalam peta minda yang jelas.",
+  },
+  slides: {
+    Icon: PresentationIcon,
+    color: "text-yellow-500",
+    subtitle: "Hasilkan slaid pembentangan yang kemas dengan bantuan AI.",
+  },
+  reports: {
+    Icon: FileTextIcon,
+    color: "text-purple-500",
+    subtitle: "Tulis laporan yang tersusun dan mudah difahami.",
+  },
+  infographics: {
+    Icon: ChartColumnIcon,
+    color: "text-pink-500",
+    subtitle: "Tukar idea menjadi infografik yang menarik.",
+  },
+  podcasts: {
+    Icon: PodcastIcon,
+    color: "text-red-500",
+    subtitle: "Hasilkan audio pembelajaran daripada topik anda.",
+  },
+  notes: {
+    Icon: StickyNoteIcon,
+    color: "text-green-600",
+    subtitle: "Catatan ringkas untuk rujukan pantas.",
+  },
+  transformations: {
+    Icon: WandSparklesIcon,
+    color: "text-blue-500",
+    subtitle: "Ubah kandungan sedia ada menjadi format baharu.",
+  },
+};
+
 const CREATE_MODULE_ITEMS: {
   type: DocType;
   label: string;
@@ -380,8 +439,39 @@ const deckInfoOf = (doc: Doc, progress: Record<string, DeckProgress>) => {
   return { total, known: row?.knownCount ?? 0 };
 };
 
-/** A deck tile for the Flashcards page: themed cover, badges, mastery. */
-const DeckCard: FC<{
+/** Tinted covers for non-deck tiles, keyed by doc type. */
+const FILE_TILE_COVER: Record<string, string> = {
+  slides:
+    "bg-gradient-to-br from-amber-300/50 via-orange-200/40 to-yellow-100/30 dark:from-amber-900/60 dark:via-orange-950/50 dark:to-yellow-950/40",
+  reports:
+    "bg-gradient-to-br from-purple-300/50 via-violet-200/40 to-indigo-100/30 dark:from-purple-900/60 dark:via-violet-950/50 dark:to-indigo-950/40",
+  infographics:
+    "bg-gradient-to-br from-pink-300/50 via-rose-200/40 to-fuchsia-100/30 dark:from-pink-900/60 dark:via-rose-950/50 dark:to-fuchsia-950/40",
+  podcasts:
+    "bg-gradient-to-br from-red-300/50 via-rose-200/40 to-orange-100/30 dark:from-red-900/60 dark:via-rose-950/50 dark:to-orange-950/40",
+  notes:
+    "bg-gradient-to-br from-green-300/50 via-emerald-200/40 to-lime-100/30 dark:from-green-900/60 dark:via-emerald-950/50 dark:to-lime-950/40",
+  mindmaps:
+    "bg-gradient-to-br from-violet-300/50 via-purple-200/40 to-fuchsia-100/30 dark:from-violet-900/60 dark:via-purple-950/50 dark:to-fuchsia-950/40",
+  transformations:
+    "bg-gradient-to-br from-blue-300/50 via-sky-200/40 to-cyan-100/30 dark:from-blue-900/60 dark:via-sky-950/50 dark:to-cyan-950/40",
+  pdf: "bg-gradient-to-br from-red-300/50 via-rose-200/40 to-pink-100/30 dark:from-red-900/60 dark:via-rose-950/50 dark:to-pink-950/40",
+  image:
+    "bg-gradient-to-br from-pink-300/50 via-fuchsia-200/40 to-purple-100/30 dark:from-pink-900/60 dark:via-fuchsia-950/50 dark:to-purple-950/40",
+  doc: "bg-gradient-to-br from-slate-300/50 via-slate-200/40 to-slate-100/30 dark:from-slate-800/60 dark:via-slate-900/50 dark:to-slate-950/40",
+  page: "bg-gradient-to-br from-slate-300/50 via-slate-200/40 to-slate-100/30 dark:from-slate-800/60 dark:via-slate-900/50 dark:to-slate-950/40",
+  folder:
+    "bg-gradient-to-br from-slate-300/50 via-slate-200/40 to-slate-100/30 dark:from-slate-800/60 dark:via-slate-900/50 dark:to-slate-950/40",
+  site: "bg-gradient-to-br from-violet-300/50 via-purple-200/40 to-indigo-100/30 dark:from-violet-900/60 dark:via-purple-950/50 dark:to-indigo-950/40",
+  space:
+    "bg-gradient-to-br from-teal-300/50 via-emerald-200/40 to-cyan-100/30 dark:from-teal-900/60 dark:via-emerald-950/50 dark:to-cyan-950/40",
+};
+
+/**
+ * The unified gallery tile: decks and quizzes get their accent cover + emoji +
+ * mastery bar; every other artifact gets a type-tinted cover with its glyph.
+ */
+const GalleryCard: FC<{
   doc: Doc;
   known: number;
   total: number;
@@ -390,6 +480,8 @@ const DeckCard: FC<{
 }> = ({ doc, known, total, onOpen, menu }) => {
   const spec = doc.spec as { subject?: string; accent?: string } | undefined;
   const theme = accentTheme(spec?.accent);
+  const isSpec = !!doc.spec;
+  const typeStyle = TYPE_STYLES[doc.type];
   const pct = total > 0 ? Math.round((known / total) * 100) : 0;
 
   return (
@@ -400,7 +492,9 @@ const DeckCard: FC<{
       <div
         className={cn(
           "relative flex aspect-[16/9] items-center justify-center overflow-hidden",
-          theme.cover,
+          isSpec
+            ? theme.cover
+            : (FILE_TILE_COVER[doc.type] ?? FILE_TILE_COVER.doc),
         )}
       >
         <div
@@ -411,9 +505,16 @@ const DeckCard: FC<{
           aria-hidden="true"
           className="absolute -right-10 -bottom-10 size-32 rounded-full bg-white/30 blur-3xl dark:bg-white/5"
         />
-        <span className="relative text-5xl drop-shadow-sm select-none">
-          {coverEmoji(doc.title, spec?.subject)}
-        </span>
+        {isSpec ? (
+          <span className="relative text-5xl drop-shadow-sm select-none">
+            {coverEmoji(doc.title, spec?.subject)}
+          </span>
+        ) : (
+          <typeStyle.Icon
+            className={cn("relative size-14 opacity-80", typeStyle.color)}
+            strokeWidth={1.5}
+          />
+        )}
         <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
           {doc.pinned && (
             <span className="bg-background/85 flex size-7 items-center justify-center rounded-full shadow-sm">
@@ -439,24 +540,41 @@ const DeckCard: FC<{
           {doc.title}
         </p>
         <div className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs">
-          {doc.type === "quizzes" ? (
-            <CircleHelpIcon className="size-3.5" />
+          {isSpec ? (
+            <>
+              {doc.type === "quizzes" ? (
+                <CircleHelpIcon className="size-3.5" />
+              ) : (
+                <LayersIcon className="size-3.5" />
+              )}
+              {total} {doc.type === "quizzes" ? "soalan" : "kad"}
+            </>
           ) : (
-            <LayersIcon className="size-3.5" />
+            <>
+              <typeStyle.Icon className={cn("size-3.5", typeStyle.color)} />
+              {MODULE_TITLES[doc.type as keyof typeof MODULE_TITLES] ??
+                doc.type}
+              {doc.source === "chat" && (
+                <span className="bg-muted ml-1 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
+                  From chat
+                </span>
+              )}
+            </>
           )}
-          {total} {doc.type === "quizzes" ? "soalan" : "kad"}
         </div>
-        <div className="mt-2.5 flex items-center gap-2">
-          <div className="bg-muted/70 h-1.5 flex-1 overflow-hidden rounded-full">
-            <div
-              className={cn("h-full transition-all", theme.bar)}
-              style={{ width: `${pct}%` }}
-            />
+        {isSpec && (
+          <div className="mt-2.5 flex items-center gap-2">
+            <div className="bg-muted/70 h-1.5 flex-1 overflow-hidden rounded-full">
+              <div
+                className={cn("h-full transition-all", theme.bar)}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-muted-foreground text-xs font-medium tabular-nums">
+              {pct}%
+            </span>
           </div>
-          <span className="text-muted-foreground text-xs font-medium tabular-nums">
-            {pct}%
-          </span>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -959,49 +1077,50 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       void openSharedArtifact(doc);
       return;
     }
-    if (doc.type === "flashcards") setViewingId(doc.id);
+    if (doc.type === "flashcards") {
+      setViewingId(doc.id);
+      return;
+    }
+    if (doc.type === "slides") openDeck(doc);
   };
+
+  const header = MODULE_HEADER[mode];
 
   return (
     <div className="bg-background flex h-full flex-col overflow-y-auto">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          {isModule ? (
-            <div className="flex min-w-0 flex-1 items-start gap-3">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-300">
-                {isQuizzes ? (
-                  <CircleHelpIcon className="size-6" />
-                ) : (
-                  <LayersIcon className="size-6" />
-                )}
-              </span>
-              <div className="min-w-0">
-                <h1 className="text-2xl font-semibold sm:text-3xl">
-                  {MODULE_TITLES[mode]}
-                </h1>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {isQuizzes
-                    ? "Uji kefahaman dengan kuiz pintar — pilihan, benar/palsu, isi tempat kosong dan soalan terbuka."
-                    : "Buat, ulang kaji dan kuasai topik dengan kad imbas pintar."}
-                </p>
-              </div>
-              <div
-                aria-hidden="true"
-                className="relative ml-auto hidden h-24 w-56 shrink-0 md:block"
-              >
-                <div className="absolute top-1/2 right-0 size-24 -translate-y-1/2 rounded-full bg-[#8fd9c8]/50 blur-2xl dark:bg-[#0f4f4a]/60" />
-                <div className="border-border/60 bg-card absolute top-1/2 right-8 h-16 w-28 -translate-y-1/2 rotate-6 rounded-xl border shadow-sm" />
-                <div className="border-border/60 bg-card absolute top-1/2 right-14 h-16 w-28 -translate-y-1/2 -rotate-3 rounded-xl border shadow-md" />
-                <div className="border-border/60 bg-card absolute top-1/2 right-12 flex h-16 w-28 -translate-y-1/2 items-center justify-center rounded-xl border text-2xl shadow-lg">
-                  💡
-                </div>
-                <SparklesIcon className="absolute top-1 right-0 size-4 text-amber-400" />
-                <SparklesIcon className="absolute right-24 bottom-0 size-3 text-amber-400" />
-              </div>
+          <div className="flex min-w-0 flex-1 items-start gap-3">
+            <span
+              className={cn(
+                "bg-muted/60 flex size-12 shrink-0 items-center justify-center rounded-2xl",
+                header.color,
+              )}
+            >
+              <header.Icon className="size-6" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold sm:text-3xl">
+                {MODULE_TITLES[mode]}
+              </h1>
+              <p className="text-muted-foreground mt-1 text-sm">
+                {header.subtitle}
+              </p>
             </div>
-          ) : (
-            <h1 className="text-2xl font-semibold">{MODULE_TITLES[mode]}</h1>
-          )}
+            <div
+              aria-hidden="true"
+              className="relative ml-auto hidden h-24 w-56 shrink-0 md:block"
+            >
+              <div className="absolute top-1/2 right-0 size-24 -translate-y-1/2 rounded-full bg-[#8fd9c8]/50 blur-2xl dark:bg-[#0f4f4a]/60" />
+              <div className="border-border/60 bg-card absolute top-1/2 right-8 h-16 w-28 -translate-y-1/2 rotate-6 rounded-xl border shadow-sm" />
+              <div className="border-border/60 bg-card absolute top-1/2 right-14 h-16 w-28 -translate-y-1/2 -rotate-3 rounded-xl border shadow-md" />
+              <div className="border-border/60 bg-card absolute top-1/2 right-12 flex h-16 w-28 -translate-y-1/2 items-center justify-center rounded-xl border text-2xl shadow-lg">
+                💡
+              </div>
+              <SparklesIcon className="absolute top-1 right-0 size-4 text-amber-400" />
+              <SparklesIcon className="absolute right-24 bottom-0 size-3 text-amber-400" />
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-3 max-sm:w-full">
             <div className="relative max-sm:w-full">
               <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -1048,14 +1167,14 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             {tabs.map((item) => {
-              const TabIcon = isModule
-                ? {
-                    All: LayoutGridIcon,
-                    Pinned: PinIcon,
-                    Favorites: StarIcon,
-                    "Shared with you": UsersIcon,
-                  }[item]
-                : undefined;
+              const TabIcon = {
+                All: LayoutGridIcon,
+                Suggested: SparklesIcon,
+                Pinned: PinIcon,
+                Favorites: StarIcon,
+                "Your items": FolderIcon,
+                "Shared with you": UsersIcon,
+              }[item];
               return (
                 <button
                   key={item}
@@ -1176,7 +1295,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 filtered.map((doc) => {
                   const info = deckInfoOf(doc, progressMap);
                   return (
-                    <DeckCard
+                    <GalleryCard
                       key={doc.id}
                       doc={doc}
                       known={info.known}
@@ -1225,75 +1344,38 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 </button>
               )}
               {!isModule &&
-                filtered.map((doc) => (
-                  <div
-                    key={doc.id}
-                    onClick={
-                      doc.spec
-                        ? () =>
-                            router.push(`/spaces/flashcards/${doc.artifactId}`)
-                        : doc.artifactId
-                          ? () => void openSharedArtifact(doc)
-                          : doc.type === "slides"
-                            ? () => openDeck(doc)
-                            : doc.type === "flashcards"
-                              ? () => setViewingId(doc.id)
-                              : undefined
-                    }
-                    className={cn(
-                      "group border-border/60 bg-card relative rounded-xl border p-3 transition-shadow hover:shadow-md",
-                      (doc.spec ||
-                        doc.artifactId ||
-                        doc.type === "slides" ||
-                        doc.type === "flashcards") &&
-                        "cursor-pointer",
-                    )}
-                  >
-                    <div className="flex items-center gap-2 pr-7">
-                      <DocGlyph type={doc.type} />
-                      <span className="truncate text-sm font-medium">
-                        {doc.title}
-                      </span>
-                      {doc.source === "chat" && (
-                        <span className="bg-muted text-muted-foreground shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
-                          From chat
-                        </span>
-                      )}
-                      {doc.pinned && (
-                        <PinIcon className="text-muted-foreground size-3.5 shrink-0" />
-                      )}
-                      {doc.favorite && (
-                        <StarIcon className="size-3.5 shrink-0 fill-current text-amber-400" />
-                      )}
-                    </div>
-                    <div className="mt-3 flex aspect-[16/10] items-center justify-center">
-                      <DocGlyph type={doc.type} size="lg" />
-                    </div>
-                    <div
-                      onClick={(event) => event.stopPropagation()}
-                      className="absolute top-2 right-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-                    >
-                      {doc.artifactId ? (
-                        <SharedArtifactMenu
-                          doc={doc}
-                          siblings={siblingsOf(doc)}
-                          onDownload={(entry) =>
-                            entry.url && window.open(entry.url, "_blank")
-                          }
-                          onRemove={removeSharedArtifact}
-                          onSetFlags={setArtifactFlags}
-                        />
-                      ) : (
-                        <DocMenu
-                          doc={doc}
-                          onTogglePin={togglePin}
-                          onToggleFavorite={toggleFavorite}
-                          onDelete={setPendingDelete}
-                        />
-                      )}
-                    </div>
-                  </div>
-                ))}
+                filtered.map((doc) => {
+                  const info = deckInfoOf(doc, progressMap);
+                  return (
+                    <GalleryCard
+                      key={doc.id}
+                      doc={doc}
+                      known={info.known}
+                      total={info.total}
+                      onOpen={() => openDeckDoc(doc)}
+                      menu={
+                        doc.artifactId ? (
+                          <SharedArtifactMenu
+                            doc={doc}
+                            siblings={siblingsOf(doc)}
+                            onDownload={(entry) =>
+                              entry.url && window.open(entry.url, "_blank")
+                            }
+                            onRemove={removeSharedArtifact}
+                            onSetFlags={setArtifactFlags}
+                          />
+                        ) : (
+                          <DocMenu
+                            doc={doc}
+                            onTogglePin={togglePin}
+                            onToggleFavorite={toggleFavorite}
+                            onDelete={setPendingDelete}
+                          />
+                        )
+                      }
+                    />
+                  );
+                })}
             </div>
           ) : (
             <div className="mt-6 flex flex-col">
