@@ -90,14 +90,14 @@ export const AuthForm: FC<{ mode: "login" | "register" }> = ({ mode }) => {
         />
         {isRegister && (
           <p className="text-muted-foreground -mt-2 text-xs">
-            At least 12 characters.
+            At least 8 characters.
           </p>
         )}
         {error && <p className="text-sm text-red-500">{error}</p>}
 
         <Button
           type="submit"
-          disabled={pending || !email || !password || (isRegister && password.length < 12)}
+          disabled={pending || !email || !password || (isRegister && password.length < 8)}
           className="h-10 bg-[#1b8a7f] text-white hover:bg-[#23a093]"
         >
           {pending ? (
