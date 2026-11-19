@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/auth-session";
+import { artifactRegistry } from "@/lib/pi/artifacts";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
 
@@ -12,18 +13,38 @@ export async function POST(req: Request) {
 
   const body = (await req.json().catch(() => ({}))) as {
     threadId?: string;
+    deckEditTargetId?: string;
     questionId?: string;
     answer?: string;
   };
 
-  if (!body.threadId || !body.questionId || typeof body.answer !== "string") {
+  if (!body.questionId || typeof body.answer !== "string") {
     return NextResponse.json(
-      { error: "threadId, questionId and answer are required" },
+      { error: "questionId and answer are required" },
       { status: 400 },
     );
   }
 
-  const thread = await registry.get(user.id, body.threadId);
+  // Deck-panel answers address the deck; resolve its thread the same way the
+  // chat relay does (the thread the deck was created in, else a dedicated one).
+  let threadId = body.threadId;
+  if (!threadId && body.deckEditTargetId) {
+    const artifact = await artifactRegistry.get(user.id, body.deckEditTargetId);
+    if (artifact?.threadId) {
+      const original = await registry.get(user.id, artifact.threadId);
+      threadId = original ? artifact.threadId : undefined;
+    }
+    threadId = threadId ?? `deck-edit-${body.deckEditTargetId}`;
+  }
+
+  if (!threadId) {
+    return NextResponse.json(
+      { error: "threadId or deckEditTargetId is required" },
+      { status: 400 },
+    );
+  }
+
+  const thread = await registry.get(user.id, threadId);
   if (!thread?.conversationId || !piConfigured()) {
     return NextResponse.json(
       { error: "no pi conversation for this thread" },

@@ -21,6 +21,18 @@ type HistoryRow = {
 const MAX_RESULT = 4000;
 
 /**
+ * Deck-edit turns send the deck context as a preamble on the user message.
+ * The transcript stores it verbatim, but the chat should show only what the
+ * user actually typed.
+ */
+const stripDeckEditContext = (text: string) => {
+  if (!text.startsWith("[Deck edit session]")) return text;
+  const marker = "User request: ";
+  const at = text.lastIndexOf(marker);
+  return at >= 0 ? text.slice(at + marker.length) : text;
+};
+
+/**
  * Rebuild the UI message history from pi's transcript for one owned thread,
  * including tool calls and render_ui blocks.
  */
@@ -79,7 +91,10 @@ export async function GET(
           id: rowId,
           parentId: previousId,
           format: "ai-sdk/v6",
-          content: { role: "user", parts: [{ type: "text", text }] },
+          content: {
+            role: "user",
+            parts: [{ type: "text", text: stripDeckEditContext(text) }],
+          },
         });
         previousId = rowId;
       } else if (message.kind === "assistant") {

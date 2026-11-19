@@ -261,14 +261,23 @@ const piChat = async (
       return null;
     }
     deckEditContext = buildDeckEditContext(artifact, body.focusedCardIndex);
-    // One persistent edit session per deck, so the sidebar keeps the history.
-    const deckThreadId = `deck-edit-${deckEditTargetId}`;
-    await registry.upsertForDeck(
-      userId,
-      deckThreadId,
-      deckEditTargetId,
-      `Edit: ${artifact.title}`,
-    );
+    // Edits belong to the thread where the deck was created, so the sidebar
+    // keeps one session per deck. Only decks without an original thread get
+    // a dedicated edit session.
+    const originalThread = artifact.threadId
+      ? await registry.get(userId, artifact.threadId)
+      : undefined;
+    const deckThreadId = originalThread
+      ? artifact.threadId
+      : `deck-edit-${deckEditTargetId}`;
+    if (!originalThread) {
+      await registry.upsertForDeck(
+        userId,
+        deckThreadId,
+        deckEditTargetId,
+        `Edit: ${artifact.title}`,
+      );
+    }
     threadId = deckThreadId;
   }
 
@@ -480,8 +489,11 @@ const piChat = async (
             } else if (
               event.type === "title" &&
               typeof event.title === "string" &&
-              threadId
+              threadId &&
+              !deckEditTargetId
             ) {
+              // Deck-edit turns never rename the thread: it keeps the name the
+              // deck was created under.
               await registry.update(userId, threadId, { title: event.title });
             } else if (
               event.type === "error" &&

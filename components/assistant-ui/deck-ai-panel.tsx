@@ -92,7 +92,7 @@ export const DeckAiPanel: FC<{
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          threadId: `deck-edit-${artifactId}`,
+          deckEditTargetId: artifactId,
           questionId: ask.questionId,
           answer: trimmed,
         }),
