@@ -148,11 +148,17 @@ export const DeckAiPanel: FC<{
         headers: { "Content-Type": "application/json" },
         signal: abort.signal,
         body: JSON.stringify({
-          messages: nextMessages.map((message) => ({
-            id: crypto.randomUUID(),
-            role: message.role === "assistant" ? "assistant" : "user",
-            parts: [{ type: "text", text: message.text }],
-          })),
+          // Only real conversation turns go upstream: system notes like
+          // "Deck updated" are panel chrome, not something the model said.
+          messages: nextMessages
+            .filter(
+              (message) => message.role !== "system" && message.text.trim(),
+            )
+            .map((message) => ({
+              id: crypto.randomUUID(),
+              role: message.role === "assistant" ? "assistant" : "user",
+              parts: [{ type: "text", text: message.text }],
+            })),
           deckEditTargetId: artifactId,
           ...(typeof focusedCardIndex === "number" ? { focusedCardIndex } : {}),
         }),
