@@ -788,6 +788,14 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     if (!docs) return [];
     const q = query.trim().toLowerCase();
     const result = [...docs, ...artifactDocs].filter((doc) => {
+      // Old text-only copies of a shared deck are obsolete: the artifact card
+      // now opens the exact PPTX preview.
+      if (
+        doc.originArtifactId &&
+        sharedArtifacts.some((a) => a.id === doc.originArtifactId)
+      ) {
+        return false;
+      }
       if (mode !== "all" && doc.type !== mode) return false;
       if (tab === "Pinned" && !doc.pinned) return false;
       if (tab === "Favorites" && !doc.favorite) return false;
@@ -805,7 +813,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       default:
         return result;
     }
-  }, [docs, artifactDocs, mode, tab, query, sort]);
+  }, [docs, artifactDocs, mode, tab, query, sort, sharedArtifacts]);
 
   /** Persist a new doc server-side (optimistic — the UI already shows it). */
   const persistDoc = (doc: Doc) => {
