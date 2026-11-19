@@ -959,8 +959,8 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
           ) : (
             <h1 className="text-2xl font-semibold">{MODULE_TITLES[mode]}</h1>
           )}
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex flex-wrap items-center gap-3 max-sm:w-full">
+            <div className="relative max-sm:w-full">
               <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <input
                 type="search"
@@ -968,7 +968,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={isFlashcards ? "Search flashcards..." : "Search"}
                 aria-label="Search"
-                className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 md:w-64"
+                className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
               />
             </div>
             {mode === "all" ? (
