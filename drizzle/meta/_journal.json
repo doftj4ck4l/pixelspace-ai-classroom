@@ -8,6 +8,13 @@
       "when": 1795074035469,
       "tag": "0000_mixed_clint_barton",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795077173957,
+      "tag": "0001_worthless_vector",
+      "breakpoints": true
     }
   ]
 }

@@ -40,7 +40,7 @@ export const piFetch = async (
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
-      ...(init?.headers ?? {}),
+      ...init?.headers,
       cookie: sessionCookie ?? "",
     },
   });

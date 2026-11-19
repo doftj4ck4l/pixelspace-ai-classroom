@@ -43,7 +43,10 @@ export async function POST(req: Request) {
     originArtifactId?: string;
   };
   if (!body.id || !body.type || !body.title) {
-    return NextResponse.json({ error: "id, type and title are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "id, type and title are required" },
+      { status: 400 },
+    );
   }
 
   await db

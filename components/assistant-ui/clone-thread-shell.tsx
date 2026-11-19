@@ -167,7 +167,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
       setSection: (next: string) => router.push(`/spaces/${next}`),
       setView: (next: SidebarView) =>
         router.push(
-          next === "home" ? "/chat" : next === "space" ? "/spaces/all" : "/scheduled",
+          next === "home"
+            ? "/chat"
+            : next === "space"
+              ? "/spaces/all"
+              : "/scheduled",
         ),
     }),
     [view, section, router],

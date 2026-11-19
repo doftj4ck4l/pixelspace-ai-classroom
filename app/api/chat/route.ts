@@ -32,7 +32,9 @@ type ChatBody = {
 
 const messageText = (message: UIMessage) =>
   message.parts
-    .filter((part): part is { type: "text"; text: string } => part.type === "text")
+    .filter(
+      (part): part is { type: "text"; text: string } => part.type === "text",
+    )
     .map((part) => part.text)
     .join("\n")
     .trim();
@@ -52,12 +54,15 @@ const newUserText = (messages: UIMessage[]) => {
 /** pi records the transcript but does not replay it — send the full history each turn. */
 const toPiMessages = (messages: UIMessage[]) =>
   messages
-    .filter((message) => message.role === "user" || message.role === "assistant")
+    .filter(
+      (message) => message.role === "user" || message.role === "assistant",
+    )
     .map((message) => ({
       role: message.role,
       content: message.parts
         .filter(
-          (part): part is { type: "text"; text: string } => part.type === "text",
+          (part): part is { type: "text"; text: string } =>
+            part.type === "text",
         )
         .map((part) => part.text)
         .join("\n")
@@ -130,7 +135,12 @@ const captureSharedArtifacts = async (
       // keep the encoded form
     }
     const title = filePath.split("/").pop() || filePath;
-    await artifactRegistry.add(userId, { threadId, title, path: filePath, url });
+    await artifactRegistry.add(userId, {
+      threadId,
+      title,
+      path: filePath,
+      url,
+    });
   }
 
   for (const match of content.matchAll(IMAGE_URL)) {
@@ -230,7 +240,11 @@ const piChat = async (
                 textId = String(textSeq++);
                 writer.write({ type: "text-start", id: textId });
               }
-              writer.write({ type: "text-delta", id: textId, delta: event.delta });
+              writer.write({
+                type: "text-delta",
+                id: textId,
+                delta: event.delta,
+              });
             } else if (
               event.type === "tool_call" &&
               typeof event.id === "string" &&
@@ -241,7 +255,11 @@ const piChat = async (
               closeText();
               lastToolId = event.id;
               openToolIds.add(event.id);
-              if (event.name === "render_ui" && event.args && typeof event.args === "object") {
+              if (
+                event.name === "render_ui" &&
+                event.args &&
+                typeof event.args === "object"
+              ) {
                 renderUiArgs.set(
                   event.id,
                   event.args as Record<string, unknown>,
@@ -335,7 +353,9 @@ const piChat = async (
               typeof event.id === "string" &&
               threadId
             ) {
-              await registry.update(userId, threadId, { conversationId: event.id });
+              await registry.update(userId, threadId, {
+                conversationId: event.id,
+              });
             } else if (
               event.type === "title" &&
               typeof event.title === "string" &&
@@ -377,7 +397,8 @@ const piChat = async (
       writer.write({ type: "finish-step" });
       writer.write({ type: "finish" });
     },
-    onError: (error) => (error instanceof Error ? error.message : String(error)),
+    onError: (error) =>
+      error instanceof Error ? error.message : String(error),
   });
 
   return createUIMessageStreamResponse({ stream });
@@ -409,7 +430,9 @@ export async function POST(req: Request) {
   const result = streamText({
     abortSignal: req.signal,
     model: gateway.chat(process.env.AI_CHAT_MODEL ?? "Qwen/Qwen3.8-27B"),
-    messages: await convertToModelMessages(body.messages, { tools: aiSDKTools }),
+    messages: await convertToModelMessages(body.messages, {
+      tools: aiSDKTools,
+    }),
     system: body.system,
     tools: aiSDKTools,
   });

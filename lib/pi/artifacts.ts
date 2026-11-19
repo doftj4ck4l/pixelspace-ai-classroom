@@ -17,6 +17,8 @@ export type PiArtifact = {
   path?: string;
   spec?: unknown;
   dedupeKey?: string;
+  pinned: boolean;
+  favorite: boolean;
   createdAt: string;
 };
 
@@ -32,6 +34,8 @@ const toPiArtifact = (row: ArtifactRow): PiArtifact => ({
   ...(row.path ? { path: row.path } : {}),
   ...(row.spec ? { spec: row.spec } : {}),
   ...(row.dedupeKey ? { dedupeKey: row.dedupeKey } : {}),
+  pinned: row.pinned,
+  favorite: row.favorite,
   createdAt: row.createdAt.toISOString(),
 });
 
@@ -105,7 +109,12 @@ export const artifactRegistry = {
       path: input.path,
     };
     await db.insert(artifacts).values(row);
-    return toPiArtifact({ ...row, createdAt: new Date() } as ArtifactRow);
+    return toPiArtifact({
+      ...row,
+      pinned: false,
+      favorite: false,
+      createdAt: new Date(),
+    } as ArtifactRow);
   },
 
   async addSpec(
@@ -122,7 +131,10 @@ export const artifactRegistry = {
       .select({ id: artifacts.id })
       .from(artifacts)
       .where(
-        and(eq(artifacts.userId, userId), eq(artifacts.dedupeKey, input.dedupeKey)),
+        and(
+          eq(artifacts.userId, userId),
+          eq(artifacts.dedupeKey, input.dedupeKey),
+        ),
       );
     if (existing.length > 0) return null;
 
@@ -137,7 +149,26 @@ export const artifactRegistry = {
       dedupeKey: input.dedupeKey,
     };
     await db.insert(artifacts).values(row);
-    return toPiArtifact({ ...row, createdAt: new Date() } as ArtifactRow);
+    return toPiArtifact({
+      ...row,
+      pinned: false,
+      favorite: false,
+      createdAt: new Date(),
+    } as ArtifactRow);
+  },
+
+  async setFlags(
+    userId: string,
+    id: string,
+    flags: { pinned?: boolean; favorite?: boolean },
+  ): Promise<void> {
+    await db
+      .update(artifacts)
+      .set({
+        ...(flags.pinned !== undefined ? { pinned: flags.pinned } : {}),
+        ...(flags.favorite !== undefined ? { favorite: flags.favorite } : {}),
+      })
+      .where(and(eq(artifacts.id, id), eq(artifacts.userId, userId)));
   },
 
   async remove(userId: string, id: string): Promise<void> {

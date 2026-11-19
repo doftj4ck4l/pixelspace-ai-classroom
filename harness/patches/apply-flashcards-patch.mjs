@@ -125,18 +125,24 @@ function validateFlashcards(p: Record<string, unknown>): UiValidation {
   let s = read("ui-catalog.ts");
   if (!s.includes("validateFlashcards")) {
     const caseAnchor = "    case 'card':\n      return validateCard(props)";
-    if (!s.includes(caseAnchor)) throw new Error("ui-catalog: card case anchor missing");
+    if (!s.includes(caseAnchor))
+      throw new Error("ui-catalog: card case anchor missing");
     s = s.replace(
       caseAnchor,
       `${caseAnchor}\n    case 'flashcards':\n      return validateFlashcards(props)`,
     );
 
     const listAnchor = "use one of: chart, table, stat, card`)";
-    if (!s.includes(listAnchor)) throw new Error("ui-catalog: component list anchor missing");
-    s = s.replace(listAnchor, "use one of: chart, table, stat, card, flashcards`)");
+    if (!s.includes(listAnchor))
+      throw new Error("ui-catalog: component list anchor missing");
+    s = s.replace(
+      listAnchor,
+      "use one of: chart, table, stat, card, flashcards`)",
+    );
 
     const fnAnchor = "// A colour is written into an SVG `fill`";
-    if (!s.includes(fnAnchor)) throw new Error("ui-catalog: function anchor missing");
+    if (!s.includes(fnAnchor))
+      throw new Error("ui-catalog: function anchor missing");
     s = s.replace(fnAnchor, `${VALIDATOR}${fnAnchor}`);
 
     write("ui-catalog.ts", s);
@@ -151,7 +157,8 @@ function validateFlashcards(p: Record<string, unknown>): UiValidation {
   if (!s.includes("flashcards:")) {
     const introAnchor =
       '"Render a rich UI component inline in your answer to the user: a chart, a sortable table, a KPI stat tile, or a titled card. " +';
-    if (!s.includes(introAnchor)) throw new Error("tools.ts: intro anchor missing");
+    if (!s.includes(introAnchor))
+      throw new Error("tools.ts: intro anchor missing");
     s = s.replace(
       introAnchor,
       '"Render a rich UI component inline in your answer to the user: a chart, a sortable table, a KPI stat tile, a titled card, or a study flashcard deck. " +',
@@ -159,7 +166,8 @@ function validateFlashcards(p: Record<string, unknown>): UiValidation {
 
     const cardAnchor =
       "\"- card: title?, body? (markdown), fields? (array of { label, value }), accent? ('default'|'primary'|'success'|'warning'|'destructive')\",";
-    if (!s.includes(cardAnchor)) throw new Error("tools.ts: card line anchor missing");
+    if (!s.includes(cardAnchor))
+      throw new Error("tools.ts: card line anchor missing");
     s = s.replace(
       cardAnchor,
       `"- card: title?, body? (markdown), fields? (array of { label, value }), accent? ('default'|'primary'|'success'|'warning'|'destructive') \\n" +\n      "- flashcards: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), cards (6 to 40 of { front, back, hint?, tags? (up to 3), type? ('term'|'question'|'cloze'|'formula') }) — a study deck for memorisation",`,
@@ -175,7 +183,8 @@ function validateFlashcards(p: Record<string, unknown>): UiValidation {
 {
   let s = read("gen-ui-prompt.ts");
   if (!s.includes("kad imbas")) {
-    const anchor = "You may call it several times in one answer for several components.";
+    const anchor =
+      "You may call it several times in one answer for several components.";
     if (!s.includes(anchor)) throw new Error("gen-ui-prompt: anchor missing");
     s = s.replace(
       anchor,

@@ -27,7 +27,11 @@ export const AuthForm: FC<{ mode: "login" | "register" }> = ({ mode }) => {
     setError(null);
     try {
       const result = isRegister
-        ? await signUp.email({ name: name.trim() || email.split("@")[0]!, email, password })
+        ? await signUp.email({
+            name: name.trim() || email.split("@")[0]!,
+            email,
+            password,
+          })
         : await signIn.email({ email, password });
       if (result.error) {
         setError(result.error.message ?? "Authentication failed");
@@ -97,7 +101,12 @@ export const AuthForm: FC<{ mode: "login" | "register" }> = ({ mode }) => {
 
         <Button
           type="submit"
-          disabled={pending || !email || !password || (isRegister && password.length < 8)}
+          disabled={
+            pending ||
+            !email ||
+            !password ||
+            (isRegister && password.length < 8)
+          }
           className="h-10 bg-[#1b8a7f] text-white hover:bg-[#23a093]"
         >
           {pending ? (
@@ -114,7 +123,9 @@ export const AuthForm: FC<{ mode: "login" | "register" }> = ({ mode }) => {
             type="button"
             variant="outline"
             className="h-10"
-            onClick={() => void signIn.social({ provider: "google", callbackURL: "/chat" })}
+            onClick={() =>
+              void signIn.social({ provider: "google", callbackURL: "/chat" })
+            }
           >
             Continue with Google
           </Button>

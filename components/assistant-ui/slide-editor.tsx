@@ -112,7 +112,7 @@ const ProjectKickoffThumb: FC = () => (
 
 const PhotographyThumb: FC = () => (
   <div className="flex size-full flex-col items-center justify-center gap-1.5 border bg-white dark:bg-[#1e1f20]">
-    <span className="font-serif text-xs italic text-[#2b2b2b] dark:text-[#e3e3e3]">
+    <span className="font-serif text-xs text-[#2b2b2b] italic dark:text-[#e3e3e3]">
       Luma Studio
     </span>
     <div className="flex gap-0.5">
@@ -151,7 +151,11 @@ export const TEMPLATES: Template[] = [
     title: "Weekly Business Review",
     render: WeeklyReviewThumb,
   },
-  { id: "project-kickoff", title: "Project Kickoff", render: ProjectKickoffThumb },
+  {
+    id: "project-kickoff",
+    title: "Project Kickoff",
+    render: ProjectKickoffThumb,
+  },
   {
     id: "product-strategy",
     title: "Product Strategy",
@@ -159,7 +163,11 @@ export const TEMPLATES: Template[] = [
   },
   { id: "luma-studio", title: "Luma Studio", render: PhotographyThumb },
   { id: "next-os", title: "Next generation OS", render: NextOsThumb },
-  { id: "brand-guidelines", title: "Brand Guidelines", render: BrandGuideThumb },
+  {
+    id: "brand-guidelines",
+    title: "Brand Guidelines",
+    render: BrandGuideThumb,
+  },
 ];
 
 export const NewPresentationDialog: FC<{
@@ -411,9 +419,12 @@ export const SlideEditor: FC<{
           type="button"
           aria-label="Download"
           onClick={() => {
-            const blob = new Blob([JSON.stringify({ title, slides }, null, 2)], {
-              type: "application/json",
-            });
+            const blob = new Blob(
+              [JSON.stringify({ title, slides }, null, 2)],
+              {
+                type: "application/json",
+              },
+            );
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
@@ -520,7 +531,10 @@ export const SlideEditor: FC<{
               className="text-muted-foreground hover:text-foreground ml-auto flex items-center gap-1 text-xs transition-colors"
             >
               <ChevronDownIcon
-                className={cn("size-3.5 transition-transform", notesOpen && "rotate-180")}
+                className={cn(
+                  "size-3.5 transition-transform",
+                  notesOpen && "rotate-180",
+                )}
               />
               Speaker notes
             </button>
@@ -598,7 +612,7 @@ export const SlideEditor: FC<{
               type="button"
               aria-label="Previous slide"
               onClick={() => setCurrent((c) => Math.max(c - 1, 0))}
-              className="hover:bg-white/10 flex size-9 items-center justify-center rounded-full transition-colors"
+              className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-white/10"
             >
               <ChevronLeftIcon className="size-5" />
             </button>
@@ -611,7 +625,7 @@ export const SlideEditor: FC<{
               onClick={() =>
                 setCurrent((c) => Math.min(c + 1, slides.length - 1))
               }
-              className="hover:bg-white/10 flex size-9 items-center justify-center rounded-full transition-colors"
+              className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-white/10"
             >
               <ChevronRightIcon className="size-5" />
             </button>
@@ -619,7 +633,7 @@ export const SlideEditor: FC<{
               type="button"
               aria-label="Exit presentation"
               onClick={() => setPresenting(false)}
-              className="hover:bg-white/10 ml-4 flex size-9 items-center justify-center rounded-full transition-colors"
+              className="ml-4 flex size-9 items-center justify-center rounded-full transition-colors hover:bg-white/10"
             >
               <XIcon className="size-5" />
             </button>

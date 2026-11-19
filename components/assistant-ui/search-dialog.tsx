@@ -25,11 +25,12 @@ export const SearchDialog: FC<{
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return [...threadItems]
-      .filter((thread) => (thread.title ?? "New chat").toLowerCase().includes(q))
+      .filter((thread) =>
+        (thread.title ?? "New chat").toLowerCase().includes(q),
+      )
       .sort(
         (a, b) =>
-          (b.lastMessageAt?.getTime() ?? 0) -
-          (a.lastMessageAt?.getTime() ?? 0),
+          (b.lastMessageAt?.getTime() ?? 0) - (a.lastMessageAt?.getTime() ?? 0),
       )
       .slice(0, 20);
   }, [threadItems, query]);

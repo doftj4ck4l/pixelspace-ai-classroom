@@ -1,12 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/lib/db";
-import {
-  accounts,
-  sessions,
-  users,
-  verifications,
-} from "@/lib/db/schema";
+import { accounts, sessions, users, verifications } from "@/lib/db/schema";
 
 /**
  * better-auth, same stack as paic-v2: Drizzle adapter over Postgres,

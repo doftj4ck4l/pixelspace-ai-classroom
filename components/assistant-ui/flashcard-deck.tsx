@@ -1,24 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FC, type ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FC,
+  type ReactNode,
+} from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeftIcon,
   CheckIcon,
-  CircleCheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CircleCheckIcon,
+  GraduationCapIcon,
+  LayersIcon,
   LayoutGridIcon,
   LightbulbIcon,
-  MaximizeIcon,
   MoreHorizontalIcon,
+  RepeatIcon,
   RotateCcwIcon,
   ShuffleIcon,
   Volume2Icon,
   VolumeXIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -30,12 +39,13 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * The rich flashcard deck: rendered from a `render_ui` flashcards spec.
+ * The rich flashcard deck rendered from a `render_ui` flashcards spec.
  *
- * `inline` keeps it compact inside a chat message (flip, nav, shuffle, hint).
- * `full` is the Spaces study experience: 3D flip, grid overview, present mode,
- * Faham/Ulang review rounds, session summary, and read-aloud through the
- * browser's built-in speech synthesis (no TTS service attached).
+ * `inline` stays compact inside a chat message. `full` is the Spaces study
+ * experience: stats strip, Belajar / Ulang Kaji / Semua Kad modes, a stacked
+ * card stage with a directional flick animation, 3D flip, Faham/Ulang marks,
+ * read-aloud through the browser voice, and per-account mastery persistence
+ * when a `deckId` is given.
  */
 
 export type FlashcardItem = {
@@ -61,6 +71,8 @@ type AccentTheme = {
   badge: string;
   cardRing: string;
   glow: string;
+  cover: string;
+  pill: string;
 };
 
 const ACCENTS: Record<string, AccentTheme> = {
@@ -71,6 +83,9 @@ const ACCENTS: Record<string, AccentTheme> = {
     badge: "bg-teal-500/15 text-teal-700 dark:text-teal-300",
     cardRing: "ring-teal-500/20",
     glow: "bg-teal-400/20 dark:bg-teal-500/10",
+    cover:
+      "bg-gradient-to-br from-teal-300/50 via-teal-200/40 to-cyan-100/30 dark:from-teal-900/60 dark:via-teal-950/50 dark:to-cyan-950/40",
+    pill: "bg-teal-500/15 text-teal-800 dark:text-teal-200",
   },
   blue: {
     header: "from-blue-500/15 via-blue-500/5 to-transparent",
@@ -79,6 +94,9 @@ const ACCENTS: Record<string, AccentTheme> = {
     badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
     cardRing: "ring-blue-500/20",
     glow: "bg-blue-400/20 dark:bg-blue-500/10",
+    cover:
+      "bg-gradient-to-br from-blue-300/50 via-sky-200/40 to-indigo-100/30 dark:from-blue-900/60 dark:via-sky-950/50 dark:to-indigo-950/40",
+    pill: "bg-blue-500/15 text-blue-800 dark:text-blue-200",
   },
   amber: {
     header: "from-amber-500/15 via-amber-500/5 to-transparent",
@@ -87,6 +105,9 @@ const ACCENTS: Record<string, AccentTheme> = {
     badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
     cardRing: "ring-amber-500/20",
     glow: "bg-amber-400/20 dark:bg-amber-500/10",
+    cover:
+      "bg-gradient-to-br from-amber-300/50 via-orange-200/40 to-yellow-100/30 dark:from-amber-900/60 dark:via-orange-950/50 dark:to-yellow-950/40",
+    pill: "bg-amber-500/15 text-amber-800 dark:text-amber-200",
   },
   violet: {
     header: "from-violet-500/15 via-violet-500/5 to-transparent",
@@ -95,6 +116,9 @@ const ACCENTS: Record<string, AccentTheme> = {
     badge: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
     cardRing: "ring-violet-500/20",
     glow: "bg-violet-400/20 dark:bg-violet-500/10",
+    cover:
+      "bg-gradient-to-br from-violet-300/50 via-purple-200/40 to-fuchsia-100/30 dark:from-violet-900/60 dark:via-purple-950/50 dark:to-fuchsia-950/40",
+    pill: "bg-violet-500/15 text-violet-800 dark:text-violet-200",
   },
   rose: {
     header: "from-rose-500/15 via-rose-500/5 to-transparent",
@@ -103,6 +127,9 @@ const ACCENTS: Record<string, AccentTheme> = {
     badge: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
     cardRing: "ring-rose-500/20",
     glow: "bg-rose-400/20 dark:bg-rose-500/10",
+    cover:
+      "bg-gradient-to-br from-rose-300/50 via-pink-200/40 to-red-100/30 dark:from-rose-900/60 dark:via-pink-950/50 dark:to-red-950/40",
+    pill: "bg-rose-500/15 text-rose-800 dark:text-rose-200",
   },
   emerald: {
     header: "from-emerald-500/15 via-emerald-500/5 to-transparent",
@@ -111,8 +138,14 @@ const ACCENTS: Record<string, AccentTheme> = {
     badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
     cardRing: "ring-emerald-500/20",
     glow: "bg-emerald-400/20 dark:bg-emerald-500/10",
+    cover:
+      "bg-gradient-to-br from-emerald-300/50 via-green-200/40 to-lime-100/30 dark:from-emerald-900/60 dark:via-green-950/50 dark:to-lime-950/40",
+    pill: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
   },
 };
+
+export const accentTheme = (accent?: string) =>
+  ACCENTS[accent ?? "teal"] ?? ACCENTS.teal!;
 
 const TYPE_LABEL: Record<NonNullable<FlashcardItem["type"]>, string> = {
   term: "Istilah",
@@ -121,7 +154,31 @@ const TYPE_LABEL: Record<NonNullable<FlashcardItem["type"]>, string> = {
   formula: "Formula",
 };
 
+/** Themed emoji for deck covers, keyed off the title/subject. */
+const COVER_EMOJI: [RegExp, string][] = [
+  [/air|water|hujan|sungai|laut|hidrologi/i, "💧"],
+  [/respirasi|pernafasan|paru/i, "🫁"],
+  [/ekosistem|haiwan|hutan|rantaian|makanan/i, "🦌"],
+  [/unsur|sebatian|atom|molekul|kimia/i, "⚛️"],
+  [/daya|gerakan/i, "🚚"],
+  [/tenaga|energi|elektrik|penukaran/i, "💡"],
+  [/suria|angkasa|planet|bintang/i, "🪐"],
+  [/fotosintesis|tumbuhan|tumbuh-tumbuhan|plant/i, "🌱"],
+  [/sel\b|biologi|genetik|dna/i, "🧬"],
+  [/matematik|nombor|algebra|pecahan/i, "➗"],
+  [/sejarah|kemerdekaan|tokoh/i, "📜"],
+  [/peta|geografi|benua/i, "🗺️"],
+  [/bahasa|tatabahasa|karangan/i, "📖"],
+  [/badan|kesihatan|nutrisi/i, "🫀"],
+];
+
+export const coverEmoji = (...texts: (string | undefined)[]) => {
+  const haystack = texts.filter(Boolean).join(" ");
+  return COVER_EMOJI.find(([pattern]) => pattern.test(haystack))?.[1] ?? "📚";
+};
+
 type Mark = "known" | "again";
+type StudyView = "study" | "review" | "grid";
 
 const shuffleIndices = (length: number) => {
   const indices = Array.from({ length }, (_, index) => index);
@@ -132,17 +189,22 @@ const shuffleIndices = (length: number) => {
   return indices;
 };
 
+const allIndices = (length: number) => Array.from({ length }, (_, i) => i);
+
 export const FlashcardDeck: FC<{
   spec: FlashcardSpec;
   variant?: "inline" | "full";
+  /** When given, mastery persists per account via /api/decks/<id>/progress. */
+  deckId?: string;
   onClose?: () => void;
-}> = ({ spec, variant = "inline", onClose }) => {
+}> = ({ spec, variant = "inline", deckId, onClose }) => {
   const full = variant === "full";
-  const theme = ACCENTS[spec.accent ?? "teal"] ?? ACCENTS.teal;
+  const theme = accentTheme(spec.accent);
+  const reduceMotion = useReducedMotion();
   const total = spec.cards.length;
 
   const [order, setOrder] = useState<number[]>(() =>
-    spec.cards.map((_, index) => index),
+    allIndices(spec.cards.length),
   );
   const [position, setPosition] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -151,9 +213,10 @@ export const FlashcardDeck: FC<{
   const [marks, setMarks] = useState<Record<number, Mark>>({});
   const [phase, setPhase] = useState<"studying" | "done">("studying");
   const [reviewRound, setReviewRound] = useState(false);
-  const [view, setView] = useState<"study" | "grid">("study");
+  const [view, setView] = useState<StudyView>("study");
   const [presenting, setPresenting] = useState(false);
   const [speaking, setSpeaking] = useState(false);
+  const directionRef = useRef(1);
 
   const cardIndex = order[position];
   const card = spec.cards[cardIndex];
@@ -162,10 +225,52 @@ export const FlashcardDeck: FC<{
     () => Object.values(marks).filter((mark) => mark === "known").length,
     [marks],
   );
-  const againCount = useMemo(
-    () => Object.values(marks).filter((mark) => mark === "again").length,
+  const againIndices = useMemo(
+    () =>
+      Object.entries(marks)
+        .filter(([, mark]) => mark === "again")
+        .map(([index]) => Number(index)),
     [marks],
   );
+  const mastery = total > 0 ? Math.round((knownCount / total) * 100) : 0;
+
+  /* ------------------------------------------------- progress persistence */
+
+  const persistProgress = useCallback(
+    (nextMarks: Record<number, Mark>) => {
+      if (!deckId) return;
+      const knownIndices = Object.entries(nextMarks)
+        .filter(([, mark]) => mark === "known")
+        .map(([index]) => Number(index));
+      void fetch(`/api/decks/${deckId}/progress`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ knownIndices, total }),
+      }).catch(() => {});
+    },
+    [deckId, total],
+  );
+
+  useEffect(() => {
+    if (!deckId) return;
+    let cancelled = false;
+    fetch(`/api/decks/${deckId}/progress`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { knownIndices?: number[] } | null) => {
+        if (cancelled || !data?.knownIndices?.length) return;
+        setMarks((prev) => {
+          const next = { ...prev };
+          for (const index of data.knownIndices ?? []) next[index] = "known";
+          return next;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [deckId]);
+
+  /* --------------------------------------------------------------- speech */
 
   const stopSpeaking = () => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -190,7 +295,10 @@ export const FlashcardDeck: FC<{
     setSpeaking(true);
   };
 
+  /* ------------------------------------------------------------ navigation */
+
   const go = (delta: number) => {
+    directionRef.current = delta;
     stopSpeaking();
     setFlipped(false);
     setHintOpen(false);
@@ -201,7 +309,7 @@ export const FlashcardDeck: FC<{
 
   const flip = () => {
     stopSpeaking();
-    setFlipped((f) => !f);
+    setFlipped((value) => !value);
     setHintOpen(false);
   };
 
@@ -216,47 +324,58 @@ export const FlashcardDeck: FC<{
   };
 
   const mark = (value: Mark) => {
-    setMarks((prev) => ({ ...prev, [cardIndex]: value }));
+    const next = { ...marks, [cardIndex]: value };
+    setMarks(next);
+    persistProgress(next);
     advance();
   };
 
-  const restart = (indices?: number[]) => {
+  const restart = (indices?: number[], review = false) => {
     stopSpeaking();
-    const next = indices ?? spec.cards.map((_, index) => index);
-    setOrder(next);
+    directionRef.current = 1;
+    setOrder(indices ?? allIndices(total));
     setPosition(0);
     setFlipped(false);
     setHintOpen(false);
     setPhase("studying");
-    setReviewRound(indices !== undefined);
-    setMarks((prev) => {
-      if (indices === undefined) return {};
-      const kept = { ...prev };
-      for (const index of indices) delete kept[index];
-      return kept;
-    });
+    setReviewRound(review);
+    if (indices === undefined) {
+      setMarks({});
+      persistProgress({});
+    }
     setView("study");
-  };
-
-  const reviewAgain = () => {
-    const againIndices = Object.entries(marks)
-      .filter(([, value]) => value === "again")
-      .map(([index]) => Number(index));
-    restart(againIndices.length > 0 ? againIndices : undefined);
   };
 
   const toggleShuffle = () => {
     stopSpeaking();
+    directionRef.current = 1;
     setShuffled((previous) => {
       const next = !previous;
-      setOrder(next ? shuffleIndices(total) : spec.cards.map((_, i) => i));
+      setOrder(next ? shuffleIndices(total) : allIndices(total));
       setPosition(0);
       setFlipped(false);
       setHintOpen(false);
       setPhase("studying");
       setReviewRound(false);
+      setView("study");
       return next;
     });
+  };
+
+  const openReview = () => {
+    if (againIndices.length === 0) {
+      setView("review");
+      return;
+    }
+    directionRef.current = 1;
+    stopSpeaking();
+    setOrder([...againIndices]);
+    setPosition(0);
+    setFlipped(false);
+    setHintOpen(false);
+    setPhase("studying");
+    setReviewRound(true);
+    setView("study");
   };
 
   const jumpTo = (index: number) => {
@@ -285,13 +404,15 @@ export const FlashcardDeck: FC<{
         (target?.closest('[role="dialog"]') && !presenting) ||
         phase !== "studying" ||
         (view !== "study" && !presenting)
-      )
+      ) {
         return;
+      }
       if (
         event.code === "Space" &&
         target?.closest('button, a, [role="button"]')
-      )
+      ) {
         return;
+      }
       if (event.key === "ArrowRight") {
         event.preventDefault();
         go(1);
@@ -338,13 +459,26 @@ export const FlashcardDeck: FC<{
         onKeyDown={onKeyDown}
         className="border-border/60 bg-card focus-visible:ring-ring/40 my-4 w-full max-w-xl overflow-hidden rounded-2xl border outline-none focus-visible:ring-2"
       >
-        <DeckHeader
-          theme={theme}
-          title={spec.title ?? "Kad Imbas"}
-          subject={spec.subject}
-        >
-          <Counter chip={theme.chip} position={position} total={order.length} />
-        </DeckHeader>
+        <div className={cn("bg-gradient-to-r px-4 py-3", theme.header)}>
+          <div className="flex items-center gap-2">
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+              {spec.title ?? "Kad Imbas"}
+            </span>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums",
+                theme.chip,
+              )}
+            >
+              {position + 1} / {total}
+            </span>
+          </div>
+          {spec.subject ? (
+            <p className="text-muted-foreground mt-0.5 truncate text-xs">
+              {spec.subject}
+            </p>
+          ) : null}
+        </div>
         <ProgressBar theme={theme} value={(position + 1) / order.length} />
         <div className="px-4 py-4">
           <FlipCard
@@ -357,17 +491,43 @@ export const FlashcardDeck: FC<{
           <HintRow
             card={card}
             open={hintOpen}
-            onToggle={() => setHintOpen((o) => !o)}
+            onToggle={() => setHintOpen((value) => !value)}
           />
         </div>
-        <DeckControls
-          position={position}
-          total={order.length}
-          onPrev={() => go(-1)}
-          onNext={() => go(1)}
-          shuffled={shuffled}
-          onShuffle={toggleShuffle}
-        />
+        <div className="border-border/60 flex items-center justify-center gap-3 border-t px-4 py-2.5">
+          <button
+            type="button"
+            aria-label="Kad sebelumnya"
+            disabled={position === 0}
+            onClick={() => go(-1)}
+            className="hover:bg-muted flex size-8 items-center justify-center rounded-full transition-colors disabled:opacity-30"
+          >
+            <ChevronLeftIcon className="size-4" />
+          </button>
+          <span className="text-muted-foreground w-14 text-center text-xs tabular-nums">
+            {position + 1} / {total}
+          </span>
+          <button
+            type="button"
+            aria-label="Kad seterusnya"
+            disabled={position === total - 1}
+            onClick={() => go(1)}
+            className="hover:bg-muted flex size-8 items-center justify-center rounded-full transition-colors disabled:opacity-30"
+          >
+            <ChevronRightIcon className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={toggleShuffle}
+            className={cn(
+              "text-muted-foreground hover:bg-muted hover:text-foreground ml-2 flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs transition-colors",
+              shuffled && "bg-muted text-foreground",
+            )}
+          >
+            <ShuffleIcon className="size-3.5" />
+            Acak
+          </button>
+        </div>
       </div>
     );
   }
@@ -376,102 +536,87 @@ export const FlashcardDeck: FC<{
 
   const finished = phase === "done";
 
-  const mastery = Math.round((knownCount / total) * 100);
-  const reset = () => {
-    setShuffled(false);
-    restart();
-  };
-
-  const studyControls = (
-    <div className="mx-auto mt-5 flex w-full max-w-lg flex-col items-center gap-4">
-      <div className="grid w-full grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] gap-2 sm:grid-cols-[1fr_1.2fr_1fr] sm:gap-3">
-        <Button
-          variant="outline"
-          className="h-11 gap-1 sm:gap-2"
-          disabled={position === 0}
-          onClick={() => go(-1)}
-          aria-label="Kad sebelumnya"
-        >
-          <ChevronLeftIcon className="size-4" />
-          <span className="hidden sm:inline">Sebelum</span>
-        </Button>
-        <Button className="h-11 gap-2" onClick={flip} aria-keyshortcuts="Space">
-          <RotateCcwIcon className="size-4" />
-          <span>{flipped ? "Lihat Soalan" : "Lihat Jawapan"}</span>
-        </Button>
-        <Button
-          variant="outline"
-          className="h-11 gap-1 sm:gap-2"
-          disabled={position === order.length - 1}
-          onClick={() => go(1)}
-          aria-label="Kad seterusnya"
-        >
-          <span className="hidden sm:inline">Seterusnya</span>
-          <ChevronRightIcon className="size-4" />
-        </Button>
-      </div>
-      <div className="min-h-11 w-full">
-        {flipped ? (
-          <div
-            className="grid grid-cols-2 gap-2 sm:gap-3"
-            aria-label="Nilai kefahaman anda"
-          >
-            <Button
-              variant="outline"
-              className="h-11 gap-2"
-              onClick={() => mark("again")}
-            >
-              <RotateCcwIcon className="size-4" />
-              Masih Belajar
-            </Button>
-            <Button
-              variant="secondary"
-              className={cn("h-11 gap-2", theme.chip)}
-              onClick={() => mark("known")}
-            >
-              <CheckIcon className="size-4" />
-              Sudah Faham
-            </Button>
-          </div>
-        ) : (
-          <p className="text-muted-foreground py-3 text-center text-xs">
-            Fikirkan jawapan anda sebelum membalikkan kad.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <div className="bg-background flex h-full min-h-0 flex-col overflow-y-auto">
-      <header className="border-border/60 shrink-0 border-b px-4 py-5 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex items-start gap-3">
-            {onClose && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mt-0.5 size-10"
-                onClick={onClose}
-                aria-label="Kembali ke kad imbas"
-              >
-                <ArrowLeftIcon className="size-5" />
-              </Button>
+      {/* Header */}
+      <header className="border-border/60 shrink-0 border-b px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-start gap-3">
+          {onClose && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-10 shrink-0 rounded-full"
+              onClick={onClose}
+              aria-label="Kembali ke kad imbas"
+            >
+              <ArrowLeftIcon className="size-5" />
+            </Button>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-xl leading-snug font-semibold tracking-tight sm:text-2xl">
+              {spec.title ?? "Kad Imbas"}
+            </h1>
+            {spec.subject && (
+              <p className="text-muted-foreground mt-0.5 line-clamp-2 text-sm">
+                {spec.subject}
+              </p>
             )}
-            <div className="min-w-0 flex-1">
-              <h1 className="text-xl leading-snug font-semibold tracking-tight sm:text-2xl">
-                {spec.title ?? "Kad Imbas"}
-              </h1>
-              {spec.subject && (
-                <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                  {spec.subject}
-                </p>
-              )}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1.5">
+            <div className="bg-muted/60 hidden items-center gap-0.5 rounded-full p-0.5 sm:flex">
+              <button
+                type="button"
+                onClick={() => setView("study")}
+                aria-pressed={view === "study"}
+                className={cn(
+                  "flex h-8 items-center gap-1.5 rounded-full px-3 text-sm transition-colors",
+                  view === "study"
+                    ? "bg-background text-foreground font-medium shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <GraduationCapIcon className="size-4" />
+                Belajar
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("grid")}
+                aria-pressed={view === "grid"}
+                className={cn(
+                  "flex h-8 items-center gap-1.5 rounded-full px-3 text-sm transition-colors",
+                  view === "grid"
+                    ? "bg-background text-foreground font-medium shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <LayoutGridIcon className="size-4" />
+                Kad
+              </button>
             </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-10 rounded-full"
+              onClick={toggleSpeaking}
+              aria-label={speaking ? "Berhenti baca" : "Baca kuat"}
+            >
+              {speaking ? (
+                <VolumeXIcon className="size-5" />
+              ) : (
+                <Volume2Icon className="size-5" />
+              )}
+            </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button variant="ghost" size="icon" className="size-10" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-10 rounded-full"
+                  />
                 }
                 aria-label="Pilihan kad imbas"
               >
@@ -482,20 +627,13 @@ export const FlashcardDeck: FC<{
                 className="min-w-48 motion-reduce:animate-none"
               >
                 <DropdownMenuItem
-                  onClick={toggleSpeaking}
-                  disabled={finished || view !== "study"}
-                >
-                  {speaking ? <VolumeXIcon /> : <Volume2Icon />}
-                  {speaking ? "Berhenti baca" : "Baca kuat"}
-                </DropdownMenuItem>
-                <DropdownMenuItem
                   onClick={() => {
                     stopSpeaking();
                     setPresenting(true);
                   }}
                   disabled={finished || view !== "study"}
                 >
-                  <MaximizeIcon />
+                  <GraduationCapIcon />
                   Skrin penuh
                 </DropdownMenuItem>
                 <DropdownMenuCheckboxItem
@@ -506,323 +644,459 @@ export const FlashcardDeck: FC<{
                   Acak kad
                 </DropdownMenuCheckboxItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={reset}>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setShuffled(false);
+                    restart();
+                  }}
+                >
                   <RotateCcwIcon />
                   Mula semula
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-            <span className="text-muted-foreground inline-flex items-center gap-2">
-              <LayoutGridIcon className="size-4" />
-              {total} kad
-            </span>
-            <span
-              className={cn(
-                "inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-medium",
-                theme.chip,
-              )}
-            >
-              <CircleCheckIcon className="size-4" />
-              {knownCount} dikuasai
-            </span>
-            <span className="text-muted-foreground ml-auto text-xs tabular-nums">
-              {mastery}% dikuasai
-            </span>
-          </div>
-          <div className="mt-3">
-            <ProgressBar
-              theme={theme}
-              value={knownCount / total}
-              label="Penguasaan dek"
+        </div>
+
+        {/* Stats strip */}
+        <div className="mx-auto mt-4 flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="border-border/60 inline-flex h-8 items-center gap-2 rounded-full border px-3 text-xs font-medium">
+            <LayersIcon className="text-muted-foreground size-3.5" />
+            {total} kad
+          </span>
+          <span
+            className={cn(
+              "inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs font-medium",
+              theme.chip,
+            )}
+          >
+            <CircleCheckIcon className="size-3.5" />
+            {knownCount} dikuasai
+          </span>
+          <div className="bg-muted/70 mx-1 hidden h-1 min-w-24 flex-1 overflow-hidden rounded-full sm:block">
+            <div
+              className={cn("h-full transition-all duration-300", theme.bar)}
+              style={{ width: `${mastery}%` }}
             />
+          </div>
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {finished ? order.length : position + 1} daripada {order.length} ·{" "}
+            {mastery}%
+          </span>
+          <div className="w-full sm:hidden">
+            <div className="bg-muted/70 h-1 w-full overflow-hidden rounded-full">
+              <div
+                className={cn("h-full transition-all duration-300", theme.bar)}
+                style={{ width: `${mastery}%` }}
+              />
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div
-            className="bg-muted/60 inline-flex items-center gap-1 rounded-lg p-1"
-            role="group"
-            aria-label="Paparan kad imbas"
-          >
-            <Button
-              variant={view === "study" ? "outline" : "ghost"}
-              className="h-9 gap-2"
-              aria-pressed={view === "study"}
-              onClick={() => setView("study")}
-            >
-              <LightbulbIcon className="size-4" />
-              Belajar
-            </Button>
-            <Button
-              variant={view === "grid" ? "outline" : "ghost"}
-              className="h-9 gap-2"
-              aria-pressed={view === "grid"}
-              onClick={() => {
-                stopSpeaking();
-                setView("grid");
-              }}
-            >
-              <LayoutGridIcon className="size-4" />
-              Semua Kad
-            </Button>
-          </div>
-          {againCount > 0 && (
-            <Button variant="ghost" className="h-9 gap-2" onClick={reviewAgain}>
-              <RotateCcwIcon className="size-4" />
-              Ulang Kaji ({againCount})
-            </Button>
-          )}
+      {/* Mode tabs */}
+      <div className="mx-auto w-full max-w-5xl px-4 pt-5 sm:px-6 lg:px-8">
+        <div
+          role="tablist"
+          aria-label="Mod kad imbas"
+          className="bg-muted/60 mx-auto flex w-full max-w-lg items-center gap-0.5 rounded-full p-1"
+        >
+          <ModeTab
+            active={view === "study" && !reviewRound}
+            icon={GraduationCapIcon}
+            label="Belajar"
+            onClick={() => setView("study")}
+            theme={theme}
+          />
+          <ModeTab
+            active={view === "review" || (view === "study" && reviewRound)}
+            icon={RepeatIcon}
+            label="Ulang Kaji"
+            onClick={openReview}
+            theme={theme}
+          />
+          <ModeTab
+            active={view === "grid"}
+            icon={LayoutGridIcon}
+            label="Semua Kad"
+            onClick={() => setView("grid")}
+            theme={theme}
+          />
         </div>
+      </div>
 
-        {view === "grid" ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Stage */}
+      {view === "grid" ? (
+        <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-5 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
             {order.map((index, at) => {
               const item = spec.cards[index];
-              const status = marks[index];
+              const mark = marks[index];
               return (
-                <Button
+                <button
                   key={index}
-                  variant="outline"
+                  type="button"
                   onClick={() => jumpTo(index)}
                   className={cn(
-                    "h-auto min-h-32 items-start justify-start gap-3 p-4 text-left whitespace-normal",
+                    "border-border/60 bg-card hover:border-foreground/20 flex items-start gap-2 rounded-xl border p-3 text-left transition-colors",
                     at === position && "ring-ring/40 ring-2",
                   )}
                 >
-                  <span className="text-muted-foreground pt-0.5 text-xs tabular-nums">
-                    {at + 1}
-                  </span>
+                  <span
+                    className={cn(
+                      "mt-1 size-2 shrink-0 rounded-full",
+                      mark === "known"
+                        ? "bg-emerald-500"
+                        : mark === "again"
+                          ? "bg-amber-500"
+                          : "bg-muted-foreground/30",
+                    )}
+                  />
                   <span className="min-w-0 flex-1">
-                    <span className="line-clamp-3 text-sm leading-relaxed font-medium">
+                    <span className="line-clamp-2 text-sm font-medium">
                       {item.front}
                     </span>
                     {item.tags?.length ? (
-                      <span className="mt-2 flex flex-wrap gap-1">
+                      <span className="mt-1 flex flex-wrap gap-1">
                         {item.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-xs font-normal"
+                            className="bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px]"
                           >
                             {tag}
                           </span>
                         ))}
                       </span>
                     ) : null}
-                    <span
-                      className={cn(
-                        "mt-3 block text-xs font-normal",
-                        status === "known"
-                          ? theme.chip
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {status === "known"
-                        ? "Sudah Faham"
-                        : status === "again"
-                          ? "Masih Belajar"
-                          : "Belum dinilai"}
-                    </span>
                   </span>
-                </Button>
+                  <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
+                    {at + 1}
+                  </span>
+                </button>
               );
             })}
           </div>
-        ) : finished ? (
-          <div
-            className="flex flex-1 flex-col items-center justify-center gap-4 py-12 text-center"
-            role="status"
-          >
-            <span
-              className={cn(
-                "flex size-12 items-center justify-center rounded-full",
-                theme.chip,
-              )}
+        </div>
+      ) : view === "review" ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 py-12 text-center">
+          <RepeatIcon className="text-muted-foreground size-8" />
+          <p className="text-sm font-medium">Tiada kad untuk ulang kaji</p>
+          <p className="text-muted-foreground max-w-sm text-sm">
+            Tandakan &ldquo;Masih Belajar&rdquo; pada kad yang sukar semasa
+            belajar — kad itu akan muncul di sini.
+          </p>
+        </div>
+      ) : finished ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-10 text-center">
+          <p className="text-lg font-semibold">
+            {reviewRound ? "Pusingan ulangan selesai" : "Sesi selesai"}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            {knownCount} dikuasai · {againIndices.length} untuk ulang kaji
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {againIndices.length > 0 && (
+              <button
+                type="button"
+                onClick={openReview}
+                className={cn(
+                  "flex h-9 items-center gap-2 rounded-full px-4 text-sm font-medium text-white transition-opacity hover:opacity-90",
+                  theme.bar,
+                )}
+              >
+                <RepeatIcon className="size-4" />
+                Ulang {againIndices.length} kad
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setShuffled(false);
+                restart();
+              }}
+              className="border-border/60 hover:bg-muted flex h-9 items-center gap-2 rounded-full border px-4 text-sm transition-colors"
             >
-              <CircleCheckIcon className="size-6" />
-            </span>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              {reviewRound ? "Pusingan ulangan selesai" : "Sesi selesai"}
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              {knownCount} dikuasai · {againCount} masih belajar
-            </p>
-            <div className="mt-2 flex flex-wrap justify-center gap-3">
-              {againCount > 0 && (
-                <Button className="h-11 gap-2" onClick={reviewAgain}>
-                  <RotateCcwIcon className="size-4" />
-                  Ulang {againCount} kad
-                </Button>
-              )}
-              <Button variant="outline" className="h-11" onClick={reset}>
-                Mula semula
+              Mula semula
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-5 sm:px-6">
+          <div className="flex w-full max-w-3xl items-center gap-2 sm:gap-4">
+            <button
+              type="button"
+              aria-label="Kad sebelumnya"
+              disabled={position === 0}
+              onClick={() => go(-1)}
+              className="border-border/60 bg-card hover:bg-muted hidden size-11 shrink-0 items-center justify-center rounded-full border shadow-sm transition-colors disabled:opacity-30 md:flex"
+            >
+              <ChevronLeftIcon className="size-5" />
+            </button>
+
+            <div className="relative min-w-0 flex-1">
+              {/* stacked deck edges */}
+              <div
+                aria-hidden="true"
+                className="border-border/60 bg-card absolute inset-x-6 -bottom-2 h-full rounded-3xl border opacity-60"
+              />
+              <div
+                aria-hidden="true"
+                className="border-border/60 bg-card absolute inset-x-3 -bottom-1 h-full rounded-3xl border opacity-80"
+              />
+
+              <AnimatePresence
+                initial={false}
+                mode="popLayout"
+                custom={directionRef.current}
+              >
+                <motion.div
+                  key={cardIndex}
+                  custom={directionRef.current}
+                  variants={
+                    reduceMotion
+                      ? {
+                          enter: { opacity: 0 },
+                          center: { opacity: 1 },
+                          exit: { opacity: 0 },
+                        }
+                      : {
+                          enter: (direction: number) => ({
+                            x: direction > 0 ? 56 : -56,
+                            y: direction > 0 ? 40 : -40,
+                            rotate: direction > 0 ? 7 : -7,
+                            scale: 0.92,
+                            opacity: 0,
+                          }),
+                          center: {
+                            x: 0,
+                            y: 0,
+                            rotate: 0,
+                            scale: 1,
+                            opacity: 1,
+                          },
+                          exit: (direction: number) => ({
+                            x: direction > 0 ? -56 : 56,
+                            y: direction > 0 ? 40 : -40,
+                            rotate: direction > 0 ? -7 : 7,
+                            scale: 0.92,
+                            opacity: 0,
+                          }),
+                        }
+                  }
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                  className="relative"
+                >
+                  <div className="relative overflow-hidden rounded-3xl">
+                    <div
+                      aria-hidden="true"
+                      className={cn(
+                        "pointer-events-none absolute -top-16 -right-16 size-48 rounded-full blur-2xl",
+                        theme.glow,
+                      )}
+                    />
+                    <div
+                      aria-hidden="true"
+                      className={cn(
+                        "pointer-events-none absolute -bottom-20 -left-16 size-52 rounded-full blur-3xl",
+                        theme.glow,
+                      )}
+                    />
+                    <FlipCard
+                      card={card}
+                      flipped={flipped}
+                      theme={theme}
+                      onFlip={flip}
+                    />
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            <button
+              type="button"
+              aria-label="Kad seterusnya"
+              disabled={position === order.length - 1}
+              onClick={() => go(1)}
+              className="border-border/60 bg-card hover:bg-muted hidden size-11 shrink-0 items-center justify-center rounded-full border shadow-sm transition-colors disabled:opacity-30 md:flex"
+            >
+              <ChevronRightIcon className="size-5" />
+            </button>
+          </div>
+
+          <div className="mt-5 flex w-full max-w-2xl flex-col items-center gap-4">
+            <HintRow
+              card={card}
+              open={hintOpen}
+              onToggle={() => setHintOpen((value) => !value)}
+            />
+
+            <div className="grid w-full grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] gap-2 sm:grid-cols-[1fr_1.2fr_1fr] sm:gap-3">
+              <Button
+                variant="outline"
+                className="h-11 gap-1 rounded-full sm:gap-2"
+                disabled={position === 0}
+                onClick={() => go(-1)}
+                aria-label="Kad sebelumnya"
+              >
+                <ChevronLeftIcon className="size-4" />
+                <span className="hidden sm:inline">Sebelum</span>
+              </Button>
+              <Button
+                className={cn(
+                  "h-11 gap-2 rounded-full text-white hover:opacity-90",
+                  theme.bar,
+                )}
+                onClick={flip}
+                aria-keyshortcuts="Space"
+              >
+                <RotateCcwIcon className="size-4" />
+                {flipped ? "Lihat Soalan" : "Lihat Jawapan"}
+              </Button>
+              <Button
+                variant="outline"
+                className="h-11 gap-1 rounded-full sm:gap-2"
+                disabled={position === order.length - 1}
+                onClick={() => go(1)}
+                aria-label="Kad seterusnya"
+              >
+                <span className="hidden sm:inline">Seterusnya</span>
+                <ChevronRightIcon className="size-4" />
               </Button>
             </div>
+
+            <div className="min-h-11 w-full">
+              {flipped ? (
+                <div
+                  className="grid grid-cols-2 gap-2 sm:gap-3"
+                  aria-label="Nilai kefahaman anda"
+                >
+                  <Button
+                    variant="outline"
+                    className="h-11 gap-2 rounded-full"
+                    onClick={() => mark("again")}
+                  >
+                    <RotateCcwIcon className="size-4" />
+                    Masih Belajar
+                  </Button>
+                  <Button
+                    className={cn(
+                      "h-11 gap-2 rounded-full text-white hover:opacity-90",
+                      theme.bar,
+                    )}
+                    onClick={() => mark("known")}
+                  >
+                    <CheckIcon className="size-4" />
+                    Faham
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-muted-foreground hidden items-center justify-center gap-3 text-xs sm:flex">
+                  <Kbd>Space</Kbd>
+                  <span>untuk flip</span>
+                  <span className="mx-1" aria-hidden="true">
+                    ·
+                  </span>
+                  <Kbd>←</Kbd>
+                  <Kbd>→</Kbd>
+                  <span>untuk navigasi</span>
+                </div>
+              )}
+            </div>
           </div>
-        ) : (
-          <div className="flex flex-1 flex-col justify-center pb-2">
-            <div className="mx-auto w-full max-w-3xl">
-              <div
-                className="text-muted-foreground mb-3 flex items-center justify-between gap-3 text-xs tabular-nums"
-                role="status"
-                aria-live="polite"
-                aria-atomic="true"
-              >
-                <span>
-                  {reviewRound ? "Ulang kaji" : "Belajar"} · Kad {position + 1}{" "}
-                  daripada {order.length}
-                </span>
-                <span>
-                  {marks[cardIndex] === "known"
-                    ? "Sudah Faham"
-                    : marks[cardIndex] === "again"
-                      ? "Masih Belajar"
-                      : "Belum dinilai"}
-                </span>
-              </div>
+        </div>
+      )}
+
+      {/* Present mode */}
+      {presenting && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/95">
+          <div className="flex flex-1 items-center justify-center p-8">
+            <div className="w-full max-w-3xl">
               <FlipCard
-                key={cardIndex}
                 card={card}
                 flipped={flipped}
                 theme={theme}
                 onFlip={flip}
+                presentation
               />
-              {studyControls}
-              <div className="flex flex-col items-center gap-4">
-                <HintRow
-                  card={card}
-                  open={hintOpen}
-                  onToggle={() => setHintOpen((o) => !o)}
-                />
-                <p className="text-muted-foreground hidden items-center justify-center gap-2 text-xs sm:flex">
-                  <kbd className="bg-muted/60 rounded border px-1.5 py-1 font-sans">
-                    Space
-                  </kbd>{" "}
-                  untuk flip
-                  <kbd className="bg-muted/60 ml-3 rounded border px-1.5 py-1">
-                    ←
-                  </kbd>
-                  <kbd className="bg-muted/60 rounded border px-1.5 py-1">
-                    →
-                  </kbd>{" "}
-                  untuk navigasi
-                </p>
-              </div>
             </div>
           </div>
-        )}
-      </div>
-
-      <Dialog
-        open={presenting}
-        onOpenChange={(open) => {
-          stopSpeaking();
-          setPresenting(open);
-        }}
-      >
-        <DialogContent className="bg-background inset-0 flex h-dvh max-w-none translate-x-0 translate-y-0 flex-col overflow-y-auto rounded-none border-0 p-4 ring-0 motion-reduce:animate-none sm:max-w-none sm:p-8">
-          <DialogTitle className="pr-8 text-lg">
-            {spec.title ?? "Kad Imbas"}
-          </DialogTitle>
-          <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center py-6">
-            {finished ? (
-              <div className="space-y-4 text-center">
-                <h2 className="text-2xl font-semibold">Sesi selesai</h2>
-                <p className="text-muted-foreground">
-                  {knownCount} dikuasai · {againCount} masih belajar
-                </p>
-                <Button variant="outline" onClick={() => setPresenting(false)}>
-                  Kembali ke dek
-                </Button>
-              </div>
-            ) : (
-              <>
-                <p className="text-muted-foreground mb-3 text-center text-sm tabular-nums">
-                  Kad {position + 1} daripada {order.length} · {knownCount}{" "}
-                  dikuasai
-                </p>
-                <FlipCard
-                  key={cardIndex}
-                  card={card}
-                  flipped={flipped}
-                  theme={theme}
-                  onFlip={flip}
-                  presentation
-                />
-                {studyControls}
-                <div className="flex justify-center">
-                  <HintRow
-                    card={card}
-                    open={hintOpen}
-                    onToggle={() => setHintOpen((o) => !o)}
-                  />
-                </div>
-              </>
-            )}
+          <div className="flex items-center justify-center gap-4 pb-6 text-white">
+            <button
+              type="button"
+              aria-label="Kad sebelumnya"
+              onClick={() => go(-1)}
+              className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+            >
+              <ChevronLeftIcon className="size-5" />
+            </button>
+            <span className="text-sm tabular-nums">
+              {position + 1} / {order.length}
+            </span>
+            <button
+              type="button"
+              aria-label="Kad seterusnya"
+              onClick={() => go(1)}
+              className="flex size-9 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+            >
+              <ChevronRightIcon className="size-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Keluar"
+              onClick={() => setPresenting(false)}
+              className="ml-4 flex size-9 items-center justify-center rounded-full transition-colors hover:bg-white/10"
+            >
+              <ArrowLeftIcon className="size-5" />
+            </button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 };
 
 /* ------------------------------------------------------------- subcomponents */
 
-const DeckHeader: FC<{
+const ModeTab: FC<{
+  active: boolean;
+  icon: typeof GraduationCapIcon;
+  label: string;
+  onClick: () => void;
   theme: AccentTheme;
-  title: string;
-  subject?: string | undefined;
-  children?: ReactNode;
-}> = ({ theme, title, subject, children }) => (
-  <div className={cn("bg-gradient-to-r px-4 py-3", theme.header)}>
-    <div className="flex items-center gap-2">
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-        {title}
-      </span>
-      {children}
-    </div>
-    {subject ? (
-      <p className="text-muted-foreground mt-0.5 truncate text-xs">{subject}</p>
-    ) : null}
-  </div>
-);
-
-const Counter: FC<{ chip: string; position: number; total: number }> = ({
-  chip,
-  position,
-  total,
-}) => (
-  <span
+}> = ({ active, icon: Icon, label, onClick, theme }) => (
+  <button
+    type="button"
+    role="tab"
+    aria-selected={active}
+    onClick={onClick}
     className={cn(
-      "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums",
-      chip,
+      "flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full px-2 text-sm transition-colors sm:gap-2 sm:px-4",
+      active
+        ? cn("font-medium", theme.pill)
+        : "text-muted-foreground hover:text-foreground",
     )}
   >
-    {position + 1} / {total}
-  </span>
+    <Icon className="size-4 shrink-0" />
+    <span className="truncate">{label}</span>
+  </button>
 );
 
-const ProgressBar: FC<{
-  theme: AccentTheme;
-  value: number;
-  label?: string;
-}> = ({ theme, value, label = "Kemajuan kad" }) => (
-  <div
-    className="bg-muted h-1.5 w-full overflow-hidden rounded-full"
-    role="progressbar"
-    aria-label={label}
-    aria-valuemin={0}
-    aria-valuemax={100}
-    aria-valuenow={Math.round(value * 100)}
-  >
+const Kbd: FC<{ children: ReactNode }> = ({ children }) => (
+  <kbd className="border-border/60 bg-muted/60 inline-flex h-6 min-w-6 items-center justify-center rounded-md border px-1.5 font-sans text-[11px] font-medium">
+    {children}
+  </kbd>
+);
+
+const ProgressBar: FC<{ theme: AccentTheme; value: number }> = ({
+  theme,
+  value,
+}) => (
+  <div className="bg-muted/60 h-1 w-full">
     <div
-      className={cn(
-        "h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none",
-        theme.bar,
-      )}
+      className={cn("h-full transition-all duration-300", theme.bar)}
       style={{ width: `${Math.min(value, 1) * 100}%` }}
     />
   </div>
@@ -835,47 +1109,37 @@ const FlipCard: FC<{
   compact?: boolean;
   presentation?: boolean;
   onFlip: () => void;
-}> = ({ card, flipped, theme, compact, presentation, onFlip }) => {
-  const reducedMotion = useReducedMotion();
-  return (
-    <button
-      type="button"
-      onClick={onFlip}
-      className="focus-visible:ring-ring/50 block w-full rounded-2xl text-left outline-none [perspective:1200px] focus-visible:ring-3"
-      aria-label={flipped ? "Tunjuk soalan" : "Tunjuk jawapan"}
-      aria-pressed={flipped}
+}> = ({ card, flipped, theme, compact, presentation, onFlip }) => (
+  <button
+    type="button"
+    onClick={onFlip}
+    className="block w-full text-left [perspective:1200px]"
+    aria-label={flipped ? "Tunjuk soalan" : "Tunjuk jawapan"}
+  >
+    <div
+      className={cn(
+        "relative w-full transition-transform duration-300 [transform-style:preserve-3d]",
+        flipped && "[transform:rotateY(180deg)]",
+        compact ? "h-40" : presentation ? "h-80 md:h-96" : "h-72 md:h-80",
+      )}
     >
-      <motion.span
-        className="relative grid w-full [transform-style:preserve-3d]"
-        initial={false}
-        animate={{ rotateY: flipped ? 180 : 0 }}
-        transition={{
-          duration: reducedMotion ? 0 : 0.45,
-          ease: [0.22, 1, 0.36, 1],
-        }}
-      >
-        <CardFace
-          theme={theme}
-          side="front"
-          card={card}
-          compact={compact}
-          presentation={presentation}
-          hidden={flipped}
-          reducedMotion={!!reducedMotion}
-        />
-        <CardFace
-          theme={theme}
-          side="back"
-          card={card}
-          compact={compact}
-          presentation={presentation}
-          hidden={!flipped}
-          reducedMotion={!!reducedMotion}
-        />
-      </motion.span>
-    </button>
-  );
-};
+      <CardFace
+        theme={theme}
+        side="front"
+        card={card}
+        compact={compact}
+        presentation={presentation}
+      />
+      <CardFace
+        theme={theme}
+        side="back"
+        card={card}
+        compact={compact}
+        presentation={presentation}
+      />
+    </div>
+  </button>
+);
 
 const CardFace: FC<{
   card: FlashcardItem;
@@ -883,33 +1147,25 @@ const CardFace: FC<{
   theme: AccentTheme;
   compact?: boolean;
   presentation?: boolean;
-  hidden: boolean;
-  reducedMotion: boolean;
-}> = ({ card, side, theme, compact, presentation, hidden, reducedMotion }) => {
+}> = ({ card, side, theme, compact, presentation }) => {
   const isBack = side === "back";
   const text = isBack ? card.back : card.front;
   return (
-    <span
-      aria-hidden={hidden}
-      style={{ visibility: reducedMotion && hidden ? "hidden" : undefined }}
+    <div
       className={cn(
-        "bg-card text-card-foreground border-border col-start-1 row-start-1 flex min-w-0 flex-col items-center justify-center gap-5 rounded-2xl border text-center shadow-sm [-webkit-backface-visibility:hidden] [backface-visibility:hidden]",
-        compact
-          ? "min-h-40 gap-3 px-5 py-6"
-          : presentation
-            ? "min-h-80 px-6 py-10 sm:min-h-96 sm:px-12"
-            : "min-h-72 px-5 py-8 sm:min-h-88 sm:px-10 sm:py-10",
-        hidden && "pointer-events-none",
+        "border-border/60 absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border px-6 text-center ring-1 [backface-visibility:hidden] ring-inset",
+        theme.cardRing,
         isBack && "[transform:rotateY(180deg)]",
+        presentation ? "bg-white text-[#1f1f1f]" : "bg-card",
       )}
     >
       {!isBack && (
-        <span className="flex flex-wrap items-center justify-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
           {card.type ? (
             <span
               className={cn(
-                "rounded-md px-2 py-0.5 text-xs font-medium",
-                theme.badge,
+                "rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase",
+                theme.pill,
               )}
             >
               {TYPE_LABEL[card.type] ?? card.type}
@@ -918,14 +1174,14 @@ const CardFace: FC<{
           {card.tags?.map((tag) => (
             <span
               key={tag}
-              className="bg-muted/70 text-muted-foreground rounded-md px-2 py-0.5 text-xs"
+              className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px]"
             >
               {tag}
             </span>
           ))}
-        </span>
+        </div>
       )}
-      <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+      <span className="text-muted-foreground text-[10px] font-medium tracking-[0.2em] uppercase">
         {isBack ? "Jawapan" : "Soalan"}
       </span>
       <span
@@ -933,24 +1189,24 @@ const CardFace: FC<{
           isBack
             ? compact
               ? "text-sm leading-relaxed"
-              : "max-w-2xl text-lg leading-relaxed sm:text-xl"
+              : "text-base leading-relaxed md:text-lg"
             : compact
               ? "text-lg leading-snug font-semibold"
               : presentation
                 ? "text-3xl leading-snug font-semibold md:text-4xl"
-                : "max-w-2xl text-2xl leading-snug font-semibold tracking-tight sm:text-3xl lg:text-4xl",
-          "[overflow-wrap:anywhere] whitespace-pre-wrap",
+                : "text-2xl leading-snug font-semibold sm:text-3xl",
           card.type === "formula" && "font-mono",
         )}
       >
         {text}
       </span>
       {!isBack && (
-        <span className="text-muted-foreground text-xs">
-          Klik kad untuk lihat jawapan
+        <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+          <GraduationCapIcon className="size-3.5" />
+          {compact ? "Klik untuk flip" : "Klik kad untuk lihat jawapan"}
         </span>
       )}
-    </span>
+    </div>
   );
 };
 
@@ -974,47 +1230,3 @@ const HintRow: FC<{
       )}
     </div>
   ) : null;
-
-const DeckControls: FC<{
-  position: number;
-  total: number;
-  onPrev: () => void;
-  onNext: () => void;
-  shuffled: boolean;
-  onShuffle: () => void;
-}> = ({ position, total, onPrev, onNext, shuffled, onShuffle }) => (
-  <div className="border-border/60 flex items-center justify-center gap-3 border-t px-4 py-2.5">
-    <button
-      type="button"
-      aria-label="Kad sebelumnya"
-      disabled={position === 0}
-      onClick={onPrev}
-      className="hover:bg-muted flex size-8 items-center justify-center rounded-full transition-colors disabled:opacity-30"
-    >
-      <ChevronLeftIcon className="size-4" />
-    </button>
-    <span className="text-muted-foreground w-14 text-center text-xs tabular-nums">
-      {position + 1} / {total}
-    </span>
-    <button
-      type="button"
-      aria-label="Kad seterusnya"
-      disabled={position === total - 1}
-      onClick={onNext}
-      className="hover:bg-muted flex size-8 items-center justify-center rounded-full transition-colors disabled:opacity-30"
-    >
-      <ChevronRightIcon className="size-4" />
-    </button>
-    <button
-      type="button"
-      onClick={onShuffle}
-      className={cn(
-        "text-muted-foreground hover:bg-muted hover:text-foreground ml-2 flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs transition-colors",
-        shuffled && "bg-muted text-foreground",
-      )}
-    >
-      <ShuffleIcon className="size-3.5" />
-      Acak
-    </button>
-  </div>
-);

@@ -12,9 +12,15 @@ import {
  */
 export const FlashcardViewer: FC<{
   spec: FlashcardSpec;
+  deckId?: string;
   onClose: () => void;
-}> = ({ spec, onClose }) => (
+}> = ({ spec, deckId, onClose }) => (
   <div className="bg-background h-full overflow-hidden">
-    <FlashcardDeck spec={spec} variant="full" onClose={onClose} />
+    <FlashcardDeck
+      spec={spec}
+      variant="full"
+      deckId={deckId}
+      onClose={onClose}
+    />
   </div>
 );

@@ -107,9 +107,29 @@ export const artifacts = pgTable(
     path: text("path"),
     spec: jsonb("spec"),
     dedupeKey: text("dedupe_key"),
+    pinned: boolean("pinned").notNull().default(false),
+    favorite: boolean("favorite").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [index("artifacts_user_id_idx").on(table.userId)],
+);
+
+/** Per-account mastery for a deck: which card indices are "dikuasai". */
+export const deckProgress = pgTable(
+  "deck_progress",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    deckId: text("deck_id").notNull(),
+    knownIndices: jsonb("known_indices").notNull().default([]),
+    total: text("total").notNull(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("deck_progress_user_idx").on(table.userId),
+    index("deck_progress_deck_idx").on(table.userId, table.deckId),
+  ],
 );
 
 /** Gallery documents (scratch decks, local slides, etc.), per account. */

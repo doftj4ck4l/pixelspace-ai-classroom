@@ -11,7 +11,10 @@ export const getSessionUser = async () => {
 export const requireApiUser = async () => {
   const user = await getSessionUser();
   if (!user) {
-    return { user: null, response: new Response("Unauthorized", { status: 401 }) } as const;
+    return {
+      user: null,
+      response: new Response("Unauthorized", { status: 401 }),
+    } as const;
   }
   return { user, response: null } as const;
 };

@@ -85,7 +85,9 @@ const run = async () => {
     }
   }
 
-  console.log(`moved ${threadsMoved} threads and ${artifactsMoved} artifacts to ${email}`);
+  console.log(
+    `moved ${threadsMoved} threads and ${artifactsMoved} artifacts to ${email}`,
+  );
   await pool.end();
 };
 

@@ -34,14 +34,7 @@ export const CreateDialog: FC<{
   onOpenChange: (open: boolean) => void;
   onGenerate: (input: CreateDialogInput) => void;
   onCreateEmpty: () => void;
-}> = ({
-  open,
-  label,
-  supported,
-  onOpenChange,
-  onGenerate,
-  onCreateEmpty,
-}) => {
+}> = ({ open, label, supported, onOpenChange, onGenerate, onCreateEmpty }) => {
   const [topic, setTopic] = useState("");
   const [language, setLanguage] = useState<"en" | "bm" | "both">("both");
   const [files, setFiles] = useState<string[]>([]);

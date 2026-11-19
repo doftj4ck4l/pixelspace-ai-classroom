@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FC } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FC,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useAui } from "@assistant-ui/react";
 import {
@@ -27,6 +34,7 @@ import {
   SearchIcon,
   SparklesIcon,
   StarIcon,
+  UsersIcon,
   StickyNoteIcon,
   TableIcon,
   Trash2Icon,
@@ -57,7 +65,11 @@ import {
   type CreateDialogInput,
 } from "@/components/assistant-ui/create-dialog";
 import { FlashcardViewer } from "@/components/assistant-ui/flashcard-viewer";
-import { type FlashcardSpec } from "@/components/assistant-ui/flashcard-deck";
+import {
+  accentTheme,
+  coverEmoji,
+  type FlashcardSpec,
+} from "@/components/assistant-ui/flashcard-deck";
 import {
   type GeneratedContent,
   type GenerationArtifact,
@@ -122,7 +134,11 @@ type SharedArtifact = {
   kind?: "file" | "spec";
   url?: string;
   spec?: unknown;
+  pinned?: boolean;
+  favorite?: boolean;
 };
+
+type DeckProgress = { knownCount: number; total: number };
 
 const baseName = (name: string) => name.replace(/\.[^.]+$/, "").toLowerCase();
 
@@ -177,22 +193,25 @@ const MODULE_TITLES: Record<ModuleKind | "all", string> = {
   transformations: "Transformations",
 };
 
-const CREATE_MODULE_ITEMS: { type: DocType; label: string; Icon: LucideIcon }[] =
-  [
-    { type: "flashcards", label: "Flashcards", Icon: LayersIcon },
-    { type: "quizzes", label: "Quiz", Icon: CircleHelpIcon },
-    { type: "mindmaps", label: "Mind Map", Icon: WaypointsIcon },
-    { type: "slides", label: "Slide Deck", Icon: PresentationIcon },
-    { type: "reports", label: "Report", Icon: FileTextIcon },
-    { type: "infographics", label: "Infographic", Icon: ChartColumnIcon },
-    { type: "podcasts", label: "Podcast", Icon: PodcastIcon },
-    { type: "notes", label: "Notes", Icon: StickyNoteIcon },
-    {
-      type: "transformations",
-      label: "Transformation",
-      Icon: WandSparklesIcon,
-    },
-  ];
+const CREATE_MODULE_ITEMS: {
+  type: DocType;
+  label: string;
+  Icon: LucideIcon;
+}[] = [
+  { type: "flashcards", label: "Flashcards", Icon: LayersIcon },
+  { type: "quizzes", label: "Quiz", Icon: CircleHelpIcon },
+  { type: "mindmaps", label: "Mind Map", Icon: WaypointsIcon },
+  { type: "slides", label: "Slide Deck", Icon: PresentationIcon },
+  { type: "reports", label: "Report", Icon: FileTextIcon },
+  { type: "infographics", label: "Infographic", Icon: ChartColumnIcon },
+  { type: "podcasts", label: "Podcast", Icon: PodcastIcon },
+  { type: "notes", label: "Notes", Icon: StickyNoteIcon },
+  {
+    type: "transformations",
+    label: "Transformation",
+    Icon: WandSparklesIcon,
+  },
+];
 
 const DocGlyph: FC<{ type: DocType; size?: "sm" | "lg" }> = ({
   type,
@@ -239,7 +258,8 @@ const newDoc = (type: DocType, title?: string): Doc => ({
 const typeFromFileName = (name: string): DocType => {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   if (ext === "pdf") return "pdf";
-  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) return "image";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext))
+    return "image";
   return "doc";
 };
 
@@ -330,7 +350,10 @@ const DocMenu: FC<{
       </DropdownMenuItem>
       <DropdownMenuItem onClick={() => onToggleFavorite(doc.id)}>
         <StarIcon
-          className={cn("size-4", doc.favorite && "fill-current text-amber-400")}
+          className={cn(
+            "size-4",
+            doc.favorite && "fill-current text-amber-400",
+          )}
         />
         {doc.favorite ? "Remove favorite" : "Favorite"}
       </DropdownMenuItem>
@@ -342,6 +365,96 @@ const DocMenu: FC<{
     </DropdownMenuContent>
   </DropdownMenu>
 );
+
+const deckInfoOf = (doc: Doc, progress: Record<string, DeckProgress>) => {
+  const spec =
+    doc.spec ??
+    (doc.content?.kind === "flashcards"
+      ? { cards: doc.content.cards }
+      : undefined);
+  const cards = spec?.cards ?? [];
+  const row = progress[doc.artifactId ?? doc.id];
+  const total = row?.total || cards.length;
+  return { total, known: row?.knownCount ?? 0 };
+};
+
+/** A deck tile for the Flashcards page: themed cover, badges, mastery. */
+const DeckCard: FC<{
+  doc: Doc;
+  known: number;
+  total: number;
+  onOpen: () => void;
+  menu: ReactNode;
+}> = ({ doc, known, total, onOpen, menu }) => {
+  const spec = doc.spec as { subject?: string; accent?: string } | undefined;
+  const theme = accentTheme(spec?.accent);
+  const pct = total > 0 ? Math.round((known / total) * 100) : 0;
+
+  return (
+    <div
+      onClick={onOpen}
+      className="group border-border/60 bg-card relative cursor-pointer overflow-hidden rounded-2xl border transition-shadow hover:shadow-md"
+    >
+      <div
+        className={cn(
+          "relative flex aspect-[16/9] items-center justify-center overflow-hidden",
+          theme.cover,
+        )}
+      >
+        <div
+          aria-hidden="true"
+          className="absolute -top-8 -left-8 size-28 rounded-full bg-white/40 blur-2xl dark:bg-white/10"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute -right-10 -bottom-10 size-32 rounded-full bg-white/30 blur-3xl dark:bg-white/5"
+        />
+        <span className="relative text-5xl drop-shadow-sm select-none">
+          {coverEmoji(doc.title, spec?.subject)}
+        </span>
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+          {doc.pinned && (
+            <span className="bg-background/85 flex size-7 items-center justify-center rounded-full shadow-sm">
+              <PinIcon className="size-3.5" />
+            </span>
+          )}
+          {doc.favorite && (
+            <span className="bg-background/85 flex size-7 items-center justify-center rounded-full shadow-sm">
+              <StarIcon className="size-3.5 fill-current text-amber-400" />
+            </span>
+          )}
+        </div>
+        <div
+          onClick={(event) => event.stopPropagation()}
+          className="absolute top-2.5 right-2.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+        >
+          {menu}
+        </div>
+      </div>
+
+      <div className="p-4">
+        <p className="line-clamp-2 text-base leading-snug font-semibold">
+          {doc.title}
+        </p>
+        <div className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs">
+          <LayersIcon className="size-3.5" />
+          {total} kad
+        </div>
+        <div className="mt-2.5 flex items-center gap-2">
+          <div className="bg-muted/70 h-1.5 flex-1 overflow-hidden rounded-full">
+            <div
+              className={cn("h-full transition-all", theme.bar)}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className="text-muted-foreground text-xs font-medium tabular-nums">
+            {pct}%
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const downloadSpecJson = (doc: Doc) => {
   if (!doc.spec) return;
@@ -361,7 +474,11 @@ const SharedArtifactMenu: FC<{
   siblings: { name: string; url: string }[];
   onDownload: (doc: Doc) => void;
   onRemove: (artifactId: string) => void;
-}> = ({ doc, siblings, onDownload, onRemove }) => {
+  onSetFlags: (
+    artifactId: string,
+    flags: { pinned?: boolean; favorite?: boolean },
+  ) => void;
+}> = ({ doc, siblings, onDownload, onRemove, onSetFlags }) => {
   const others = siblings.filter((file) => file.url !== doc.url);
   return (
     <DropdownMenu>
@@ -372,6 +489,34 @@ const SharedArtifactMenu: FC<{
         <MoreHorizontalIcon className="size-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="bottom">
+        <DropdownMenuItem
+          onClick={() =>
+            doc.artifactId &&
+            onSetFlags(doc.artifactId, { pinned: !doc.pinned })
+          }
+        >
+          {doc.pinned ? (
+            <PinOffIcon className="size-4" />
+          ) : (
+            <PinIcon className="size-4" />
+          )}
+          {doc.pinned ? "Unpin" : "Pin"}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() =>
+            doc.artifactId &&
+            onSetFlags(doc.artifactId, { favorite: !doc.favorite })
+          }
+        >
+          <StarIcon
+            className={cn(
+              "size-4",
+              doc.favorite && "fill-current text-amber-400",
+            )}
+          />
+          {doc.favorite ? "Remove favorite" : "Favorite"}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => (doc.spec ? downloadSpecJson(doc) : onDownload(doc))}
         >
@@ -416,10 +561,12 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [sharedArtifacts, setSharedArtifacts] = useState<SharedArtifact[]>([]);
+  const [progressMap, setProgressMap] = useState<Record<string, DeckProgress>>(
+    {},
+  );
   const [showNewPresentation, setShowNewPresentation] = useState(false);
   const [createKind, setCreateKind] = useState<ModuleKind | null>(null);
   const templatesRef = useRef<HTMLDivElement>(null);
-
 
   useEffect(() => {
     let cancelled = false;
@@ -444,6 +591,17 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         if (!cancelled) setSharedArtifacts(data.artifacts ?? []);
       })
       .catch(() => {});
+    fetch("/api/decks/progress")
+      .then((res) => res.json())
+      .then((data: { progress?: (DeckProgress & { deckId: string })[] }) => {
+        if (cancelled) return;
+        const map: Record<string, DeckProgress> = {};
+        for (const row of data.progress ?? []) {
+          map[row.deckId] = { knownCount: row.knownCount, total: row.total };
+        }
+        setProgressMap(map);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -455,8 +613,8 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         id: artifact.id,
         title: artifact.title,
         type: (artifact.type === "other" ? "doc" : artifact.type) as DocType,
-        pinned: false,
-        favorite: false,
+        pinned: artifact.pinned ?? false,
+        favorite: artifact.favorite ?? false,
         source: "chat" as const,
         url: artifact.url,
         artifactId: artifact.id,
@@ -471,7 +629,8 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   // so the closure never reads it in its temporal dead zone.
   const findDoc = (id: string | null) =>
     id
-      ? ([...(docs ?? []), ...artifactDocs].find((doc) => doc.id === id) ?? null)
+      ? ([...(docs ?? []), ...artifactDocs].find((doc) => doc.id === id) ??
+        null)
       : null;
   const editingDoc = findDoc(editingId);
   const viewingDoc = findDoc(viewingId);
@@ -541,7 +700,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
 
   const updateDoc = (id: string, patch: Partial<Doc>) => {
     setDocs(
-      (prev) => prev?.map((doc) => (doc.id === id ? { ...doc, ...patch } : doc)) ?? null,
+      (prev) =>
+        prev?.map((doc) => (doc.id === id ? { ...doc, ...patch } : doc)) ??
+        null,
     );
     void fetch(`/api/docs/${id}`, {
       method: "PATCH",
@@ -553,7 +714,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const openDeck = (doc: Doc) => {
     if (!doc.slides) {
       updateDoc(doc.id, {
-        slides: [blankSlide(doc.title === "Untitled slide deck" ? "" : doc.title)],
+        slides: [
+          blankSlide(doc.title === "Untitled slide deck" ? "" : doc.title),
+        ],
       });
     }
     setEditingId(doc.id);
@@ -632,6 +795,22 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     );
   };
 
+  const setArtifactFlags = (
+    artifactId: string,
+    flags: { pinned?: boolean; favorite?: boolean },
+  ) => {
+    setSharedArtifacts((prev) =>
+      prev.map((artifact) =>
+        artifact.id === artifactId ? { ...artifact, ...flags } : artifact,
+      ),
+    );
+    void fetch(`/api/pi/artifacts/${artifactId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(flags),
+    }).catch(() => {});
+  };
+
   /**
    * Generations run as conversations on the pi harness: create a thread, switch
    * to it, and send the request — the agent researches, designs the artifact
@@ -696,7 +875,11 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         ? { title: viewingDoc.title, cards: viewingDoc.content.cards }
         : { title: viewingDoc.title, cards: [] });
     return (
-      <FlashcardViewer spec={spec} onClose={() => setViewingId(null)} />
+      <FlashcardViewer
+        spec={spec}
+        deckId={viewingDoc.id}
+        onClose={() => setViewingId(null)}
+      />
     );
   }
 
@@ -708,7 +891,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         slides={
           editingDoc.slides ?? [
             blankSlide(
-              editingDoc.title === "Untitled slide deck" ? "" : editingDoc.title,
+              editingDoc.title === "Untitled slide deck"
+                ? ""
+                : editingDoc.title,
             ),
           ]
         }
@@ -726,11 +911,54 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     );
   }
 
+  const isFlashcards = mode === "flashcards";
+
+  const openDeckDoc = (doc: Doc) => {
+    if (doc.spec) {
+      router.push(`/spaces/flashcards/${doc.artifactId}`);
+      return;
+    }
+    if (doc.artifactId) {
+      void openSharedArtifact(doc);
+      return;
+    }
+    if (doc.type === "flashcards") setViewingId(doc.id);
+  };
+
   return (
     <div className="bg-background flex h-full flex-col overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-8 py-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold">{MODULE_TITLES[mode]}</h1>
+          {isFlashcards ? (
+            <div className="flex min-w-0 flex-1 items-start gap-3">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-300">
+                <LayersIcon className="size-6" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-semibold sm:text-3xl">
+                  Flashcards
+                </h1>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Buat, ulang kaji dan kuasai topik dengan kad imbas pintar.
+                </p>
+              </div>
+              <div
+                aria-hidden="true"
+                className="relative ml-auto hidden h-24 w-56 shrink-0 md:block"
+              >
+                <div className="absolute top-1/2 right-0 size-24 -translate-y-1/2 rounded-full bg-[#8fd9c8]/50 blur-2xl dark:bg-[#0f4f4a]/60" />
+                <div className="border-border/60 bg-card absolute top-1/2 right-8 h-16 w-28 -translate-y-1/2 rotate-6 rounded-xl border shadow-sm" />
+                <div className="border-border/60 bg-card absolute top-1/2 right-14 h-16 w-28 -translate-y-1/2 -rotate-3 rounded-xl border shadow-md" />
+                <div className="border-border/60 bg-card absolute top-1/2 right-12 flex h-16 w-28 -translate-y-1/2 items-center justify-center rounded-xl border text-2xl shadow-lg">
+                  💡
+                </div>
+                <SparklesIcon className="absolute top-1 right-0 size-4 text-amber-400" />
+                <SparklesIcon className="absolute right-24 bottom-0 size-3 text-amber-400" />
+              </div>
+            </div>
+          ) : (
+            <h1 className="text-2xl font-semibold">{MODULE_TITLES[mode]}</h1>
+          )}
           <div className="flex items-center gap-3">
             <div className="relative">
               <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
@@ -738,7 +966,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search"
+                placeholder={isFlashcards ? "Search flashcards..." : "Search"}
                 aria-label="Search"
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 md:w-64"
               />
@@ -770,21 +998,32 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            {tabs.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setTab(item)}
-                className={cn(
-                  "h-8 rounded-full px-4 text-sm transition-colors",
-                  tab === item
-                    ? "bg-muted text-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                )}
-              >
-                {item}
-              </button>
-            ))}
+            {tabs.map((item) => {
+              const TabIcon = isFlashcards
+                ? {
+                    All: LayoutGridIcon,
+                    Pinned: PinIcon,
+                    Favorites: StarIcon,
+                    "Shared with you": UsersIcon,
+                  }[item]
+                : undefined;
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setTab(item)}
+                  className={cn(
+                    "flex h-8 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors sm:px-4",
+                    tab === item
+                      ? "bg-muted text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  {TabIcon ? <TabIcon className="size-3.5 shrink-0" /> : null}
+                  <span className="whitespace-nowrap">{item}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-1">
@@ -843,7 +1082,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
 
         {mode === "slides" && (
           <div className="mt-8" ref={templatesRef}>
-            <h2 className="text-base font-semibold">Create together in Space</h2>
+            <h2 className="text-base font-semibold">
+              Create together in Space
+            </h2>
             <p className="text-muted-foreground text-sm">
               Choose a template to start working with your team
             </p>
@@ -876,74 +1117,130 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
 
         {docs !== null &&
           (layout === "grid" ? (
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((doc) => (
-                <div
-                  key={doc.id}
-                  onClick={
-                    doc.spec
-                      ? () => router.push(`/spaces/flashcards/${doc.artifactId}`)
-                      : doc.artifactId
-                        ? () => void openSharedArtifact(doc)
-                        : doc.type === "slides"
-                          ? () => openDeck(doc)
-                          : doc.type === "flashcards"
-                            ? () => setViewingId(doc.id)
-                            : undefined
-                  }
-                  className={cn(
-                    "group border-border/60 bg-card relative rounded-xl border p-3 transition-shadow hover:shadow-md",
-                    (doc.spec ||
-                      doc.artifactId ||
-                      doc.type === "slides" ||
-                      doc.type === "flashcards") &&
-                      "cursor-pointer",
-                  )}
+            <div
+              className={cn(
+                "mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3",
+                isFlashcards && "xl:grid-cols-4",
+              )}
+            >
+              {isFlashcards &&
+                filtered.map((doc) => {
+                  const info = deckInfoOf(doc, progressMap);
+                  return (
+                    <DeckCard
+                      key={doc.id}
+                      doc={doc}
+                      known={info.known}
+                      total={info.total}
+                      onOpen={() => openDeckDoc(doc)}
+                      menu={
+                        doc.artifactId ? (
+                          <SharedArtifactMenu
+                            doc={doc}
+                            siblings={siblingsOf(doc)}
+                            onDownload={(entry) =>
+                              entry.url && window.open(entry.url, "_blank")
+                            }
+                            onRemove={removeSharedArtifact}
+                            onSetFlags={setArtifactFlags}
+                          />
+                        ) : (
+                          <DocMenu
+                            doc={doc}
+                            onTogglePin={togglePin}
+                            onToggleFavorite={toggleFavorite}
+                            onDelete={setPendingDelete}
+                          />
+                        )
+                      }
+                    />
+                  );
+                })}
+              {isFlashcards && (
+                <button
+                  type="button"
+                  onClick={() => setCreateKind("flashcards")}
+                  className="border-border/60 hover:bg-muted/40 flex min-h-[248px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-6 text-center transition-colors"
                 >
-                  <div className="flex items-center gap-2 pr-7">
-                    <DocGlyph type={doc.type} />
-                    <span className="truncate text-sm font-medium">
-                      {doc.title}
-                    </span>
-                    {doc.source === "chat" && (
-                      <span className="bg-muted text-muted-foreground shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
-                        From chat
-                      </span>
-                    )}
-                    {doc.pinned && (
-                      <PinIcon className="text-muted-foreground size-3.5 shrink-0" />
-                    )}
-                    {doc.favorite && (
-                      <StarIcon className="size-3.5 shrink-0 fill-current text-amber-400" />
-                    )}
-                  </div>
-                  <div className="mt-3 flex aspect-[16/10] items-center justify-center">
-                    <DocGlyph type={doc.type} size="lg" />
-                  </div>
+                  <span className="bg-muted flex size-12 items-center justify-center rounded-xl">
+                    <PlusIcon className="size-5" />
+                  </span>
+                  <span className="text-sm font-semibold">Buat set baharu</span>
+                  <span className="text-muted-foreground max-w-44 text-xs">
+                    Hasilkan kad imbas dengan AI atau secara manual
+                  </span>
+                </button>
+              )}
+              {!isFlashcards &&
+                filtered.map((doc) => (
                   <div
-                    onClick={(event) => event.stopPropagation()}
-                    className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-                  >
-                    {doc.artifactId ? (
-                      <SharedArtifactMenu
-                        doc={doc}
-                        siblings={siblingsOf(doc)}
-                        onDownload={(entry) =>
-                          entry.url && window.open(entry.url, "_blank")
-                        }
-                        onRemove={removeSharedArtifact}
-                      />
-                    ) : (
-                      <DocMenu
-                        doc={doc}
-                        onTogglePin={togglePin}
-                        onToggleFavorite={toggleFavorite}
-                        onDelete={setPendingDelete}
-                      />
+                    key={doc.id}
+                    onClick={
+                      doc.spec
+                        ? () =>
+                            router.push(`/spaces/flashcards/${doc.artifactId}`)
+                        : doc.artifactId
+                          ? () => void openSharedArtifact(doc)
+                          : doc.type === "slides"
+                            ? () => openDeck(doc)
+                            : doc.type === "flashcards"
+                              ? () => setViewingId(doc.id)
+                              : undefined
+                    }
+                    className={cn(
+                      "group border-border/60 bg-card relative rounded-xl border p-3 transition-shadow hover:shadow-md",
+                      (doc.spec ||
+                        doc.artifactId ||
+                        doc.type === "slides" ||
+                        doc.type === "flashcards") &&
+                        "cursor-pointer",
                     )}
+                  >
+                    <div className="flex items-center gap-2 pr-7">
+                      <DocGlyph type={doc.type} />
+                      <span className="truncate text-sm font-medium">
+                        {doc.title}
+                      </span>
+                      {doc.source === "chat" && (
+                        <span className="bg-muted text-muted-foreground shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
+                          From chat
+                        </span>
+                      )}
+                      {doc.pinned && (
+                        <PinIcon className="text-muted-foreground size-3.5 shrink-0" />
+                      )}
+                      {doc.favorite && (
+                        <StarIcon className="size-3.5 shrink-0 fill-current text-amber-400" />
+                      )}
+                    </div>
+                    <div className="mt-3 flex aspect-[16/10] items-center justify-center">
+                      <DocGlyph type={doc.type} size="lg" />
+                    </div>
+                    <div
+                      onClick={(event) => event.stopPropagation()}
+                      className="absolute top-2 right-2 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                    >
+                      {doc.artifactId ? (
+                        <SharedArtifactMenu
+                          doc={doc}
+                          siblings={siblingsOf(doc)}
+                          onDownload={(entry) =>
+                            entry.url && window.open(entry.url, "_blank")
+                          }
+                          onRemove={removeSharedArtifact}
+                          onSetFlags={setArtifactFlags}
+                        />
+                      ) : (
+                        <DocMenu
+                          doc={doc}
+                          onTogglePin={togglePin}
+                          onToggleFavorite={toggleFavorite}
+                          onDelete={setPendingDelete}
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           ) : (
             <div className="mt-6 flex flex-col">
@@ -952,7 +1249,8 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                   key={doc.id}
                   onClick={
                     doc.spec
-                      ? () => router.push(`/spaces/flashcards/${doc.artifactId}`)
+                      ? () =>
+                          router.push(`/spaces/flashcards/${doc.artifactId}`)
                       : doc.artifactId
                         ? () => void openSharedArtifact(doc)
                         : doc.type === "slides"
@@ -987,7 +1285,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                   )}
                   <div
                     onClick={(event) => event.stopPropagation()}
-                    className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                    className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
                   >
                     {doc.artifactId ? (
                       <SharedArtifactMenu
@@ -997,6 +1295,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                           entry.url && window.open(entry.url, "_blank")
                         }
                         onRemove={removeSharedArtifact}
+                        onSetFlags={setArtifactFlags}
                       />
                     ) : (
                       <DocMenu
@@ -1027,12 +1326,8 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
 
       <CreateDialog
         open={createKind !== null}
-        label={
-          createKind ? MODULE_TITLES[createKind].toLowerCase() : "item"
-        }
-        supported={
-          createKind === "slides" || createKind === "flashcards"
-        }
+        label={createKind ? MODULE_TITLES[createKind].toLowerCase() : "item"}
+        supported={createKind === "slides" || createKind === "flashcards"}
         onOpenChange={(open) => {
           if (!open) setCreateKind(null);
         }}

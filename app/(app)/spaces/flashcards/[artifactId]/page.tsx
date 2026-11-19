@@ -67,6 +67,7 @@ const DeckPage: FC = () => {
   return (
     <FlashcardViewer
       spec={spec}
+      deckId={params?.artifactId}
       onClose={() => router.push("/spaces/flashcards")}
     />
   );

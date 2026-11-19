@@ -39,7 +39,11 @@ type ChartProps = {
 };
 
 type TableProps = {
-  columns: { key: string; label?: string; align?: "left" | "right" | "center" }[];
+  columns: {
+    key: string;
+    label?: string;
+    align?: "left" | "right" | "center";
+  }[];
   rows: Record<string, unknown>[];
   caption?: string;
 };
@@ -99,7 +103,9 @@ export const RenderUiBlock: FC<{
         </Suspense>
       );
     case "flashcards":
-      return <FlashcardDeck spec={spec.props as FlashcardSpec} variant="inline" />;
+      return (
+        <FlashcardDeck spec={spec.props as FlashcardSpec} variant="inline" />
+      );
     default:
       return <ErrorNote reason={`unknown component "${spec.component}"`} />;
   }
@@ -149,7 +155,7 @@ const ACCENT: Record<NonNullable<CardProps["accent"]>, string> = {
 };
 
 const Markdown: FC<{ children: string }> = ({ children }) => (
-  <div className="[&_a]:underline [&_code]:bg-muted [&_code]:rounded [&_code]:px-1 [&_li]:my-0.5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:ps-4 [&_p]:my-1 [&_ul]:my-1 [&_ul]:list-disc [&_ul]:ps-4">
+  <div className="[&_code]:bg-muted [&_a]:underline [&_code]:rounded [&_code]:px-1 [&_li]:my-0.5 [&_ol]:my-1 [&_ol]:list-decimal [&_ol]:ps-4 [&_p]:my-1 [&_ul]:my-1 [&_ul]:list-disc [&_ul]:ps-4">
     <ReactMarkdown remarkPlugins={[remarkGfm]}>{children}</ReactMarkdown>
   </div>
 );
@@ -278,7 +284,10 @@ function DataTable({ columns, rows, caption }: TableProps) {
           </thead>
           <tbody>
             {sorted.map((row, index) => (
-              <tr key={index} className="border-border/40 border-b last:border-0">
+              <tr
+                key={index}
+                className="border-border/40 border-b last:border-0"
+              >
                 {columns.map((column) => (
                   <td
                     key={column.key}

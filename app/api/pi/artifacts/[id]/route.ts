@@ -16,6 +16,28 @@ export async function GET(
   return NextResponse.json(artifact);
 }
 
+/** Pin / favorite a deck or file card. */
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { user, response } = await requireApiUser();
+  if (!user) return response;
+
+  const { id } = await params;
+  const patch = (await req.json().catch(() => ({}))) as {
+    pinned?: boolean;
+    favorite?: boolean;
+  };
+  await artifactRegistry.setFlags(user.id, id, {
+    ...(typeof patch.pinned === "boolean" ? { pinned: patch.pinned } : {}),
+    ...(typeof patch.favorite === "boolean"
+      ? { favorite: patch.favorite }
+      : {}),
+  });
+  return new Response(null, { status: 204 });
+}
+
 /** Removes the gallery card only; the file stays in the harness workspace. */
 export async function DELETE(
   _req: Request,
