@@ -112,7 +112,12 @@ export const DeckAiPanel: FC<{
     abortRef.current = null;
     setBusy(false);
     setAsk(null);
-    setMessages((prev) => [...prev, { role: "system", text: "Stopped." }]);
+    setMessages((prev) => [
+      ...prev.filter(
+        (message) => message.role !== "assistant" || message.text.trim(),
+      ),
+      { role: "system", text: "Stopped." },
+    ]);
   };
 
   const send = async () => {
@@ -236,6 +241,13 @@ export const DeckAiPanel: FC<{
     } finally {
       setBusy(false);
       abortRef.current = null;
+      // Drop placeholder assistant bubbles that never received text (the run
+      // answered with an ask prompt, a tool call, or nothing at all).
+      setMessages((prev) =>
+        prev.filter(
+          (message) => message.role !== "assistant" || message.text.trim(),
+        ),
+      );
     }
   };
 
@@ -296,19 +308,22 @@ export const DeckAiPanel: FC<{
             >
               {message.text}
             </div>
-          ) : (
+          ) : message.text ? (
             <p
               key={index}
               className="mr-8 text-sm leading-relaxed whitespace-pre-wrap"
             >
-              {message.text || (
-                <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
-                  <Loader2Icon className="size-3.5 animate-spin" />
-                  {ask ? "Waiting for your answer..." : "Thinking..."}
-                </span>
-              )}
+              {message.text}
             </p>
-          ),
+          ) : busy && index === messages.length - 1 ? (
+            <p
+              key={index}
+              className="text-muted-foreground inline-flex items-center gap-1.5 text-xs"
+            >
+              <Loader2Icon className="size-3.5 animate-spin" />
+              {ask ? "Waiting for your answer..." : "Thinking..."}
+            </p>
+          ) : null,
         )}
 
         {ask && (
