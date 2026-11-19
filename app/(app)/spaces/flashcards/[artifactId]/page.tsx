@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState, type FC } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { FlashcardViewer } from "@/components/assistant-ui/flashcard-viewer";
-import { DeckEditor } from "@/components/assistant-ui/deck-editor";
 import { DeckAiPanel } from "@/components/assistant-ui/deck-ai-panel";
 import {
   type FlashcardItem,
@@ -24,7 +23,6 @@ const DeckPage: FC = () => {
   const router = useRouter();
   const [spec, setSpec] = useState<FlashcardSpec | null>(null);
   const [missing, setMissing] = useState(false);
-  const [editing, setEditing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPrefill, setAiPrefill] = useState<{
     text: string;
@@ -51,19 +49,6 @@ const DeckPage: FC = () => {
 
   useEffect(load, [load]);
 
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("edit") === "1") {
-      setEditing(true);
-    }
-  }, []);
-
-  const closeEditor = useCallback(() => {
-    setEditing(false);
-    if (artifactId && window.location.search.includes("edit=1")) {
-      router.replace(`/spaces/flashcards/${artifactId}`);
-    }
-  }, [artifactId, router]);
-
   if (missing) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
@@ -86,20 +71,6 @@ const DeckPage: FC = () => {
     );
   }
 
-  if (editing && artifactId) {
-    return (
-      <DeckEditor
-        artifactId={artifactId}
-        initialSpec={spec}
-        onClose={closeEditor}
-        onSaved={(next) => {
-          setSpec(next);
-          closeEditor();
-        }}
-      />
-    );
-  }
-
   const improveCard = (index: number, card: FlashcardItem) => {
     setFocusedCard(index);
     setAiPrefill({
@@ -114,7 +85,7 @@ const DeckPage: FC = () => {
         spec={spec}
         deckId={artifactId}
         onClose={() => router.push("/spaces/flashcards")}
-        onEdit={() => setEditing(true)}
+        onCardChange={setFocusedCard}
         onImproveCard={improveCard}
       />
       {artifactId && (

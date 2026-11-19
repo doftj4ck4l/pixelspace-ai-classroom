@@ -15,16 +15,16 @@ export const FlashcardViewer: FC<{
   spec: FlashcardSpec;
   deckId?: string;
   onClose: () => void;
-  onEdit?: () => void;
+  onCardChange?: (index: number) => void;
   onImproveCard?: (index: number, card: FlashcardItem) => void;
-}> = ({ spec, deckId, onClose, onEdit, onImproveCard }) => (
+}> = ({ spec, deckId, onClose, onCardChange, onImproveCard }) => (
   <div className="bg-background h-full overflow-hidden">
     <FlashcardDeck
       spec={spec}
       variant="full"
       deckId={deckId}
       onClose={onClose}
-      onEdit={onEdit}
+      onCardChange={onCardChange}
       onImproveCard={onImproveCard}
     />
   </div>

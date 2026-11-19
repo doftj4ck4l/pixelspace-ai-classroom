@@ -121,6 +121,8 @@ const buildDeckEditContext = (
   artifact: PiArtifact,
   focusedCardIndex?: number,
 ) => {
+  const spec = artifact.spec as FlashcardSpec | undefined;
+  const cards = spec?.cards ?? [];
   const lines = [
     "[Deck edit session]",
     "You are editing an EXISTING flashcard deck. Do NOT create a new deck.",
@@ -131,12 +133,16 @@ const buildDeckEditContext = (
     typeof focusedCardIndex === "number" &&
     Number.isInteger(focusedCardIndex)
   ) {
+    const card = cards[focusedCardIndex];
     lines.push(
-      `The user is currently looking at card #${focusedCardIndex + 1}.`,
+      card
+        ? `The user is currently viewing card #${focusedCardIndex + 1} of ${cards.length}: front "${card.front}" — back "${card.back}". If they say "this card", "this page", "this one", or refer to the card on screen, they mean card #${focusedCardIndex + 1}.`
+        : `The user is currently looking at card #${focusedCardIndex + 1}.`,
     );
   }
   lines.push(
     'When done, call render_ui with component "flashcards" containing the COMPLETE updated deck — every card, with only the requested changes applied. Keep unmentioned cards byte-identical.',
+    "For small edits (renaming, tweaking one or two cards), do NOT run web searches — apply the change directly and return quickly.",
   );
   return lines.join("\n");
 };

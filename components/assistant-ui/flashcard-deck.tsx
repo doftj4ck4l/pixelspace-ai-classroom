@@ -21,7 +21,6 @@ import {
   LayoutGridIcon,
   LightbulbIcon,
   MoreHorizontalIcon,
-  PencilIcon,
   RepeatIcon,
   RotateCcwIcon,
   ShuffleIcon,
@@ -172,11 +171,18 @@ export const FlashcardDeck: FC<{
   /** When given, mastery persists per account via /api/decks/<id>/progress. */
   deckId?: string;
   onClose?: () => void;
-  /** Full variant only: enter the manual editor. */
-  onEdit?: () => void;
-  /** Full variant only: send the current card to the AI edit panel. */
+  /** Full variant only: reports which card is on screen (for AI editing). */
+  onCardChange?: (index: number) => void;
+  /** Full variant only: send a card to the AI edit panel. */
   onImproveCard?: (index: number, card: FlashcardItem) => void;
-}> = ({ spec, variant = "inline", deckId, onClose, onEdit, onImproveCard }) => {
+}> = ({
+  spec,
+  variant = "inline",
+  deckId,
+  onClose,
+  onCardChange,
+  onImproveCard,
+}) => {
   const full = variant === "full";
   const theme = accentTheme(spec.accent);
   const reduceMotion = useReducedMotion();
@@ -411,6 +417,10 @@ export const FlashcardDeck: FC<{
 
   useEffect(() => stopSpeaking, []);
 
+  useEffect(() => {
+    if (full) onCardChange?.(cardIndex);
+  }, [full, cardIndex, onCardChange]);
+
   if (total === 0 || !card) {
     return (
       <div className="text-muted-foreground border-border/60 my-4 rounded-xl border border-dashed p-4 text-sm">
@@ -588,18 +598,6 @@ export const FlashcardDeck: FC<{
               )}
             </Button>
 
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-10 rounded-full"
-                onClick={onEdit}
-                aria-label="Edit deck"
-              >
-                <PencilIcon className="size-5" />
-              </Button>
-            )}
-
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -724,46 +722,63 @@ export const FlashcardDeck: FC<{
               const item = spec.cards[index];
               const mark = marks[index];
               return (
-                <button
+                <div
                   key={index}
-                  type="button"
-                  onClick={() => jumpTo(index)}
                   className={cn(
-                    "border-border/60 bg-card hover:border-foreground/20 flex items-start gap-2 rounded-xl border p-3 text-left transition-colors",
+                    "group border-border/60 bg-card hover:border-foreground/20 relative flex items-start rounded-xl border transition-colors",
                     at === position && "ring-ring/40 ring-2",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "mt-1 size-2 shrink-0 rounded-full",
-                      mark === "known"
-                        ? "bg-emerald-500"
-                        : mark === "again"
-                          ? "bg-amber-500"
-                          : "bg-muted-foreground/30",
-                    )}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-sm font-medium">
-                      {item.front}
-                    </span>
-                    {item.tags?.length ? (
-                      <span className="mt-1 flex flex-wrap gap-1">
-                        {item.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px]"
-                          >
-                            {tag}
-                          </span>
-                        ))}
+                  <button
+                    type="button"
+                    onClick={() => jumpTo(index)}
+                    className="flex min-w-0 flex-1 items-start gap-2 p-3 text-left"
+                  >
+                    <span
+                      className={cn(
+                        "mt-1 size-2 shrink-0 rounded-full",
+                        mark === "known"
+                          ? "bg-emerald-500"
+                          : mark === "again"
+                            ? "bg-amber-500"
+                            : "bg-muted-foreground/30",
+                      )}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-2 text-sm font-medium">
+                        {item.front}
                       </span>
+                      {item.tags?.length ? (
+                        <span className="mt-1 flex flex-wrap gap-1">
+                          {item.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px]"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                  <span className="flex shrink-0 flex-col items-center gap-1 p-3 pl-0">
+                    <span className="text-muted-foreground text-[10px] tabular-nums">
+                      {at + 1}
+                    </span>
+                    {onImproveCard ? (
+                      <button
+                        type="button"
+                        aria-label={`Improve card ${at + 1} with AI`}
+                        title="Improve with AI"
+                        onClick={() => onImproveCard(index, item)}
+                        className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-6 items-center justify-center rounded-md transition-colors sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+                      >
+                        <SparklesIcon className="size-3.5" />
+                      </button>
                     ) : null}
                   </span>
-                  <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
-                    {at + 1}
-                  </span>
-                </button>
+                </div>
               );
             })}
           </div>

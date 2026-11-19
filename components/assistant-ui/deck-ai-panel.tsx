@@ -211,10 +211,11 @@ export const DeckAiPanel: FC<{
       >
         {messages.length === 0 && (
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Ask for changes to <strong>this deck</strong> — e.g. &ldquo;make
-            card 3 simpler&rdquo;, &ldquo;add 2 cards about condensation&rdquo;,
-            or &ldquo;translate every back to English&rdquo;. New decks are made
-            in the main chat.
+            Ask for changes to the <strong>card on screen</strong>{" "}
+            (&ldquo;change this card&hellip;&rdquo;, &ldquo;make it
+            simpler&rdquo;) or the whole deck (&ldquo;add 2 cards about
+            condensation&rdquo;, &ldquo;translate every back to English&rdquo;).
+            New decks are made in the main chat.
           </p>
         )}
         {messages.map((message, index) =>
@@ -261,7 +262,7 @@ export const DeckAiPanel: FC<{
               }
             }}
             rows={1}
-            placeholder="Ask to change this deck..."
+            placeholder="Ask to change this card or the deck..."
             className="max-h-28 min-h-6 flex-1 resize-none bg-transparent text-sm outline-none"
           />
           <button

@@ -25,7 +25,6 @@ import {
   LayoutGridIcon,
   ListIcon,
   MoreHorizontalIcon,
-  PencilIcon,
   PinIcon,
   PinOffIcon,
   PlugIcon,
@@ -480,7 +479,6 @@ const SharedArtifactMenu: FC<{
     flags: { pinned?: boolean; favorite?: boolean },
   ) => void;
 }> = ({ doc, siblings, onDownload, onRemove, onSetFlags }) => {
-  const router = useRouter();
   const others = siblings.filter((file) => file.url !== doc.url);
   return (
     <DropdownMenu>
@@ -518,16 +516,6 @@ const SharedArtifactMenu: FC<{
           />
           {doc.favorite ? "Remove favorite" : "Favorite"}
         </DropdownMenuItem>
-        {doc.spec ? (
-          <DropdownMenuItem
-            onClick={() =>
-              router.push(`/spaces/flashcards/${doc.artifactId}?edit=1`)
-            }
-          >
-            <PencilIcon className="size-4" />
-            Edit
-          </DropdownMenuItem>
-        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => (doc.spec ? downloadSpecJson(doc) : onDownload(doc))}
