@@ -900,7 +900,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     if (!doc.url) return;
     if (doc.type === "slides") {
       // PowerPoint files render from the actual .pptx, exactly as generated.
-      if (/\.pptx$/i.test(doc.url)) {
+      if (doc.url.split("?")[0]?.toLowerCase().endsWith(".pptx")) {
         setPreviewId(doc.artifactId);
         return;
       }
