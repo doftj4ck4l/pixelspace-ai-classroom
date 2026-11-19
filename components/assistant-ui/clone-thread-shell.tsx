@@ -5,8 +5,8 @@ import {
   ThreadListItems,
   ThreadListNew,
   ThreadListRoot,
-  ThreadListSearch,
 } from "@/components/assistant-ui/elements/thread-list.aui";
+import { SearchDialog } from "@/components/assistant-ui/search-dialog";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
 import { ProfileMenu } from "@/components/assistant-ui/profile-menu";
 import { Button } from "@/components/ui/button";
@@ -147,7 +147,6 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const [section, setSection] = useState("all");
   const [view, setView] = useState<SidebarView>("home");
   const nav = useMemo(
@@ -313,7 +312,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 size="icon"
                 tooltip="Search"
                 side="bottom"
-                onClick={() => setSearchOpen((open) => !open)}
+                onClick={() => setSearchOpen(true)}
                 className="size-8"
               >
                 <SearchIcon className="size-4" />
@@ -381,12 +380,6 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               </div>
             ) : null}
 
-            {searchOpen && !sidebarCollapsed && hasThreads && (
-              <div className="pt-1 pb-1">
-                <ThreadListSearch value={search} onValueChange={setSearch} />
-              </div>
-            )}
-
             {hasThreads && (
               <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
                 Recents
@@ -394,7 +387,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             )}
 
             <ThreadListItems
-              searchQuery={searchOpen && hasThreads ? search : ""}
+              searchQuery=""
               aria-hidden={sidebarCollapsed}
               inert={sidebarCollapsed}
               className={cn(
@@ -439,6 +432,8 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
 
         <div className="min-w-0 flex-1 overflow-hidden">{children}</div>
       </div>
+
+      <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </SidebarNavContext.Provider>
   );
 };
