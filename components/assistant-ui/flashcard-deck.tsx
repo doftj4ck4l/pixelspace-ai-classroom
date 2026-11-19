@@ -1,19 +1,32 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FC, type ReactNode } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import {
+  ArrowLeftIcon,
+  CheckIcon,
+  CircleCheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   LayoutGridIcon,
   LightbulbIcon,
   MaximizeIcon,
+  MoreHorizontalIcon,
   RotateCcwIcon,
   ShuffleIcon,
   Volume2Icon,
   VolumeXIcon,
-  XIcon,
-  type LucideIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 /**
@@ -181,7 +194,9 @@ export const FlashcardDeck: FC<{
     stopSpeaking();
     setFlipped(false);
     setHintOpen(false);
-    setPosition((current) => Math.min(Math.max(current + delta, 0), order.length - 1));
+    setPosition((current) =>
+      Math.min(Math.max(current + delta, 0), order.length - 1),
+    );
   };
 
   const flip = () => {
@@ -245,6 +260,7 @@ export const FlashcardDeck: FC<{
   };
 
   const jumpTo = (index: number) => {
+    stopSpeaking();
     const at = order.indexOf(index);
     setPosition(at >= 0 ? at : 0);
     setFlipped(false);
@@ -254,20 +270,44 @@ export const FlashcardDeck: FC<{
   };
 
   useEffect(() => {
-    if (!presenting) return;
+    if (!full) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPresenting(false);
-      if (event.key === "ArrowRight") go(1);
-      if (event.key === "ArrowLeft") go(-1);
-      if (event.key === " ") {
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      if (
+        event.defaultPrevented ||
+        event.repeat ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        target?.closest(
+          'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="menu"], [role="menuitem"], [role="menuitemcheckbox"], [aria-haspopup]',
+        ) ||
+        (target?.closest('[role="dialog"]') && !presenting) ||
+        phase !== "studying" ||
+        (view !== "study" && !presenting)
+      )
+        return;
+      if (
+        event.code === "Space" &&
+        target?.closest('button, a, [role="button"]')
+      )
+        return;
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        go(1);
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        go(-1);
+      }
+      if (event.code === "Space") {
         event.preventDefault();
         flip();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [presenting, position, order.length]);
+  });
 
   useEffect(() => stopSpeaking, []);
 
@@ -280,6 +320,7 @@ export const FlashcardDeck: FC<{
   }
 
   const onKeyDown = (event: React.KeyboardEvent) => {
+    if (event.target !== event.currentTarget) return;
     if (event.key === "ArrowLeft") go(-1);
     else if (event.key === "ArrowRight") go(1);
     else if (event.key === " " || event.key === "Enter") {
@@ -295,9 +336,13 @@ export const FlashcardDeck: FC<{
       <div
         tabIndex={0}
         onKeyDown={onKeyDown}
-        className="border-border/60 bg-card my-4 w-full max-w-xl overflow-hidden rounded-2xl border outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="border-border/60 bg-card focus-visible:ring-ring/40 my-4 w-full max-w-xl overflow-hidden rounded-2xl border outline-none focus-visible:ring-2"
       >
-        <DeckHeader theme={theme} title={spec.title ?? "Kad Imbas"} subject={spec.subject}>
+        <DeckHeader
+          theme={theme}
+          title={spec.title ?? "Kad Imbas"}
+          subject={spec.subject}
+        >
           <Counter chip={theme.chip} position={position} total={order.length} />
         </DeckHeader>
         <ProgressBar theme={theme} value={(position + 1) / order.length} />
@@ -309,7 +354,11 @@ export const FlashcardDeck: FC<{
             compact
             onFlip={flip}
           />
-          <HintRow card={card} open={hintOpen} onToggle={() => setHintOpen((o) => !o)} />
+          <HintRow
+            card={card}
+            open={hintOpen}
+            onToggle={() => setHintOpen((o) => !o)}
+          />
         </div>
         <DeckControls
           position={position}
@@ -327,279 +376,395 @@ export const FlashcardDeck: FC<{
 
   const finished = phase === "done";
 
+  const mastery = Math.round((knownCount / total) * 100);
+  const reset = () => {
+    setShuffled(false);
+    restart();
+  };
+
+  const studyControls = (
+    <div className="mx-auto mt-5 flex w-full max-w-lg flex-col items-center gap-4">
+      <div className="grid w-full grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] gap-2 sm:grid-cols-[1fr_1.2fr_1fr] sm:gap-3">
+        <Button
+          variant="outline"
+          className="h-11 gap-1 sm:gap-2"
+          disabled={position === 0}
+          onClick={() => go(-1)}
+          aria-label="Kad sebelumnya"
+        >
+          <ChevronLeftIcon className="size-4" />
+          <span className="hidden sm:inline">Sebelum</span>
+        </Button>
+        <Button className="h-11 gap-2" onClick={flip} aria-keyshortcuts="Space">
+          <RotateCcwIcon className="size-4" />
+          <span>{flipped ? "Lihat Soalan" : "Lihat Jawapan"}</span>
+        </Button>
+        <Button
+          variant="outline"
+          className="h-11 gap-1 sm:gap-2"
+          disabled={position === order.length - 1}
+          onClick={() => go(1)}
+          aria-label="Kad seterusnya"
+        >
+          <span className="hidden sm:inline">Seterusnya</span>
+          <ChevronRightIcon className="size-4" />
+        </Button>
+      </div>
+      <div className="min-h-11 w-full">
+        {flipped ? (
+          <div
+            className="grid grid-cols-2 gap-2 sm:gap-3"
+            aria-label="Nilai kefahaman anda"
+          >
+            <Button
+              variant="outline"
+              className="h-11 gap-2"
+              onClick={() => mark("again")}
+            >
+              <RotateCcwIcon className="size-4" />
+              Masih Belajar
+            </Button>
+            <Button
+              variant="secondary"
+              className={cn("h-11 gap-2", theme.chip)}
+              onClick={() => mark("known")}
+            >
+              <CheckIcon className="size-4" />
+              Sudah Faham
+            </Button>
+          </div>
+        ) : (
+          <p className="text-muted-foreground py-3 text-center text-xs">
+            Fikirkan jawapan anda sebelum membalikkan kad.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <div className={cn("bg-gradient-to-r px-4 py-3", theme.header)}>
-        <div className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-            {spec.title ?? "Kad Imbas"}
-          </span>
-          {full && (
-            <span className="text-muted-foreground hidden shrink-0 items-center gap-2 text-xs sm:flex">
-              <span className="text-emerald-600 dark:text-emerald-400">
-                ✓ {knownCount}
-              </span>
-              <span className="text-amber-600 dark:text-amber-400">
-                ↻ {againCount}
-              </span>
+    <div className="bg-background flex h-full min-h-0 flex-col overflow-y-auto">
+      <header className="border-border/60 shrink-0 border-b px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex items-start gap-3">
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mt-0.5 size-10"
+                onClick={onClose}
+                aria-label="Kembali ke kad imbas"
+              >
+                <ArrowLeftIcon className="size-5" />
+              </Button>
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl leading-snug font-semibold tracking-tight sm:text-2xl">
+                {spec.title ?? "Kad Imbas"}
+              </h1>
+              {spec.subject && (
+                <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+                  {spec.subject}
+                </p>
+              )}
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="ghost" size="icon" className="size-10" />
+                }
+                aria-label="Pilihan kad imbas"
+              >
+                <MoreHorizontalIcon className="size-5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="min-w-48 motion-reduce:animate-none"
+              >
+                <DropdownMenuItem
+                  onClick={toggleSpeaking}
+                  disabled={finished || view !== "study"}
+                >
+                  {speaking ? <VolumeXIcon /> : <Volume2Icon />}
+                  {speaking ? "Berhenti baca" : "Baca kuat"}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    stopSpeaking();
+                    setPresenting(true);
+                  }}
+                  disabled={finished || view !== "study"}
+                >
+                  <MaximizeIcon />
+                  Skrin penuh
+                </DropdownMenuItem>
+                <DropdownMenuCheckboxItem
+                  checked={shuffled}
+                  onCheckedChange={toggleShuffle}
+                >
+                  <ShuffleIcon />
+                  Acak kad
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={reset}>
+                  <RotateCcwIcon />
+                  Mula semula
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <span className="text-muted-foreground inline-flex items-center gap-2">
+              <LayoutGridIcon className="size-4" />
+              {total} kad
             </span>
-          )}
-          <Counter chip={theme.chip} position={position} total={order.length} />
-        </div>
-        <div className="mt-0.5 flex items-center gap-2">
-          {spec.subject ? (
-            <p className="text-muted-foreground min-w-0 flex-1 truncate text-xs">
-              {spec.subject}
-            </p>
-          ) : (
-            <span className="flex-1" />
-          )}
-          <div className="bg-muted/70 flex shrink-0 items-center gap-0.5 rounded-full p-0.5">
-            <ViewToggle
-              active={view === "study"}
-              icon={LightbulbIcon}
-              label="Belajar"
-              onClick={() => setView("study")}
-            />
-            <ViewToggle
-              active={view === "grid"}
-              icon={LayoutGridIcon}
-              label="Kad"
-              onClick={() => setView("grid")}
+            <span
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs font-medium",
+                theme.chip,
+              )}
+            >
+              <CircleCheckIcon className="size-4" />
+              {knownCount} dikuasai
+            </span>
+            <span className="text-muted-foreground ml-auto text-xs tabular-nums">
+              {mastery}% dikuasai
+            </span>
+          </div>
+          <div className="mt-3">
+            <ProgressBar
+              theme={theme}
+              value={knownCount / total}
+              label="Penguasaan dek"
             />
           </div>
-          <HeaderAction
-            icon={speaking ? VolumeXIcon : Volume2Icon}
-            label={speaking ? "Berhenti baca" : "Baca kuat"}
-            onClick={toggleSpeaking}
-          />
-          <HeaderAction
-            icon={MaximizeIcon}
-            label="Skrin penuh"
-            onClick={() => setPresenting(true)}
-          />
-          <HeaderAction
-            icon={RotateCcwIcon}
-            label="Mula semula"
-            onClick={() => {
-              setShuffled(false);
-              restart();
-            }}
-          />
-          <HeaderAction
-            icon={ShuffleIcon}
-            label="Acak"
-            active={shuffled}
-            onClick={toggleShuffle}
-          />
-          {onClose && (
-            <HeaderAction icon={XIcon} label="Tutup" onClick={onClose} />
+        </div>
+      </header>
+
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div
+            className="bg-muted/60 inline-flex items-center gap-1 rounded-lg p-1"
+            role="group"
+            aria-label="Paparan kad imbas"
+          >
+            <Button
+              variant={view === "study" ? "outline" : "ghost"}
+              className="h-9 gap-2"
+              aria-pressed={view === "study"}
+              onClick={() => setView("study")}
+            >
+              <LightbulbIcon className="size-4" />
+              Belajar
+            </Button>
+            <Button
+              variant={view === "grid" ? "outline" : "ghost"}
+              className="h-9 gap-2"
+              aria-pressed={view === "grid"}
+              onClick={() => {
+                stopSpeaking();
+                setView("grid");
+              }}
+            >
+              <LayoutGridIcon className="size-4" />
+              Semua Kad
+            </Button>
+          </div>
+          {againCount > 0 && (
+            <Button variant="ghost" className="h-9 gap-2" onClick={reviewAgain}>
+              <RotateCcwIcon className="size-4" />
+              Ulang Kaji ({againCount})
+            </Button>
           )}
         </div>
-      </div>
 
-      <ProgressBar theme={theme} value={finished ? 1 : (position + 1) / order.length} />
-
-      {view === "grid" ? (
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="mx-auto grid max-w-4xl grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        {view === "grid" ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {order.map((index, at) => {
               const item = spec.cards[index];
-              const mark = marks[index];
+              const status = marks[index];
               return (
-                <button
+                <Button
                   key={index}
-                  type="button"
+                  variant="outline"
                   onClick={() => jumpTo(index)}
                   className={cn(
-                    "border-border/60 bg-card hover:border-foreground/20 flex items-start gap-2 rounded-xl border p-3 text-left transition-colors",
-                    at === position && "ring-2 ring-ring/40",
+                    "h-auto min-h-32 items-start justify-start gap-3 p-4 text-left whitespace-normal",
+                    at === position && "ring-ring/40 ring-2",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "mt-1 size-2 shrink-0 rounded-full",
-                      mark === "known"
-                        ? "bg-emerald-500"
-                        : mark === "again"
-                          ? "bg-amber-500"
-                          : "bg-muted-foreground/30",
-                    )}
-                  />
+                  <span className="text-muted-foreground pt-0.5 text-xs tabular-nums">
+                    {at + 1}
+                  </span>
                   <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-sm font-medium">
+                    <span className="line-clamp-3 text-sm leading-relaxed font-medium">
                       {item.front}
                     </span>
                     {item.tags?.length ? (
-                      <span className="mt-1 flex flex-wrap gap-1">
+                      <span className="mt-2 flex flex-wrap gap-1">
                         {item.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 text-[10px]"
+                            className="bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-xs font-normal"
                           >
                             {tag}
                           </span>
                         ))}
                       </span>
                     ) : null}
+                    <span
+                      className={cn(
+                        "mt-3 block text-xs font-normal",
+                        status === "known"
+                          ? theme.chip
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {status === "known"
+                        ? "Sudah Faham"
+                        : status === "again"
+                          ? "Masih Belajar"
+                          : "Belum dinilai"}
+                    </span>
                   </span>
-                  <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
-                    {at + 1}
-                  </span>
-                </button>
+                </Button>
               );
             })}
           </div>
-        </div>
-      ) : finished ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-10 text-center">
-          <p className="text-lg font-semibold">
-            {reviewRound ? "Pusingan ulangan selesai" : "Sesi selesai"}
-          </p>
-          <p className="text-muted-foreground text-sm">
-            {knownCount} faham · {againCount} untuk ulang kaji
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {againCount > 0 && (
-              <button
-                type="button"
-                onClick={reviewAgain}
-                className={cn(
-                  "flex h-9 items-center gap-2 rounded-full px-4 text-sm font-medium text-white transition-opacity hover:opacity-90",
-                  theme.bar,
-                )}
-              >
-                <RotateCcwIcon className="size-4" />
-                Ulang {againCount} kad
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                setShuffled(false);
-                restart();
-              }}
-              className="border-border/60 hover:bg-muted flex h-9 items-center gap-2 rounded-full border px-4 text-sm transition-colors"
-            >
-              Mula semula
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-6">
-          <div className="relative w-full max-w-2xl">
-            <div
-              aria-hidden="true"
+        ) : finished ? (
+          <div
+            className="flex flex-1 flex-col items-center justify-center gap-4 py-12 text-center"
+            role="status"
+          >
+            <span
               className={cn(
-                "pointer-events-none absolute top-1/2 left-1/2 h-[70%] w-[85%] -translate-x-1/2 -translate-y-1/2 rounded-[60px] blur-3xl",
-                theme.glow,
+                "flex size-12 items-center justify-center rounded-full",
+                theme.chip,
               )}
-            />
-            <FlipCard
-              card={card}
-              flipped={flipped}
-              theme={theme}
-              onFlip={flip}
-            />
-          </div>
-
-          <div className="mt-4 flex w-full max-w-2xl flex-col items-center gap-3">
-            <HintRow card={card} open={hintOpen} onToggle={() => setHintOpen((o) => !o)} />
-
-            {flipped ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => mark("again")}
-                  className="border-amber-500/40 text-amber-700 hover:bg-amber-500/10 dark:text-amber-300 flex h-9 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors"
-                >
-                  ↻ Ulang kaji
-                </button>
-                <button
-                  type="button"
-                  onClick={() => mark("known")}
-                  className="border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300 flex h-9 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors"
-                >
-                  ✓ Faham
-                </button>
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-xs">
-                Klik kad untuk flip · ← → navigasi · space flip
-              </p>
-            )}
-
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                aria-label="Kad sebelumnya"
-                disabled={position === 0}
-                onClick={() => go(-1)}
-                className="hover:bg-muted flex size-9 items-center justify-center rounded-full transition-colors disabled:opacity-30"
-              >
-                <ChevronLeftIcon className="size-5" />
-              </button>
-              <span className="text-muted-foreground w-16 text-center text-sm tabular-nums">
-                {position + 1} / {order.length}
-              </span>
-              <button
-                type="button"
-                aria-label="Kad seterusnya"
-                disabled={position === order.length - 1}
-                onClick={() => go(1)}
-                className="hover:bg-muted flex size-9 items-center justify-center rounded-full transition-colors disabled:opacity-30"
-              >
-                <ChevronRightIcon className="size-5" />
-              </button>
+            >
+              <CircleCheckIcon className="size-6" />
+            </span>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              {reviewRound ? "Pusingan ulangan selesai" : "Sesi selesai"}
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              {knownCount} dikuasai · {againCount} masih belajar
+            </p>
+            <div className="mt-2 flex flex-wrap justify-center gap-3">
+              {againCount > 0 && (
+                <Button className="h-11 gap-2" onClick={reviewAgain}>
+                  <RotateCcwIcon className="size-4" />
+                  Ulang {againCount} kad
+                </Button>
+              )}
+              <Button variant="outline" className="h-11" onClick={reset}>
+                Mula semula
+              </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {presenting && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/95">
-          <div className="flex flex-1 items-center justify-center p-8">
-            <div className="w-full max-w-3xl">
+        ) : (
+          <div className="flex flex-1 flex-col justify-center pb-2">
+            <div className="mx-auto w-full max-w-3xl">
+              <div
+                className="text-muted-foreground mb-3 flex items-center justify-between gap-3 text-xs tabular-nums"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                <span>
+                  {reviewRound ? "Ulang kaji" : "Belajar"} · Kad {position + 1}{" "}
+                  daripada {order.length}
+                </span>
+                <span>
+                  {marks[cardIndex] === "known"
+                    ? "Sudah Faham"
+                    : marks[cardIndex] === "again"
+                      ? "Masih Belajar"
+                      : "Belum dinilai"}
+                </span>
+              </div>
               <FlipCard
+                key={cardIndex}
                 card={card}
                 flipped={flipped}
                 theme={theme}
                 onFlip={flip}
-                presentation
               />
+              {studyControls}
+              <div className="flex flex-col items-center gap-4">
+                <HintRow
+                  card={card}
+                  open={hintOpen}
+                  onToggle={() => setHintOpen((o) => !o)}
+                />
+                <p className="text-muted-foreground hidden items-center justify-center gap-2 text-xs sm:flex">
+                  <kbd className="bg-muted/60 rounded border px-1.5 py-1 font-sans">
+                    Space
+                  </kbd>{" "}
+                  untuk flip
+                  <kbd className="bg-muted/60 ml-3 rounded border px-1.5 py-1">
+                    ←
+                  </kbd>
+                  <kbd className="bg-muted/60 rounded border px-1.5 py-1">
+                    →
+                  </kbd>{" "}
+                  untuk navigasi
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center justify-center gap-4 pb-6 text-white">
-            <button
-              type="button"
-              aria-label="Kad sebelumnya"
-              onClick={() => go(-1)}
-              className="hover:bg-white/10 flex size-9 items-center justify-center rounded-full transition-colors"
-            >
-              <ChevronLeftIcon className="size-5" />
-            </button>
-            <span className="text-sm tabular-nums">
-              {position + 1} / {order.length}
-            </span>
-            <button
-              type="button"
-              aria-label="Kad seterusnya"
-              onClick={() => go(1)}
-              className="hover:bg-white/10 flex size-9 items-center justify-center rounded-full transition-colors"
-            >
-              <ChevronRightIcon className="size-5" />
-            </button>
-            <button
-              type="button"
-              aria-label="Keluar"
-              onClick={() => setPresenting(false)}
-              className="hover:bg-white/10 ml-4 flex size-9 items-center justify-center rounded-full transition-colors"
-            >
-              <XIcon className="size-5" />
-            </button>
+        )}
+      </div>
+
+      <Dialog
+        open={presenting}
+        onOpenChange={(open) => {
+          stopSpeaking();
+          setPresenting(open);
+        }}
+      >
+        <DialogContent className="bg-background inset-0 flex h-dvh max-w-none translate-x-0 translate-y-0 flex-col overflow-y-auto rounded-none border-0 p-4 ring-0 motion-reduce:animate-none sm:max-w-none sm:p-8">
+          <DialogTitle className="pr-8 text-lg">
+            {spec.title ?? "Kad Imbas"}
+          </DialogTitle>
+          <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center py-6">
+            {finished ? (
+              <div className="space-y-4 text-center">
+                <h2 className="text-2xl font-semibold">Sesi selesai</h2>
+                <p className="text-muted-foreground">
+                  {knownCount} dikuasai · {againCount} masih belajar
+                </p>
+                <Button variant="outline" onClick={() => setPresenting(false)}>
+                  Kembali ke dek
+                </Button>
+              </div>
+            ) : (
+              <>
+                <p className="text-muted-foreground mb-3 text-center text-sm tabular-nums">
+                  Kad {position + 1} daripada {order.length} · {knownCount}{" "}
+                  dikuasai
+                </p>
+                <FlipCard
+                  key={cardIndex}
+                  card={card}
+                  flipped={flipped}
+                  theme={theme}
+                  onFlip={flip}
+                  presentation
+                />
+                {studyControls}
+                <div className="flex justify-center">
+                  <HintRow
+                    card={card}
+                    open={hintOpen}
+                    onToggle={() => setHintOpen((o) => !o)}
+                  />
+                </div>
+              </>
+            )}
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -640,57 +805,27 @@ const Counter: FC<{ chip: string; position: number; total: number }> = ({
   </span>
 );
 
-const ProgressBar: FC<{ theme: AccentTheme; value: number }> = ({
-  theme,
-  value,
-}) => (
-  <div className="h-1 w-full bg-muted/60">
+const ProgressBar: FC<{
+  theme: AccentTheme;
+  value: number;
+  label?: string;
+}> = ({ theme, value, label = "Kemajuan kad" }) => (
+  <div
+    className="bg-muted h-1.5 w-full overflow-hidden rounded-full"
+    role="progressbar"
+    aria-label={label}
+    aria-valuemin={0}
+    aria-valuemax={100}
+    aria-valuenow={Math.round(value * 100)}
+  >
     <div
-      className={cn("h-full transition-all duration-300", theme.bar)}
+      className={cn(
+        "h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none",
+        theme.bar,
+      )}
       style={{ width: `${Math.min(value, 1) * 100}%` }}
     />
   </div>
-);
-
-const ViewToggle: FC<{
-  active: boolean;
-  icon: LucideIcon;
-  label: string;
-  onClick: () => void;
-}> = ({ active, icon: Icon, label, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={cn(
-      "flex h-7 items-center gap-1 rounded-full px-2.5 text-xs transition-colors",
-      active
-        ? "bg-background text-foreground font-medium shadow-sm"
-        : "text-muted-foreground hover:text-foreground",
-    )}
-  >
-    <Icon className="size-3.5" />
-    {label}
-  </button>
-);
-
-const HeaderAction: FC<{
-  icon: LucideIcon;
-  label: string;
-  onClick: () => void;
-  active?: boolean;
-}> = ({ icon: Icon, label, onClick, active }) => (
-  <button
-    type="button"
-    title={label}
-    aria-label={label}
-    onClick={onClick}
-    className={cn(
-      "text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 shrink-0 items-center justify-center rounded-full transition-colors",
-      active && "bg-muted text-foreground",
-    )}
-  >
-    <Icon className="size-3.5" />
-  </button>
 );
 
 const FlipCard: FC<{
@@ -700,37 +835,47 @@ const FlipCard: FC<{
   compact?: boolean;
   presentation?: boolean;
   onFlip: () => void;
-}> = ({ card, flipped, theme, compact, presentation, onFlip }) => (
-  <button
-    type="button"
-    onClick={onFlip}
-    className="block w-full text-left [perspective:1200px]"
-    aria-label={flipped ? "Tunjuk soalan" : "Tunjuk jawapan"}
-  >
-    <div
-      className={cn(
-        "relative w-full transition-transform duration-300 [transform-style:preserve-3d]",
-        flipped && "[transform:rotateY(180deg)]",
-        compact ? "h-40" : presentation ? "h-80 md:h-96" : "h-64 md:h-72",
-      )}
+}> = ({ card, flipped, theme, compact, presentation, onFlip }) => {
+  const reducedMotion = useReducedMotion();
+  return (
+    <button
+      type="button"
+      onClick={onFlip}
+      className="focus-visible:ring-ring/50 block w-full rounded-2xl text-left outline-none [perspective:1200px] focus-visible:ring-3"
+      aria-label={flipped ? "Tunjuk soalan" : "Tunjuk jawapan"}
+      aria-pressed={flipped}
     >
-      <CardFace
-        theme={theme}
-        side="front"
-        card={card}
-        compact={compact}
-        presentation={presentation}
-      />
-      <CardFace
-        theme={theme}
-        side="back"
-        card={card}
-        compact={compact}
-        presentation={presentation}
-      />
-    </div>
-  </button>
-);
+      <motion.span
+        className="relative grid w-full [transform-style:preserve-3d]"
+        initial={false}
+        animate={{ rotateY: flipped ? 180 : 0 }}
+        transition={{
+          duration: reducedMotion ? 0 : 0.45,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+      >
+        <CardFace
+          theme={theme}
+          side="front"
+          card={card}
+          compact={compact}
+          presentation={presentation}
+          hidden={flipped}
+          reducedMotion={!!reducedMotion}
+        />
+        <CardFace
+          theme={theme}
+          side="back"
+          card={card}
+          compact={compact}
+          presentation={presentation}
+          hidden={!flipped}
+          reducedMotion={!!reducedMotion}
+        />
+      </motion.span>
+    </button>
+  );
+};
 
 const CardFace: FC<{
   card: FlashcardItem;
@@ -738,24 +883,32 @@ const CardFace: FC<{
   theme: AccentTheme;
   compact?: boolean;
   presentation?: boolean;
-}> = ({ card, side, theme, compact, presentation }) => {
+  hidden: boolean;
+  reducedMotion: boolean;
+}> = ({ card, side, theme, compact, presentation, hidden, reducedMotion }) => {
   const isBack = side === "back";
   const text = isBack ? card.back : card.front;
   return (
-    <div
+    <span
+      aria-hidden={hidden}
+      style={{ visibility: reducedMotion && hidden ? "hidden" : undefined }}
       className={cn(
-        "border-border/60 absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border px-6 text-center ring-1 ring-inset [backface-visibility:hidden]",
-        theme.cardRing,
+        "bg-card text-card-foreground border-border col-start-1 row-start-1 flex min-w-0 flex-col items-center justify-center gap-5 rounded-2xl border text-center shadow-sm [-webkit-backface-visibility:hidden] [backface-visibility:hidden]",
+        compact
+          ? "min-h-40 gap-3 px-5 py-6"
+          : presentation
+            ? "min-h-80 px-6 py-10 sm:min-h-96 sm:px-12"
+            : "min-h-72 px-5 py-8 sm:min-h-88 sm:px-10 sm:py-10",
+        hidden && "pointer-events-none",
         isBack && "[transform:rotateY(180deg)]",
-        presentation ? "bg-white text-[#1f1f1f]" : "bg-card",
       )}
     >
       {!isBack && (
-        <div className="flex flex-wrap items-center justify-center gap-1.5">
+        <span className="flex flex-wrap items-center justify-center gap-1.5">
           {card.type ? (
             <span
               className={cn(
-                "rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase",
+                "rounded-md px-2 py-0.5 text-xs font-medium",
                 theme.badge,
               )}
             >
@@ -765,14 +918,14 @@ const CardFace: FC<{
           {card.tags?.map((tag) => (
             <span
               key={tag}
-              className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px]"
+              className="bg-muted/70 text-muted-foreground rounded-md px-2 py-0.5 text-xs"
             >
               {tag}
             </span>
           ))}
-        </div>
+        </span>
       )}
-      <span className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+      <span className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
         {isBack ? "Jawapan" : "Soalan"}
       </span>
       <span
@@ -780,21 +933,24 @@ const CardFace: FC<{
           isBack
             ? compact
               ? "text-sm leading-relaxed"
-              : "text-base leading-relaxed md:text-lg"
+              : "max-w-2xl text-lg leading-relaxed sm:text-xl"
             : compact
-              ? "text-lg font-semibold leading-snug"
+              ? "text-lg leading-snug font-semibold"
               : presentation
-                ? "text-3xl font-semibold leading-snug md:text-4xl"
-                : "text-2xl font-semibold leading-snug",
+                ? "text-3xl leading-snug font-semibold md:text-4xl"
+                : "max-w-2xl text-2xl leading-snug font-semibold tracking-tight sm:text-3xl lg:text-4xl",
+          "[overflow-wrap:anywhere] whitespace-pre-wrap",
           card.type === "formula" && "font-mono",
         )}
       >
         {text}
       </span>
       {!isBack && (
-        <span className="text-muted-foreground text-xs">Klik untuk flip</span>
+        <span className="text-muted-foreground text-xs">
+          Klik kad untuk lihat jawapan
+        </span>
       )}
-    </div>
+    </span>
   );
 };
 
