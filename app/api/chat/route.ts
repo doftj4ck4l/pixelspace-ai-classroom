@@ -131,6 +131,24 @@ const buildArtifactEditContext = (
   artifact: PiArtifact,
   focusedIndex?: number,
 ) => {
+  if (artifact.type === "slides" && artifact.kind === "file") {
+    const lines = [
+      "[Artifact edit session]",
+      "You are editing an EXISTING slide deck file. Do NOT create a new deck.",
+      `Deck: ${artifact.title} (id ${artifact.id})`,
+      `File: ${artifact.path ?? "the shared .pptx in your workspace"}`,
+    ];
+    if (typeof focusedIndex === "number" && Number.isInteger(focusedIndex)) {
+      lines.push(`The user is currently viewing slide #${focusedIndex + 1}.`);
+    }
+    lines.push(
+      "Apply the requested changes to the ACTUAL .pptx file — edit it in place (LibreOffice is available) or regenerate the deck, then verify it renders and share_file the updated .pptx with the SAME filename so the app replaces the existing file.",
+      "For small edits do NOT run web searches — apply the change directly and return quickly.",
+      "If the request does not say what to change, ask one short clarifying question with the ask_user tool (never a plain-text question, which would end the run without an edit).",
+    );
+    return lines.join("\n");
+  }
+
   const isQuiz = artifact.type === "quizzes";
   const lines = [
     "[Artifact edit session]",
@@ -243,12 +261,31 @@ const trimTail = (url: string) => url.replace(/[.,;:!?]+$/, "");
  * as cards in Spaces. Only explicitly shared files — never a workspace listing,
  * which would fill the gallery with scratch files.
  */
+const baseNameOf = (name: string) => name.replace(/\.[^.]+$/, "").trim();
+
 const captureSharedArtifacts = async (
   userId: string,
   threadId: string,
   content: string,
+  slideEditTargetId?: string,
 ) => {
   const seen = new Set<string>();
+
+  // A slide-edit run re-shares the updated deck (and its PDF sibling) under
+  // the same file names. Those replace the existing artifact files instead of
+  // piling up duplicate cards.
+  let editableArtifacts: PiArtifact[] | null = null;
+  if (slideEditTargetId) {
+    const target = await artifactRegistry.get(userId, slideEditTargetId);
+    if (target) {
+      const all = await artifactRegistry.list(userId);
+      const base = baseNameOf(target.title);
+      editableArtifacts = all.filter(
+        (artifact) =>
+          artifact.type === "slides" && baseNameOf(artifact.title) === base,
+      );
+    }
+  }
 
   for (const match of content.matchAll(WORKSPACE_FILE_URL)) {
     const url = trimTail(match[0]);
@@ -262,6 +299,18 @@ const captureSharedArtifacts = async (
       // keep the encoded form
     }
     const title = filePath.split("/").pop() || filePath;
+
+    const replace = editableArtifacts?.find(
+      (artifact) => baseNameOf(artifact.title) === baseNameOf(title),
+    );
+    if (replace) {
+      await artifactRegistry.updateFile(userId, replace.id, {
+        url,
+        path: filePath,
+      });
+      continue;
+    }
+
     await artifactRegistry.add(userId, {
       threadId,
       title,
@@ -303,11 +352,14 @@ const piChat = async (
 
   if (artifactEditTargetId) {
     const artifact = await artifactRegistry.get(userId, artifactEditTargetId);
-    if (
-      !artifact ||
-      artifact.kind !== "spec" ||
-      (artifact.type !== "flashcards" && artifact.type !== "quizzes")
-    ) {
+    const editable =
+      artifact &&
+      ((artifact.kind === "spec" &&
+        (artifact.type === "flashcards" || artifact.type === "quizzes")) ||
+        (artifact.kind === "file" &&
+          artifact.type === "slides" &&
+          typeof artifact.url === "string"));
+    if (!editable) {
       return null;
     }
     deckEditContext = buildArtifactEditContext(artifact, body.focusedIndex);
@@ -469,7 +521,12 @@ const piChat = async (
                   typeof event.content === "string" &&
                   threadId
                 ) {
-                  await captureSharedArtifacts(userId, threadId, event.content);
+                  await captureSharedArtifacts(
+                    userId,
+                    threadId,
+                    event.content,
+                    artifactEditTargetId,
+                  );
                 }
                 if (
                   event.name === "render_ui" &&

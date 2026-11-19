@@ -46,8 +46,8 @@ type Ask = {
 
 export const ArtifactAiPanel: FC<{
   artifactId: string;
-  /** Drives the copy: "card"/"deck" vs "question"/"quiz". */
-  kind: "flashcards" | "quizzes";
+  /** Drives the copy and which tool signals a completed edit. */
+  kind: "flashcards" | "quizzes" | "slides";
   open: boolean;
   onOpenChange: (open: boolean) => void;
   prefill?: { text: string; nonce: number } | null;
@@ -63,8 +63,11 @@ export const ArtifactAiPanel: FC<{
   onDeckUpdated,
 }) => {
   const isQuiz = kind === "quizzes";
-  const itemWord = isQuiz ? "question" : "card";
+  const isSlides = kind === "slides";
+  const itemWord = isSlides ? "slide" : isQuiz ? "question" : "card";
   const setWord = isQuiz ? "quiz" : "deck";
+  // Slides edits are complete when the agent shares the updated file.
+  const editTool = isSlides ? "share_file" : "render_ui";
   const [messages, setMessages] = useState<PanelMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -204,7 +207,7 @@ export const ArtifactAiPanel: FC<{
             });
           } else if (
             event.type === "tool-input-available" &&
-            event.toolName === "render_ui" &&
+            event.toolName === editTool &&
             event.toolCallId
           ) {
             pendingRenderUi.add(event.toolCallId);
@@ -227,7 +230,7 @@ export const ArtifactAiPanel: FC<{
           ...prev,
           {
             role: "system",
-            text: `${isQuiz ? "Quiz" : "Deck"} updated — changes saved.`,
+            text: `${isQuiz ? "Quiz" : isSlides ? "Slides" : "Deck"} updated — changes saved.`,
           },
         ]);
         onDeckUpdated();
@@ -300,7 +303,14 @@ export const ArtifactAiPanel: FC<{
       >
         {messages.length === 0 && (
           <p className="text-muted-foreground text-xs leading-relaxed">
-            {isQuiz ? (
+            {isSlides ? (
+              <>
+                Ask for changes to <strong>this deck</strong> — the agent edits
+                the actual PowerPoint file and re-shares it. e.g. &ldquo;add a
+                slide about condensation&rdquo;, &ldquo;change the title of
+                slide 2&rdquo;, &ldquo;translate every slide to English&rdquo;.
+              </>
+            ) : isQuiz ? (
               <>
                 Ask for changes to the <strong>question on screen</strong>{" "}
                 (&ldquo;change this question to open-ended&rdquo;, &ldquo;make

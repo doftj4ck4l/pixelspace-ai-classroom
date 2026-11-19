@@ -82,6 +82,7 @@ import {
   blankSlide,
   type SlideData,
 } from "@/components/assistant-ui/slide-editor";
+import { SlidePreview } from "@/components/assistant-ui/slide-preview";
 import { cn } from "@/lib/utils";
 
 export type ModuleKind =
@@ -683,6 +684,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [pendingDelete, setPendingDelete] = useState<Doc | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [sharedArtifacts, setSharedArtifacts] = useState<SharedArtifact[]>([]);
   const [progressMap, setProgressMap] = useState<Record<string, DeckProgress>>(
@@ -897,6 +899,11 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     }
     if (!doc.url) return;
     if (doc.type === "slides") {
+      // PowerPoint files render from the actual .pptx, exactly as generated.
+      if (/\.pptx$/i.test(doc.url)) {
+        setPreviewId(doc.artifactId);
+        return;
+      }
       const downloads = siblingsOf(doc);
       const existing = (docs ?? []).find(
         (entry) => entry.originArtifactId === doc.artifactId,
@@ -1028,6 +1035,19 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         spec={spec}
         deckId={viewingDoc.id}
         onClose={() => setViewingId(null)}
+      />
+    );
+  }
+
+  const previewDoc = findDoc(previewId);
+
+  if (previewDoc && previewDoc.artifactId) {
+    return (
+      <SlidePreview
+        artifactId={previewDoc.artifactId}
+        title={previewDoc.title}
+        downloads={siblingsOf(previewDoc)}
+        onClose={() => setPreviewId(null)}
       />
     );
   }

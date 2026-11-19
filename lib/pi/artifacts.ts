@@ -178,6 +178,24 @@ export const artifactRegistry = {
       .where(and(eq(artifacts.id, id), eq(artifacts.userId, userId)));
   },
 
+  /** Point a file artifact at a freshly shared copy (same deck, new file). */
+  async updateFile(
+    userId: string,
+    id: string,
+    patch: { url?: string; path?: string; title?: string },
+  ): Promise<void> {
+    if (!patch.url && !patch.path && !patch.title) return;
+    await db
+      .update(artifacts)
+      .set({
+        ...(patch.url ? { url: patch.url } : {}),
+        ...(patch.path ? { path: patch.path } : {}),
+        ...(patch.title ? { title: patch.title } : {}),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(artifacts.id, id), eq(artifacts.userId, userId)));
+  },
+
   async setFlags(
     userId: string,
     id: string,
