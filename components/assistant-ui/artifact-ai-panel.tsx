@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 /**
  * Floating "Edit with AI" panel for the deck page.
  *
- * Talks to the same /api/chat endpoint but passes `deckEditTargetId`, which
+ * Talks to the same /api/chat endpoint but passes `artifactEditTargetId`, which
  * scopes the turn to THIS deck (the server injects the deck spec and replaces
  * the artifact instead of creating a new one). The conversation lives in a
  * persistent per-deck thread, so history shows up in the sidebar.
@@ -44,21 +44,27 @@ type Ask = {
   options: string[];
 };
 
-export const DeckAiPanel: FC<{
+export const ArtifactAiPanel: FC<{
   artifactId: string;
+  /** Drives the copy: "card"/"deck" vs "question"/"quiz". */
+  kind: "flashcards" | "quizzes";
   open: boolean;
   onOpenChange: (open: boolean) => void;
   prefill?: { text: string; nonce: number } | null;
-  focusedCardIndex?: number | null;
+  focusedIndex?: number | null;
   onDeckUpdated: () => void;
 }> = ({
   artifactId,
+  kind,
   open,
   onOpenChange,
   prefill,
-  focusedCardIndex,
+  focusedIndex,
   onDeckUpdated,
 }) => {
+  const isQuiz = kind === "quizzes";
+  const itemWord = isQuiz ? "question" : "card";
+  const setWord = isQuiz ? "quiz" : "deck";
   const [messages, setMessages] = useState<PanelMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -92,7 +98,7 @@ export const DeckAiPanel: FC<{
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          deckEditTargetId: artifactId,
+          artifactEditTargetId: artifactId,
           questionId: ask.questionId,
           answer: trimmed,
         }),
@@ -159,8 +165,8 @@ export const DeckAiPanel: FC<{
               role: message.role === "assistant" ? "assistant" : "user",
               parts: [{ type: "text", text: message.text }],
             })),
-          deckEditTargetId: artifactId,
-          ...(typeof focusedCardIndex === "number" ? { focusedCardIndex } : {}),
+          artifactEditTargetId: artifactId,
+          ...(typeof focusedIndex === "number" ? { focusedIndex } : {}),
         }),
       });
       if (!res.ok || !res.body) throw new Error("request failed");
@@ -219,7 +225,10 @@ export const DeckAiPanel: FC<{
       if (deckUpdated) {
         setMessages((prev) => [
           ...prev,
-          { role: "system", text: "Deck updated — changes saved." },
+          {
+            role: "system",
+            text: `${isQuiz ? "Quiz" : "Deck"} updated — changes saved.`,
+          },
         ]);
         onDeckUpdated();
       } else {
@@ -230,7 +239,7 @@ export const DeckAiPanel: FC<{
               ...prev.slice(0, -1),
               {
                 role: "system",
-                text: "The agent did not update the deck. Try rephrasing your request.",
+                text: `The agent did not update the ${setWord}. Try rephrasing your request.`,
               },
             ];
           }
@@ -291,11 +300,23 @@ export const DeckAiPanel: FC<{
       >
         {messages.length === 0 && (
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Ask for changes to the <strong>card on screen</strong>{" "}
-            (&ldquo;change this card&hellip;&rdquo;, &ldquo;make it
-            simpler&rdquo;) or the whole deck (&ldquo;add 2 cards about
-            condensation&rdquo;, &ldquo;translate every back to English&rdquo;).
-            New decks are made in the main chat.
+            {isQuiz ? (
+              <>
+                Ask for changes to the <strong>question on screen</strong>{" "}
+                (&ldquo;change this question to open-ended&rdquo;, &ldquo;make
+                it clearer&rdquo;) or the whole quiz (&ldquo;add 5 more
+                questions&rdquo;, &ldquo;translate everything to
+                English&rdquo;). New quizzes are made in the main chat.
+              </>
+            ) : (
+              <>
+                Ask for changes to the <strong>card on screen</strong>{" "}
+                (&ldquo;change this card&hellip;&rdquo;, &ldquo;make it
+                simpler&rdquo;) or the whole deck (&ldquo;add 2 cards about
+                condensation&rdquo;, &ldquo;translate every back to
+                English&rdquo;). New decks are made in the main chat.
+              </>
+            )}
           </p>
         )}
         {messages.map((message, index) =>
@@ -387,7 +408,7 @@ export const DeckAiPanel: FC<{
               }
             }}
             rows={1}
-            placeholder="Ask to change this card or the deck..."
+            placeholder={`Ask to change this ${itemWord} or the ${setWord}...`}
             className="max-h-28 min-h-6 flex-1 resize-none bg-transparent text-sm outline-none"
           />
           {busy ? (

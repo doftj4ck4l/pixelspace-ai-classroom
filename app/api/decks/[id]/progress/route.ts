@@ -17,10 +17,13 @@ export async function GET(
     .select()
     .from(deckProgress)
     .where(and(eq(deckProgress.userId, user.id), eq(deckProgress.deckId, id)));
-  return NextResponse.json({
-    knownIndices: Array.isArray(row?.knownIndices) ? row.knownIndices : [],
-    total: row ? Number(row.total) || 0 : 0,
-  });
+  return NextResponse.json(
+    {
+      knownIndices: Array.isArray(row?.knownIndices) ? row.knownIndices : [],
+      total: row ? Number(row.total) || 0 : 0,
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 /** Upsert mastery as cards are marked. */

@@ -112,6 +112,7 @@ export const artifacts = pgTable(
     pinned: boolean("pinned").notNull().default(false),
     favorite: boolean("favorite").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [index("artifacts_user_id_idx").on(table.userId)],
 );
@@ -131,6 +132,24 @@ export const deckProgress = pgTable(
   (table) => [
     index("deck_progress_user_idx").on(table.userId),
     index("deck_progress_deck_idx").on(table.userId, table.deckId),
+  ],
+);
+
+/** Per-account quiz results: question index → "correct" | "wrong". */
+export const quizProgress = pgTable(
+  "quiz_progress",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    quizId: text("quiz_id").notNull(),
+    results: jsonb("results").notNull().default({}),
+    total: text("total").notNull(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("quiz_progress_user_idx").on(table.userId),
+    index("quiz_progress_quiz_idx").on(table.userId, table.quizId),
   ],
 );
 

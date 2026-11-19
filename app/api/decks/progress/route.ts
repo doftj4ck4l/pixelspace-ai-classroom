@@ -13,12 +13,17 @@ export async function GET() {
     .select()
     .from(deckProgress)
     .where(eq(deckProgress.userId, user.id));
-  return NextResponse.json({
-    progress: rows.map((row) => ({
-      deckId: row.deckId,
-      knownCount: Array.isArray(row.knownIndices) ? row.knownIndices.length : 0,
-      total: Number(row.total) || 0,
-      updatedAt: row.updatedAt.toISOString(),
-    })),
-  });
+  return NextResponse.json(
+    {
+      progress: rows.map((row) => ({
+        deckId: row.deckId,
+        knownCount: Array.isArray(row.knownIndices)
+          ? row.knownIndices.length
+          : 0,
+        total: Number(row.total) || 0,
+        updatedAt: row.updatedAt.toISOString(),
+      })),
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

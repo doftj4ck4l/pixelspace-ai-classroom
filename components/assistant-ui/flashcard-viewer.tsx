@@ -17,7 +17,8 @@ export const FlashcardViewer: FC<{
   onClose: () => void;
   onCardChange?: (index: number) => void;
   onImproveCard?: (index: number, card: FlashcardItem) => void;
-}> = ({ spec, deckId, onClose, onCardChange, onImproveCard }) => (
+  initialIndex?: number;
+}> = ({ spec, deckId, onClose, onCardChange, onImproveCard, initialIndex }) => (
   <div className="bg-background h-full overflow-hidden">
     <FlashcardDeck
       spec={spec}
@@ -26,6 +27,7 @@ export const FlashcardViewer: FC<{
       onClose={onClose}
       onCardChange={onCardChange}
       onImproveCard={onImproveCard}
+      initialIndex={initialIndex}
     />
   </div>
 );

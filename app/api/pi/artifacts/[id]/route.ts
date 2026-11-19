@@ -13,7 +13,10 @@ export async function GET(
   const { id } = await params;
   const artifact = await artifactRegistry.get(user.id, id);
   if (!artifact) return new Response(null, { status: 404 });
-  return NextResponse.json(artifact);
+  // Silent refetches after AI edits must never hit an HTTP cache.
+  return NextResponse.json(artifact, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 /** Pin / favorite a deck or file card. */

@@ -372,9 +372,11 @@ const deckInfoOf = (doc: Doc, progress: Record<string, DeckProgress>) => {
     (doc.content?.kind === "flashcards"
       ? { cards: doc.content.cards }
       : undefined);
-  const cards = spec?.cards ?? [];
+  const questions = (doc.spec as { questions?: unknown[] } | undefined)
+    ?.questions;
+  const items = spec?.cards ?? questions ?? [];
   const row = progress[doc.artifactId ?? doc.id];
-  const total = row?.total || cards.length;
+  const total = row?.total || items.length;
   return { total, known: row?.knownCount ?? 0 };
 };
 
@@ -437,8 +439,12 @@ const DeckCard: FC<{
           {doc.title}
         </p>
         <div className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs">
-          <LayersIcon className="size-3.5" />
-          {total} kad
+          {doc.type === "quizzes" ? (
+            <CircleHelpIcon className="size-3.5" />
+          ) : (
+            <LayersIcon className="size-3.5" />
+          )}
+          {total} {doc.type === "quizzes" ? "soalan" : "kad"}
         </div>
         <div className="mt-2.5 flex items-center gap-2">
           <div className="bg-muted/70 h-1.5 flex-1 overflow-hidden rounded-full">
@@ -591,16 +597,39 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         if (!cancelled) setSharedArtifacts(data.artifacts ?? []);
       })
       .catch(() => {});
-    fetch("/api/decks/progress")
-      .then((res) => res.json())
-      .then((data: { progress?: (DeckProgress & { deckId: string })[] }) => {
-        if (cancelled) return;
-        const map: Record<string, DeckProgress> = {};
-        for (const row of data.progress ?? []) {
-          map[row.deckId] = { knownCount: row.knownCount, total: row.total };
-        }
-        setProgressMap(map);
-      })
+    Promise.all([
+      fetch("/api/decks/progress")
+        .then((res) => res.json())
+        .catch(() => ({})),
+      fetch("/api/quizzes/progress")
+        .then((res) => res.json())
+        .catch(() => ({})),
+    ])
+      .then(
+        ([decks, quizzes]: [
+          { progress?: (DeckProgress & { deckId: string })[] },
+          {
+            progress?: {
+              quizId: string;
+              correctCount: number;
+              total: number;
+            }[];
+          },
+        ]) => {
+          if (cancelled) return;
+          const map: Record<string, DeckProgress> = {};
+          for (const row of decks.progress ?? []) {
+            map[row.deckId] = { knownCount: row.knownCount, total: row.total };
+          }
+          for (const row of quizzes.progress ?? []) {
+            map[row.quizId] = {
+              knownCount: row.correctCount,
+              total: row.total,
+            };
+          }
+          setProgressMap(map);
+        },
+      )
       .catch(() => {});
     return () => {
       cancelled = true;
@@ -817,7 +846,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
    * (render_ui flashcards / a shared pptx), and it lands in Spaces.
    */
   const generateInThread = async (
-    kind: "flashcards" | "slides",
+    kind: "flashcards" | "quizzes" | "slides",
     input: CreateDialogInput,
   ) => {
     setCreateKind(null);
@@ -840,7 +869,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       const prompt =
         kind === "flashcards"
           ? `Buat kad imbas tentang ${input.topic}. ${language} Gunakan render_ui flashcards supaya kad boleh terus dilihat dan diacak.${attachmentNote}`
-          : `Buat slide deck tentang ${input.topic}. ${language} Hasilkan fail .pptx yang kemas, semak visualnya, dan share_file kepadanya.${attachmentNote}`;
+          : kind === "quizzes"
+            ? `Buat kuiz tentang ${input.topic}. ${language} Gunakan render_ui quizzes — campurkan jenis soalan (pilihan aneka, benar/palsu, isi tempat kosong, soalan terbuka) supaya kuiz ini menguji kefahaman.${attachmentNote}`
+            : `Buat slide deck tentang ${input.topic}. ${language} Hasilkan fail .pptx yang kemas, semak visualnya, dan share_file kepadanya.${attachmentNote}`;
       aui.composer.setText(prompt);
       aui.composer.send();
     } catch {
@@ -912,10 +943,16 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   }
 
   const isFlashcards = mode === "flashcards";
+  const isQuizzes = mode === "quizzes";
+  const isModule = isFlashcards || isQuizzes;
 
   const openDeckDoc = (doc: Doc) => {
     if (doc.spec) {
-      router.push(`/spaces/flashcards/${doc.artifactId}`);
+      router.push(
+        doc.type === "quizzes"
+          ? `/spaces/quizzes/${doc.artifactId}`
+          : `/spaces/flashcards/${doc.artifactId}`,
+      );
       return;
     }
     if (doc.artifactId) {
@@ -929,17 +966,23 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     <div className="bg-background flex h-full flex-col overflow-y-auto">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          {isFlashcards ? (
+          {isModule ? (
             <div className="flex min-w-0 flex-1 items-start gap-3">
               <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-300">
-                <LayersIcon className="size-6" />
+                {isQuizzes ? (
+                  <CircleHelpIcon className="size-6" />
+                ) : (
+                  <LayersIcon className="size-6" />
+                )}
               </span>
               <div className="min-w-0">
                 <h1 className="text-2xl font-semibold sm:text-3xl">
-                  Flashcards
+                  {MODULE_TITLES[mode]}
                 </h1>
                 <p className="text-muted-foreground mt-1 text-sm">
-                  Buat, ulang kaji dan kuasai topik dengan kad imbas pintar.
+                  {isQuizzes
+                    ? "Uji kefahaman dengan kuiz pintar — pilihan, benar/palsu, isi tempat kosong dan soalan terbuka."
+                    : "Buat, ulang kaji dan kuasai topik dengan kad imbas pintar."}
                 </p>
               </div>
               <div
@@ -966,7 +1009,13 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder={isFlashcards ? "Search flashcards..." : "Search"}
+                placeholder={
+                  isQuizzes
+                    ? "Search quizzes..."
+                    : isFlashcards
+                      ? "Search flashcards..."
+                      : "Search"
+                }
                 aria-label="Search"
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
               />
@@ -999,7 +1048,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             {tabs.map((item) => {
-              const TabIcon = isFlashcards
+              const TabIcon = isModule
                 ? {
                     All: LayoutGridIcon,
                     Pinned: PinIcon,
@@ -1120,10 +1169,10 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
             <div
               className={cn(
                 "mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3",
-                isFlashcards && "xl:grid-cols-4",
+                isModule && "xl:grid-cols-4",
               )}
             >
-              {isFlashcards &&
+              {isModule &&
                 filtered.map((doc) => {
                   const info = deckInfoOf(doc, progressMap);
                   return (
@@ -1156,22 +1205,26 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                     />
                   );
                 })}
-              {isFlashcards && (
+              {isModule && (
                 <button
                   type="button"
-                  onClick={() => setCreateKind("flashcards")}
+                  onClick={() => setCreateKind(mode)}
                   className="border-border/60 hover:bg-muted/40 flex min-h-[248px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-6 text-center transition-colors"
                 >
                   <span className="bg-muted flex size-12 items-center justify-center rounded-xl">
                     <PlusIcon className="size-5" />
                   </span>
-                  <span className="text-sm font-semibold">Buat set baharu</span>
+                  <span className="text-sm font-semibold">
+                    {isQuizzes ? "Buat kuiz baharu" : "Buat set baharu"}
+                  </span>
                   <span className="text-muted-foreground max-w-44 text-xs">
-                    Hasilkan kad imbas dengan AI atau secara manual
+                    {isQuizzes
+                      ? "Hasilkan kuiz dengan AI atau secara manual"
+                      : "Hasilkan kad imbas dengan AI atau secara manual"}
                   </span>
                 </button>
               )}
-              {!isFlashcards &&
+              {!isModule &&
                 filtered.map((doc) => (
                   <div
                     key={doc.id}
@@ -1327,13 +1380,21 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       <CreateDialog
         open={createKind !== null}
         label={createKind ? MODULE_TITLES[createKind].toLowerCase() : "item"}
-        supported={createKind === "slides" || createKind === "flashcards"}
+        supported={
+          createKind === "slides" ||
+          createKind === "flashcards" ||
+          createKind === "quizzes"
+        }
         onOpenChange={(open) => {
           if (!open) setCreateKind(null);
         }}
         onGenerate={(input: CreateDialogInput) =>
           void generateInThread(
-            createKind === "flashcards" ? "flashcards" : "slides",
+            createKind === "flashcards"
+              ? "flashcards"
+              : createKind === "quizzes"
+                ? "quizzes"
+                : "slides",
             input,
           )
         }

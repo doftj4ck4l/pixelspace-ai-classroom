@@ -20,6 +20,7 @@ export type PiArtifact = {
   pinned: boolean;
   favorite: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 type ArtifactRow = typeof artifacts.$inferSelect;
@@ -37,6 +38,7 @@ const toPiArtifact = (row: ArtifactRow): PiArtifact => ({
   pinned: row.pinned,
   favorite: row.favorite,
   createdAt: row.createdAt.toISOString(),
+  updatedAt: row.updatedAt.toISOString(),
 });
 
 /** Extension → gallery type. Unknown extensions land in All only. */
@@ -114,6 +116,7 @@ export const artifactRegistry = {
       pinned: false,
       favorite: false,
       createdAt: new Date(),
+      updatedAt: new Date(),
     } as ArtifactRow);
   },
 
@@ -154,6 +157,7 @@ export const artifactRegistry = {
       pinned: false,
       favorite: false,
       createdAt: new Date(),
+      updatedAt: new Date(),
     } as ArtifactRow);
   },
 
@@ -168,6 +172,7 @@ export const artifactRegistry = {
       .update(artifacts)
       .set({
         spec: spec as Record<string, unknown>,
+        updatedAt: new Date(),
         ...(title ? { title } : {}),
       })
       .where(

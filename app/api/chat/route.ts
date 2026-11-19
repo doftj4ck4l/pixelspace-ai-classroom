@@ -14,6 +14,8 @@ import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
 import { remapDeckProgress } from "@/lib/flashcards/progress";
 import { validateDeckSpec, type FlashcardSpec } from "@/lib/flashcards/spec";
+import { remapQuizProgress } from "@/lib/quizzes/progress";
+import { validateQuizSpec, type QuizSpec } from "@/lib/quizzes/spec";
 
 export const maxDuration = 300;
 
@@ -30,10 +32,10 @@ type ChatBody = {
   id?: string;
   /** Kept for compatibility with callers that pass the thread explicitly. */
   threadId?: string;
-  /** When set, this turn edits that deck artifact instead of creating one. */
-  deckEditTargetId?: string;
-  /** The card the user is looking at, for targeted edits. */
-  focusedCardIndex?: number;
+  /** When set, this turn edits that deck/quiz artifact instead of creating one. */
+  artifactEditTargetId?: string;
+  /** The card/question the user is looking at, for targeted edits. */
+  focusedIndex?: number;
 };
 
 const messageText = (message: UIMessage) =>
@@ -79,7 +81,7 @@ const toPiMessages = (messages: UIMessage[]) =>
 type PiEvent = { type?: string; [key: string]: unknown };
 
 /**
- * Register a generative-UI deck the agent designed (render_ui flashcards) as a
+ * Register a generative-UI deck or quiz the agent designed (render_ui) as a
  * Spaces artifact. The spec rides in the tool call's arguments; the result only
  * confirms the harness validated it.
  */
@@ -89,8 +91,9 @@ const captureRenderUiSpec = async (
   toolCallId: string,
   args: Record<string, unknown> | undefined,
 ) => {
-  if (!args || args.component !== "flashcards") return;
-  let props = args.props;
+  const component = args?.component;
+  if (component !== "flashcards" && component !== "quizzes") return;
+  let props = args?.props;
   if (typeof props === "string") {
     try {
       props = JSON.parse(props);
@@ -99,63 +102,91 @@ const captureRenderUiSpec = async (
     }
   }
   if (!props || typeof props !== "object" || Array.isArray(props)) return;
-  const spec = props as { title?: unknown; cards?: unknown };
-  if (!Array.isArray(spec.cards) || spec.cards.length === 0) return;
+  const spec = props as {
+    title?: unknown;
+    cards?: unknown;
+    questions?: unknown;
+  };
+  const list = component === "flashcards" ? spec.cards : spec.questions;
+  if (!Array.isArray(list) || list.length === 0) return;
   await artifactRegistry.addSpec(userId, {
     threadId,
     title:
       typeof spec.title === "string" && spec.title.trim()
         ? spec.title.trim()
-        : "Kad Imbas",
-    type: "flashcards",
+        : component === "flashcards"
+          ? "Kad Imbas"
+          : "Kuiz",
+    type: component,
     spec,
     dedupeKey: `render_ui:${toolCallId}`,
   });
 };
 
 /**
- * The edit-session preamble: pins the harness to the existing deck and demands
- * the complete updated deck back, so the app can replace the spec wholesale.
+ * The edit-session preamble: pins the harness to the existing artifact and
+ * demands the complete updated spec back, so the app can replace it wholesale.
  */
-const buildDeckEditContext = (
+const buildArtifactEditContext = (
   artifact: PiArtifact,
-  focusedCardIndex?: number,
+  focusedIndex?: number,
 ) => {
-  const spec = artifact.spec as FlashcardSpec | undefined;
-  const cards = spec?.cards ?? [];
+  const isQuiz = artifact.type === "quizzes";
   const lines = [
-    "[Deck edit session]",
-    "You are editing an EXISTING flashcard deck. Do NOT create a new deck.",
-    `Deck: ${artifact.title} (id ${artifact.id})`,
+    "[Artifact edit session]",
+    isQuiz
+      ? "You are editing an EXISTING quiz. Do NOT create a new quiz."
+      : "You are editing an EXISTING flashcard deck. Do NOT create a new deck.",
+    `${isQuiz ? "Quiz" : "Deck"}: ${artifact.title} (id ${artifact.id})`,
     `Current spec JSON: ${JSON.stringify(artifact.spec)}`,
   ];
-  if (
-    typeof focusedCardIndex === "number" &&
-    Number.isInteger(focusedCardIndex)
-  ) {
-    const card = cards[focusedCardIndex];
+
+  if (isQuiz) {
     lines.push(
-      card
-        ? `The user is currently viewing card #${focusedCardIndex + 1} of ${cards.length}: front "${card.front}" — back "${card.back}". If they say "this card", "this page", "this one", or refer to the card on screen, they mean card #${focusedCardIndex + 1}.`
-        : `The user is currently looking at card #${focusedCardIndex + 1}.`,
+      'Question types: "multiple-choice" (options 2-6 + answerIndex), "open-ended" (modelAnswer + optional keywords), "true-false" (boolean answer), "fill-blank" (answer; "/" separates accepted alternatives). Convert between types whenever the user asks (e.g. "change q1 to open ended").',
     );
   }
+
+  if (typeof focusedIndex === "number" && Number.isInteger(focusedIndex)) {
+    if (isQuiz) {
+      const questions =
+        (artifact.spec as QuizSpec | undefined)?.questions ?? [];
+      const question = questions[focusedIndex];
+      lines.push(
+        question
+          ? `The user is currently viewing question #${focusedIndex + 1} of ${questions.length} (${question.type}): "${question.question}". If they say "this question", "this one", or refer to the question on screen, they mean question #${focusedIndex + 1}.`
+          : `The user is currently looking at question #${focusedIndex + 1}.`,
+      );
+    } else {
+      const cards = (artifact.spec as FlashcardSpec | undefined)?.cards ?? [];
+      const card = cards[focusedIndex];
+      lines.push(
+        card
+          ? `The user is currently viewing card #${focusedIndex + 1} of ${cards.length}: front "${card.front}" — back "${card.back}". If they say "this card", "this page", "this one", or refer to the card on screen, they mean card #${focusedIndex + 1}.`
+          : `The user is currently looking at card #${focusedIndex + 1}.`,
+      );
+    }
+  }
+
   lines.push(
-    'When done, call render_ui with component "flashcards" containing the COMPLETE updated deck — every card, with only the requested changes applied. Keep unmentioned cards byte-identical.',
-    "For small edits (renaming, tweaking one or two cards), do NOT run web searches — apply the change directly and return quickly.",
+    isQuiz
+      ? 'When done, call render_ui with component "quizzes" containing the COMPLETE updated quiz — every question, with only the requested changes applied. Keep unmentioned questions byte-identical.'
+      : 'When done, call render_ui with component "flashcards" containing the COMPLETE updated deck — every card, with only the requested changes applied. Keep unmentioned cards byte-identical.',
+    "For small edits (renaming, tweaking one or two items), do NOT run web searches — apply the change directly and return quickly.",
     "If the request does not say what to change, ask one short clarifying question with the ask_user tool (never a plain-text question, which would end the run without an edit).",
   );
   return lines.join("\n");
 };
 
-/** Persist an AI-edited deck over its artifact, remapping mastery. */
-const applyDeckEdit = async (
+/** Persist an AI-edited deck or quiz over its artifact, remapping progress. */
+const applyArtifactEdit = async (
   userId: string,
   artifactId: string,
   args: Record<string, unknown> | undefined,
 ) => {
-  if (!args || args.component !== "flashcards") return;
-  let props = args.props;
+  const component = args?.component;
+  if (component !== "flashcards" && component !== "quizzes") return;
+  let props = args?.props;
   if (typeof props === "string") {
     try {
       props = JSON.parse(props);
@@ -163,25 +194,44 @@ const applyDeckEdit = async (
       return;
     }
   }
-  const result = validateDeckSpec(props);
-  if (!result.ok) return;
   const artifact = await artifactRegistry.get(userId, artifactId);
-  if (!artifact || artifact.type !== "flashcards" || artifact.kind !== "spec") {
+  if (!artifact || artifact.kind !== "spec" || artifact.type !== component) {
     return;
   }
-  const oldSpec = artifact.spec as FlashcardSpec | undefined;
-  await artifactRegistry.updateSpec(
-    userId,
-    artifactId,
-    result.spec,
-    result.spec.title ?? artifact.title,
-  );
-  await remapDeckProgress(
-    userId,
-    artifactId,
-    oldSpec?.cards ?? [],
-    result.spec.cards,
-  );
+
+  if (component === "flashcards") {
+    const result = validateDeckSpec(props);
+    if (!result.ok) return;
+    const oldSpec = artifact.spec as FlashcardSpec | undefined;
+    await artifactRegistry.updateSpec(
+      userId,
+      artifactId,
+      result.spec,
+      result.spec.title ?? artifact.title,
+    );
+    await remapDeckProgress(
+      userId,
+      artifactId,
+      oldSpec?.cards ?? [],
+      result.spec.cards,
+    );
+  } else {
+    const result = validateQuizSpec(props);
+    if (!result.ok) return;
+    const oldSpec = artifact.spec as QuizSpec | undefined;
+    await artifactRegistry.updateSpec(
+      userId,
+      artifactId,
+      result.spec,
+      result.spec.title ?? artifact.title,
+    );
+    await remapQuizProgress(
+      userId,
+      artifactId,
+      oldSpec?.questions ?? [],
+      result.spec.questions,
+    );
+  }
 };
 
 const WORKSPACE_FILE_URL = /\/api\/workspace\/files\/[^\s)"'<>`]+/g;
@@ -244,23 +294,23 @@ const piChat = async (
   const userText = newUserText(body.messages);
   if (userText === null || userText.length === 0) return null;
 
-  const deckEditTargetId =
-    typeof body.deckEditTargetId === "string"
-      ? body.deckEditTargetId
+  const artifactEditTargetId =
+    typeof body.artifactEditTargetId === "string"
+      ? body.artifactEditTargetId
       : undefined;
   let deckEditContext: string | null = null;
   let threadId = body.id ?? body.threadId;
 
-  if (deckEditTargetId) {
-    const artifact = await artifactRegistry.get(userId, deckEditTargetId);
+  if (artifactEditTargetId) {
+    const artifact = await artifactRegistry.get(userId, artifactEditTargetId);
     if (
       !artifact ||
-      artifact.type !== "flashcards" ||
-      artifact.kind !== "spec"
+      artifact.kind !== "spec" ||
+      (artifact.type !== "flashcards" && artifact.type !== "quizzes")
     ) {
       return null;
     }
-    deckEditContext = buildDeckEditContext(artifact, body.focusedCardIndex);
+    deckEditContext = buildArtifactEditContext(artifact, body.focusedIndex);
     // Edits belong to the thread where the deck was created, so the sidebar
     // keeps one session per deck. Only decks without an original thread get
     // a dedicated edit session.
@@ -269,12 +319,12 @@ const piChat = async (
       : undefined;
     const deckThreadId = originalThread
       ? artifact.threadId
-      : `deck-edit-${deckEditTargetId}`;
+      : `deck-edit-${artifactEditTargetId}`;
     if (!originalThread) {
       await registry.upsertForDeck(
         userId,
         deckThreadId,
-        deckEditTargetId,
+        artifactEditTargetId,
         `Edit: ${artifact.title}`,
       );
     }
@@ -428,8 +478,8 @@ const piChat = async (
                 ) {
                   const args = renderUiArgs.get(toolCallId);
                   renderUiArgs.delete(toolCallId);
-                  if (deckEditTargetId) {
-                    await applyDeckEdit(userId, deckEditTargetId, args);
+                  if (artifactEditTargetId) {
+                    await applyArtifactEdit(userId, artifactEditTargetId, args);
                   } else {
                     await captureRenderUiSpec(
                       userId,
@@ -490,7 +540,7 @@ const piChat = async (
               event.type === "title" &&
               typeof event.title === "string" &&
               threadId &&
-              !deckEditTargetId
+              !artifactEditTargetId
             ) {
               // Deck-edit turns never rename the thread: it keeps the name the
               // deck was created under.

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
   const body = (await req.json().catch(() => ({}))) as {
     threadId?: string;
-    deckEditTargetId?: string;
+    artifactEditTargetId?: string;
     questionId?: string;
     answer?: string;
   };
@@ -25,21 +25,24 @@ export async function POST(req: Request) {
     );
   }
 
-  // Deck-panel answers address the deck; resolve its thread the same way the
+  // Panel answers address an artifact; resolve its thread the same way the
   // chat relay does (the thread the deck was created in, else a dedicated one).
   let threadId = body.threadId;
-  if (!threadId && body.deckEditTargetId) {
-    const artifact = await artifactRegistry.get(user.id, body.deckEditTargetId);
+  if (!threadId && body.artifactEditTargetId) {
+    const artifact = await artifactRegistry.get(
+      user.id,
+      body.artifactEditTargetId,
+    );
     if (artifact?.threadId) {
       const original = await registry.get(user.id, artifact.threadId);
       threadId = original ? artifact.threadId : undefined;
     }
-    threadId = threadId ?? `deck-edit-${body.deckEditTargetId}`;
+    threadId = threadId ?? `deck-edit-${body.artifactEditTargetId}`;
   }
 
   if (!threadId) {
     return NextResponse.json(
-      { error: "threadId or deckEditTargetId is required" },
+      { error: "threadId or artifactEditTargetId is required" },
       { status: 400 },
     );
   }

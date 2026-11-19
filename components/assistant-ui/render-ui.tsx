@@ -15,6 +15,10 @@ import {
   FlashcardDeck,
   type FlashcardSpec,
 } from "@/components/assistant-ui/flashcard-deck";
+import {
+  QuizRunner,
+  type QuizSpec,
+} from "@/components/assistant-ui/quiz-runner";
 import { cn } from "@/lib/utils";
 
 /**
@@ -106,6 +110,8 @@ export const RenderUiBlock: FC<{
       return (
         <FlashcardDeck spec={spec.props as FlashcardSpec} variant="inline" />
       );
+    case "quizzes":
+      return <QuizRunner spec={spec.props as QuizSpec} variant="inline" />;
     default:
       return <ErrorNote reason={`unknown component "${spec.component}"`} />;
   }

@@ -175,6 +175,8 @@ export const FlashcardDeck: FC<{
   onCardChange?: (index: number) => void;
   /** Full variant only: send a card to the AI edit panel. */
   onImproveCard?: (index: number, card: FlashcardItem) => void;
+  /** Full variant only: start on this card (used across live edits). */
+  initialIndex?: number;
 }> = ({
   spec,
   variant = "inline",
@@ -182,6 +184,7 @@ export const FlashcardDeck: FC<{
   onClose,
   onCardChange,
   onImproveCard,
+  initialIndex,
 }) => {
   const full = variant === "full";
   const theme = accentTheme(spec.accent);
@@ -191,7 +194,12 @@ export const FlashcardDeck: FC<{
   const [order, setOrder] = useState<number[]>(() =>
     allIndices(spec.cards.length),
   );
-  const [position, setPosition] = useState(0);
+  const [position, setPosition] = useState(() =>
+    Math.min(
+      Math.max(initialIndex ?? 0, 0),
+      Math.max(spec.cards.length - 1, 0),
+    ),
+  );
   const [flipped, setFlipped] = useState(false);
   const [hintOpen, setHintOpen] = useState(false);
   const [shuffled, setShuffled] = useState(false);

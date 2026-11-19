@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type FC } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { FlashcardViewer } from "@/components/assistant-ui/flashcard-viewer";
-import { DeckAiPanel } from "@/components/assistant-ui/deck-ai-panel";
+import { ArtifactAiPanel } from "@/components/assistant-ui/artifact-ai-panel";
 import {
   type FlashcardItem,
   type FlashcardSpec,
@@ -15,6 +15,7 @@ type ArtifactJson = {
   title: string;
   kind?: "file" | "spec";
   spec?: unknown;
+  updatedAt?: string;
 };
 
 /** /spaces/flashcards/<artifactId> — a shared deck as its own page. */
@@ -22,6 +23,7 @@ const DeckPage: FC = () => {
   const params = useParams<{ artifactId: string }>();
   const router = useRouter();
   const [spec, setSpec] = useState<FlashcardSpec | null>(null);
+  const [version, setVersion] = useState(0);
   const [missing, setMissing] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPrefill, setAiPrefill] = useState<{
@@ -34,7 +36,7 @@ const DeckPage: FC = () => {
 
   const load = useCallback(() => {
     if (!artifactId) return;
-    fetch(`/api/pi/artifacts/${artifactId}`)
+    fetch(`/api/pi/artifacts/${artifactId}`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data: ArtifactJson | null) => {
         if (!data || data.kind !== "spec" || !data.spec) {
@@ -43,6 +45,7 @@ const DeckPage: FC = () => {
         }
         setMissing(false);
         setSpec(data.spec as FlashcardSpec);
+        setVersion((value) => value + 1);
       })
       .catch(() => setMissing(true));
   }, [artifactId]);
@@ -82,19 +85,22 @@ const DeckPage: FC = () => {
   return (
     <>
       <FlashcardViewer
+        key={version}
         spec={spec}
         deckId={artifactId}
+        initialIndex={focusedCard ?? 0}
         onClose={() => router.push("/spaces/flashcards")}
         onCardChange={setFocusedCard}
         onImproveCard={improveCard}
       />
       {artifactId && (
-        <DeckAiPanel
+        <ArtifactAiPanel
           artifactId={artifactId}
+          kind="flashcards"
           open={aiOpen}
           onOpenChange={setAiOpen}
           prefill={aiPrefill}
-          focusedCardIndex={focusedCard}
+          focusedIndex={focusedCard}
           onDeckUpdated={load}
         />
       )}

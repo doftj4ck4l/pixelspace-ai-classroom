@@ -26,7 +26,12 @@ const MAX_RESULT = 4000;
  * user actually typed.
  */
 const stripDeckEditContext = (text: string) => {
-  if (!text.startsWith("[Deck edit session]")) return text;
+  if (
+    !text.startsWith("[Deck edit session]") &&
+    !text.startsWith("[Artifact edit session]")
+  ) {
+    return text;
+  }
   const marker = "User request: ";
   const at = text.lastIndexOf(marker);
   return at >= 0 ? text.slice(at + marker.length) : text;
