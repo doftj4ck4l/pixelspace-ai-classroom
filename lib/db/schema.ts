@@ -84,6 +84,8 @@ export const threads = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     piConversationId: text("pi_conversation_id"),
     title: text("title"),
+    /** Set when this thread is the AI edit session for a deck artifact. */
+    deckId: text("deck_id"),
     status: text("status").notNull().default("regular"),
     lastMessageAt: timestamp("last_message_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),

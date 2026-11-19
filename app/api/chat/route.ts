@@ -9,9 +9,11 @@ import {
   type UIMessage,
 } from "ai";
 import { requireApiUser } from "@/lib/auth-session";
-import { artifactRegistry } from "@/lib/pi/artifacts";
+import { artifactRegistry, type PiArtifact } from "@/lib/pi/artifacts";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
+import { remapDeckProgress } from "@/lib/flashcards/progress";
+import { validateDeckSpec, type FlashcardSpec } from "@/lib/flashcards/spec";
 
 export const maxDuration = 300;
 
@@ -28,6 +30,10 @@ type ChatBody = {
   id?: string;
   /** Kept for compatibility with callers that pass the thread explicitly. */
   threadId?: string;
+  /** When set, this turn edits that deck artifact instead of creating one. */
+  deckEditTargetId?: string;
+  /** The card the user is looking at, for targeted edits. */
+  focusedCardIndex?: number;
 };
 
 const messageText = (message: UIMessage) =>
@@ -107,6 +113,70 @@ const captureRenderUiSpec = async (
   });
 };
 
+/**
+ * The edit-session preamble: pins the harness to the existing deck and demands
+ * the complete updated deck back, so the app can replace the spec wholesale.
+ */
+const buildDeckEditContext = (
+  artifact: PiArtifact,
+  focusedCardIndex?: number,
+) => {
+  const lines = [
+    "[Deck edit session]",
+    "You are editing an EXISTING flashcard deck. Do NOT create a new deck.",
+    `Deck: ${artifact.title} (id ${artifact.id})`,
+    `Current spec JSON: ${JSON.stringify(artifact.spec)}`,
+  ];
+  if (
+    typeof focusedCardIndex === "number" &&
+    Number.isInteger(focusedCardIndex)
+  ) {
+    lines.push(
+      `The user is currently looking at card #${focusedCardIndex + 1}.`,
+    );
+  }
+  lines.push(
+    'When done, call render_ui with component "flashcards" containing the COMPLETE updated deck — every card, with only the requested changes applied. Keep unmentioned cards byte-identical.',
+  );
+  return lines.join("\n");
+};
+
+/** Persist an AI-edited deck over its artifact, remapping mastery. */
+const applyDeckEdit = async (
+  userId: string,
+  artifactId: string,
+  args: Record<string, unknown> | undefined,
+) => {
+  if (!args || args.component !== "flashcards") return;
+  let props = args.props;
+  if (typeof props === "string") {
+    try {
+      props = JSON.parse(props);
+    } catch {
+      return;
+    }
+  }
+  const result = validateDeckSpec(props);
+  if (!result.ok) return;
+  const artifact = await artifactRegistry.get(userId, artifactId);
+  if (!artifact || artifact.type !== "flashcards" || artifact.kind !== "spec") {
+    return;
+  }
+  const oldSpec = artifact.spec as FlashcardSpec | undefined;
+  await artifactRegistry.updateSpec(
+    userId,
+    artifactId,
+    result.spec,
+    result.spec.title ?? artifact.title,
+  );
+  await remapDeckProgress(
+    userId,
+    artifactId,
+    oldSpec?.cards ?? [],
+    result.spec.cards,
+  );
+};
+
 const WORKSPACE_FILE_URL = /\/api\/workspace\/files\/[^\s)"'<>`]+/g;
 const IMAGE_URL = /\/api\/images\/[A-Za-z0-9._-]+/g;
 const trimTail = (url: string) => url.replace(/[.,;:!?]+$/, "");
@@ -167,8 +237,43 @@ const piChat = async (
   const userText = newUserText(body.messages);
   if (userText === null || userText.length === 0) return null;
 
-  const threadId = body.id ?? body.threadId;
+  const deckEditTargetId =
+    typeof body.deckEditTargetId === "string"
+      ? body.deckEditTargetId
+      : undefined;
+  let deckEditContext: string | null = null;
+  let threadId = body.id ?? body.threadId;
+
+  if (deckEditTargetId) {
+    const artifact = await artifactRegistry.get(userId, deckEditTargetId);
+    if (
+      !artifact ||
+      artifact.type !== "flashcards" ||
+      artifact.kind !== "spec"
+    ) {
+      return null;
+    }
+    deckEditContext = buildDeckEditContext(artifact, body.focusedCardIndex);
+    // One persistent edit session per deck, so the sidebar keeps the history.
+    const deckThreadId = `deck-edit-${deckEditTargetId}`;
+    await registry.upsertForDeck(
+      userId,
+      deckThreadId,
+      deckEditTargetId,
+      `Edit: ${artifact.title}`,
+    );
+    threadId = deckThreadId;
+  }
+
   const thread = threadId ? await registry.get(userId, threadId) : undefined;
+
+  const piMessages = toPiMessages(body.messages);
+  if (deckEditContext) {
+    const lastUser = [...piMessages].reverse().find((m) => m.role === "user");
+    if (lastUser) {
+      lastUser.content = `${deckEditContext}\n\nUser request: ${lastUser.content}`;
+    }
+  }
 
   let upstream: Response;
   try {
@@ -184,7 +289,7 @@ const piChat = async (
         ...(thread?.conversationId
           ? { conversationId: thread.conversationId }
           : {}),
-        messages: toPiMessages(body.messages),
+        messages: piMessages,
       }),
       signal: req.signal,
     });
@@ -307,7 +412,16 @@ const piChat = async (
                 ) {
                   const args = renderUiArgs.get(toolCallId);
                   renderUiArgs.delete(toolCallId);
-                  await captureRenderUiSpec(userId, threadId, toolCallId, args);
+                  if (deckEditTargetId) {
+                    await applyDeckEdit(userId, deckEditTargetId, args);
+                  } else {
+                    await captureRenderUiSpec(
+                      userId,
+                      threadId,
+                      toolCallId,
+                      args,
+                    );
+                  }
                 }
                 if (event.ok === false) {
                   writer.write({

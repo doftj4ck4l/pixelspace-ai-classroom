@@ -3,6 +3,7 @@
 import type { FC } from "react";
 import {
   FlashcardDeck,
+  type FlashcardItem,
   type FlashcardSpec,
 } from "@/components/assistant-ui/flashcard-deck";
 
@@ -14,13 +15,17 @@ export const FlashcardViewer: FC<{
   spec: FlashcardSpec;
   deckId?: string;
   onClose: () => void;
-}> = ({ spec, deckId, onClose }) => (
+  onEdit?: () => void;
+  onImproveCard?: (index: number, card: FlashcardItem) => void;
+}> = ({ spec, deckId, onClose, onEdit, onImproveCard }) => (
   <div className="bg-background h-full overflow-hidden">
     <FlashcardDeck
       spec={spec}
       variant="full"
       deckId={deckId}
       onClose={onClose}
+      onEdit={onEdit}
+      onImproveCard={onImproveCard}
     />
   </div>
 );

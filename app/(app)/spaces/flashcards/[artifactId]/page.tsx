@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState, type FC } from "react";
+import { useCallback, useEffect, useState, type FC } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { FlashcardViewer } from "@/components/assistant-ui/flashcard-viewer";
-import { type FlashcardSpec } from "@/components/assistant-ui/flashcard-deck";
+import { DeckEditor } from "@/components/assistant-ui/deck-editor";
+import { DeckAiPanel } from "@/components/assistant-ui/deck-ai-panel";
+import {
+  type FlashcardItem,
+  type FlashcardSpec,
+} from "@/components/assistant-ui/flashcard-deck";
 
 type ArtifactJson = {
   id: string;
@@ -19,28 +24,45 @@ const DeckPage: FC = () => {
   const router = useRouter();
   const [spec, setSpec] = useState<FlashcardSpec | null>(null);
   const [missing, setMissing] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrefill, setAiPrefill] = useState<{
+    text: string;
+    nonce: number;
+  } | null>(null);
+  const [focusedCard, setFocusedCard] = useState<number | null>(null);
 
-  useEffect(() => {
-    const id = params?.artifactId;
-    if (!id) return;
-    let cancelled = false;
-    fetch(`/api/pi/artifacts/${id}`)
+  const artifactId = params?.artifactId;
+
+  const load = useCallback(() => {
+    if (!artifactId) return;
+    fetch(`/api/pi/artifacts/${artifactId}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data: ArtifactJson | null) => {
-        if (cancelled) return;
         if (!data || data.kind !== "spec" || !data.spec) {
           setMissing(true);
           return;
         }
+        setMissing(false);
         setSpec(data.spec as FlashcardSpec);
       })
-      .catch(() => {
-        if (!cancelled) setMissing(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [params]);
+      .catch(() => setMissing(true));
+  }, [artifactId]);
+
+  useEffect(load, [load]);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("edit") === "1") {
+      setEditing(true);
+    }
+  }, []);
+
+  const closeEditor = useCallback(() => {
+    setEditing(false);
+    if (artifactId && window.location.search.includes("edit=1")) {
+      router.replace(`/spaces/flashcards/${artifactId}`);
+    }
+  }, [artifactId, router]);
 
   if (missing) {
     return (
@@ -64,12 +86,48 @@ const DeckPage: FC = () => {
     );
   }
 
+  if (editing && artifactId) {
+    return (
+      <DeckEditor
+        artifactId={artifactId}
+        initialSpec={spec}
+        onClose={closeEditor}
+        onSaved={(next) => {
+          setSpec(next);
+          closeEditor();
+        }}
+      />
+    );
+  }
+
+  const improveCard = (index: number, card: FlashcardItem) => {
+    setFocusedCard(index);
+    setAiPrefill({
+      text: `Improve card ${index + 1} ("${card.front}"): make it clearer and easier to remember while keeping the same meaning.`,
+      nonce: Date.now(),
+    });
+  };
+
   return (
-    <FlashcardViewer
-      spec={spec}
-      deckId={params?.artifactId}
-      onClose={() => router.push("/spaces/flashcards")}
-    />
+    <>
+      <FlashcardViewer
+        spec={spec}
+        deckId={artifactId}
+        onClose={() => router.push("/spaces/flashcards")}
+        onEdit={() => setEditing(true)}
+        onImproveCard={improveCard}
+      />
+      {artifactId && (
+        <DeckAiPanel
+          artifactId={artifactId}
+          open={aiOpen}
+          onOpenChange={setAiOpen}
+          prefill={aiPrefill}
+          focusedCardIndex={focusedCard}
+          onDeckUpdated={load}
+        />
+      )}
+    </>
   );
 };
 

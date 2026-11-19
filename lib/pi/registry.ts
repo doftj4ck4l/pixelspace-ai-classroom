@@ -50,6 +50,31 @@ export const registry = {
     await db.insert(threads).values({ id, userId }).onConflictDoNothing();
   },
 
+  /** The AI edit session for a deck artifact, if one exists. */
+  async findByDeck(
+    userId: string,
+    deckId: string,
+  ): Promise<PiThread | undefined> {
+    const [row] = await db
+      .select()
+      .from(threads)
+      .where(and(eq(threads.userId, userId), eq(threads.deckId, deckId)));
+    return row ? toPiThread(row) : undefined;
+  },
+
+  /** Get or create the AI edit session thread for a deck artifact. */
+  async upsertForDeck(
+    userId: string,
+    id: string,
+    deckId: string,
+    title: string,
+  ): Promise<void> {
+    await db
+      .insert(threads)
+      .values({ id, userId, deckId, title })
+      .onConflictDoNothing();
+  },
+
   async update(
     userId: string,
     id: string,

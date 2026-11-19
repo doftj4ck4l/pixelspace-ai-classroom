@@ -21,9 +21,11 @@ import {
   LayoutGridIcon,
   LightbulbIcon,
   MoreHorizontalIcon,
+  PencilIcon,
   RepeatIcon,
   RotateCcwIcon,
   ShuffleIcon,
+  SparklesIcon,
   Volume2Icon,
   VolumeXIcon,
 } from "lucide-react";
@@ -37,6 +39,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import type { FlashcardItem, FlashcardSpec } from "@/lib/flashcards/spec";
+
+export type { FlashcardItem, FlashcardSpec } from "@/lib/flashcards/spec";
 
 /**
  * The rich flashcard deck rendered from a `render_ui` flashcards spec.
@@ -47,22 +52,6 @@ import { cn } from "@/lib/utils";
  * read-aloud through the browser voice, and per-account mastery persistence
  * when a `deckId` is given.
  */
-
-export type FlashcardItem = {
-  front: string;
-  back: string;
-  hint?: string;
-  tags?: string[];
-  type?: "term" | "question" | "cloze" | "formula";
-};
-
-export type FlashcardSpec = {
-  title?: string;
-  subject?: string;
-  language?: string;
-  accent?: string;
-  cards: FlashcardItem[];
-};
 
 type AccentTheme = {
   header: string;
@@ -183,7 +172,11 @@ export const FlashcardDeck: FC<{
   /** When given, mastery persists per account via /api/decks/<id>/progress. */
   deckId?: string;
   onClose?: () => void;
-}> = ({ spec, variant = "inline", deckId, onClose }) => {
+  /** Full variant only: enter the manual editor. */
+  onEdit?: () => void;
+  /** Full variant only: send the current card to the AI edit panel. */
+  onImproveCard?: (index: number, card: FlashcardItem) => void;
+}> = ({ spec, variant = "inline", deckId, onClose, onEdit, onImproveCard }) => {
   const full = variant === "full";
   const theme = accentTheme(spec.accent);
   const reduceMotion = useReducedMotion();
@@ -595,6 +588,18 @@ export const FlashcardDeck: FC<{
               )}
             </Button>
 
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-10 rounded-full"
+                onClick={onEdit}
+                aria-label="Edit deck"
+              >
+                <PencilIcon className="size-5" />
+              </Button>
+            )}
+
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -903,6 +908,9 @@ export const FlashcardDeck: FC<{
               card={card}
               open={hintOpen}
               onToggle={() => setHintOpen((value) => !value)}
+              onImprove={
+                onImproveCard ? () => onImproveCard(cardIndex, card) : undefined
+              }
             />
 
             <div className="grid w-full grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] gap-2 sm:grid-cols-[1fr_1.2fr_1fr] sm:gap-3">
@@ -1185,19 +1193,38 @@ const HintRow: FC<{
   card: FlashcardItem;
   open: boolean;
   onToggle: () => void;
-}> = ({ card, open, onToggle }) =>
-  card.hint ? (
-    <div className="mt-2">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
-      >
-        <LightbulbIcon className="size-3.5" />
-        {open ? "Sembunyi petunjuk" : "Petunjuk"}
-      </button>
-      {open && (
-        <p className="text-muted-foreground mt-1 text-xs italic">{card.hint}</p>
-      )}
+  onImprove?: () => void;
+}> = ({ card, open, onToggle, onImprove }) => {
+  if (!card.hint && !onImprove) return null;
+  return (
+    <div className="flex items-center gap-4">
+      {card.hint ? (
+        <div className="flex flex-col items-start">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
+          >
+            <LightbulbIcon className="size-3.5" />
+            {open ? "Sembunyi petunjuk" : "Petunjuk"}
+          </button>
+          {open && (
+            <p className="text-muted-foreground mt-1 text-xs italic">
+              {card.hint}
+            </p>
+          )}
+        </div>
+      ) : null}
+      {onImprove ? (
+        <button
+          type="button"
+          onClick={onImprove}
+          className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
+        >
+          <SparklesIcon className="size-3.5" />
+          Improve with AI
+        </button>
+      ) : null}
     </div>
-  ) : null;
+  );
+};

@@ -157,6 +157,28 @@ export const artifactRegistry = {
     } as ArtifactRow);
   },
 
+  /** Replace a deck artifact's spec (and mirror its title column). */
+  async updateSpec(
+    userId: string,
+    id: string,
+    spec: unknown,
+    title?: string,
+  ): Promise<void> {
+    await db
+      .update(artifacts)
+      .set({
+        spec: spec as Record<string, unknown>,
+        ...(title ? { title } : {}),
+      })
+      .where(
+        and(
+          eq(artifacts.id, id),
+          eq(artifacts.userId, userId),
+          eq(artifacts.type, "flashcards"),
+        ),
+      );
+  },
+
   async setFlags(
     userId: string,
     id: string,
