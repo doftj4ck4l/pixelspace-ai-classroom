@@ -30,6 +30,18 @@ type StreamEvent = {
   toolName?: string;
   toolCallId?: string;
   errorText?: string;
+  data?: {
+    questionId?: string;
+    question?: string;
+    options?: unknown[];
+    kind?: string;
+  };
+};
+
+type Ask = {
+  questionId: string;
+  question: string;
+  options: string[];
 };
 
 export const DeckAiPanel: FC<{
@@ -50,6 +62,9 @@ export const DeckAiPanel: FC<{
   const [messages, setMessages] = useState<PanelMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [ask, setAsk] = useState<Ask | null>(null);
+  const [askSending, setAskSending] = useState(false);
+  const [askError, setAskError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -67,11 +82,46 @@ export const DeckAiPanel: FC<{
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  const answerAsk = async (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || !ask || askSending) return;
+    setAskSending(true);
+    setAskError(null);
+    try {
+      const res = await fetch("/api/pi/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          threadId: `deck-edit-${artifactId}`,
+          questionId: ask.questionId,
+          answer: trimmed,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
+      setAsk(null);
+    } catch {
+      setAskError("Could not send the answer — try again.");
+    } finally {
+      setAskSending(false);
+    }
+  };
+
+  const stop = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(false);
+    setAsk(null);
+    setMessages((prev) => [...prev, { role: "system", text: "Stopped." }]);
+  };
+
   const send = async () => {
     const text = input.trim();
     if (!text || busy) return;
     setInput("");
     setBusy(true);
+    setAsk(null);
+    setAskError(null);
     const nextMessages: PanelMessage[] = [...messages, { role: "user", text }];
     setMessages([...nextMessages, { role: "assistant", text: "" }]);
 
@@ -125,6 +175,17 @@ export const DeckAiPanel: FC<{
           if (event.type === "text-delta" && typeof event.delta === "string") {
             appendAssistant(event.delta);
           } else if (
+            event.type === "data-ask-user" &&
+            typeof event.data?.questionId === "string"
+          ) {
+            setAsk({
+              questionId: event.data.questionId,
+              question: String(event.data.question ?? ""),
+              options: Array.isArray(event.data.options)
+                ? event.data.options.map(String)
+                : [],
+            });
+          } else if (
             event.type === "tool-input-available" &&
             event.toolName === "render_ui" &&
             event.toolCallId
@@ -143,6 +204,7 @@ export const DeckAiPanel: FC<{
         }
       }
 
+      setAsk(null);
       if (deckUpdated) {
         setMessages((prev) => [
           ...prev,
@@ -242,11 +304,53 @@ export const DeckAiPanel: FC<{
               {message.text || (
                 <span className="text-muted-foreground inline-flex items-center gap-1.5 text-xs">
                   <Loader2Icon className="size-3.5 animate-spin" />
-                  Thinking...
+                  {ask ? "Waiting for your answer..." : "Thinking..."}
                 </span>
               )}
             </p>
           ),
+        )}
+
+        {ask && (
+          <div className="border-border/60 bg-muted/40 rounded-xl border p-3">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {ask.question}
+            </p>
+            {ask.options.length > 0 && (
+              <div className="mt-2.5 grid gap-1.5">
+                {ask.options.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    disabled={askSending}
+                    onClick={() => void answerAsk(option)}
+                    className="border-border/60 bg-background hover:bg-muted rounded-lg border px-3 py-1.5 text-left text-xs transition-colors disabled:opacity-50"
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="mt-2.5 flex items-center gap-2">
+              <input
+                placeholder="Or type your answer..."
+                disabled={askSending}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void answerAsk(event.currentTarget.value);
+                  }
+                }}
+                className="border-border/60 bg-background focus-visible:ring-ring/40 h-8 min-w-0 flex-1 rounded-lg border px-2.5 text-xs outline-none focus-visible:ring-2"
+              />
+              {askSending && (
+                <Loader2Icon className="text-muted-foreground size-4 animate-spin" />
+              )}
+            </div>
+            {askError && (
+              <p className="text-destructive mt-1.5 text-xs">{askError}</p>
+            )}
+          </div>
         )}
       </div>
 
@@ -265,24 +369,31 @@ export const DeckAiPanel: FC<{
             placeholder="Ask to change this card or the deck..."
             className="max-h-28 min-h-6 flex-1 resize-none bg-transparent text-sm outline-none"
           />
-          <button
-            type="button"
-            aria-label="Hantar"
-            disabled={busy || !input.trim()}
-            onClick={() => void send()}
-            className={cn(
-              "flex size-8 shrink-0 items-center justify-center rounded-full transition-colors",
-              busy || !input.trim()
-                ? "bg-muted text-muted-foreground"
-                : "bg-foreground text-background hover:opacity-90",
-            )}
-          >
-            {busy ? (
+          {busy ? (
+            <button
+              type="button"
+              aria-label="Berhenti"
+              onClick={stop}
+              className="bg-muted text-muted-foreground hover:bg-muted/70 flex size-8 shrink-0 items-center justify-center rounded-full transition-colors"
+            >
               <Loader2Icon className="size-4 animate-spin" />
-            ) : (
+            </button>
+          ) : (
+            <button
+              type="button"
+              aria-label="Hantar"
+              disabled={!input.trim()}
+              onClick={() => void send()}
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-full transition-colors",
+                !input.trim()
+                  ? "bg-muted text-muted-foreground"
+                  : "bg-foreground text-background hover:opacity-90",
+              )}
+            >
               <SendIcon className="size-4" />
-            )}
-          </button>
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -143,6 +143,7 @@ const buildDeckEditContext = (
   lines.push(
     'When done, call render_ui with component "flashcards" containing the COMPLETE updated deck — every card, with only the requested changes applied. Keep unmentioned cards byte-identical.',
     "For small edits (renaming, tweaking one or two cards), do NOT run web searches — apply the change directly and return quickly.",
+    "If the request does not say what to change, ask one short clarifying question with the ask_user tool (never a plain-text question, which would end the run without an edit).",
   );
   return lines.join("\n");
 };
