@@ -67,12 +67,17 @@ export async function PATCH(
     );
   }
 
-  await artifactRegistry.setFlags(user.id, id, {
-    ...(typeof patch.pinned === "boolean" ? { pinned: patch.pinned } : {}),
-    ...(typeof patch.favorite === "boolean"
-      ? { favorite: patch.favorite }
-      : {}),
-  });
+  if (
+    typeof patch.pinned === "boolean" ||
+    typeof patch.favorite === "boolean"
+  ) {
+    await artifactRegistry.setFlags(user.id, id, {
+      ...(typeof patch.pinned === "boolean" ? { pinned: patch.pinned } : {}),
+      ...(typeof patch.favorite === "boolean"
+        ? { favorite: patch.favorite }
+        : {}),
+    });
+  }
   return new Response(null, { status: 204 });
 }
 

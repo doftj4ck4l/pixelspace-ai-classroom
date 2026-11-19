@@ -184,6 +184,7 @@ export const artifactRegistry = {
     id: string,
     flags: { pinned?: boolean; favorite?: boolean },
   ): Promise<void> {
+    if (flags.pinned === undefined && flags.favorite === undefined) return;
     await db
       .update(artifacts)
       .set({
