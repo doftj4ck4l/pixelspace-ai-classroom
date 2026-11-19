@@ -175,13 +175,7 @@ export const artifactRegistry = {
         updatedAt: new Date(),
         ...(title ? { title } : {}),
       })
-      .where(
-        and(
-          eq(artifacts.id, id),
-          eq(artifacts.userId, userId),
-          eq(artifacts.type, "flashcards"),
-        ),
-      );
+      .where(and(eq(artifacts.id, id), eq(artifacts.userId, userId)));
   },
 
   async setFlags(
