@@ -11,6 +11,10 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from "lucide-react";
+import {
+  FlashcardDeck,
+  type FlashcardSpec,
+} from "@/components/assistant-ui/flashcard-deck";
 import { cn } from "@/lib/utils";
 
 /**
@@ -94,6 +98,8 @@ export const RenderUiBlock: FC<{
           <Chart {...(spec.props as ChartProps)} />
         </Suspense>
       );
+    case "flashcards":
+      return <FlashcardDeck spec={spec.props as FlashcardSpec} variant="inline" />;
     default:
       return <ErrorNote reason={`unknown component "${spec.component}"`} />;
   }

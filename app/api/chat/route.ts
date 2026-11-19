@@ -66,6 +66,40 @@ const toPiMessages = (messages: UIMessage[]) =>
 
 type PiEvent = { type?: string; [key: string]: unknown };
 
+/**
+ * Register a generative-UI deck the agent designed (render_ui flashcards) as a
+ * Spaces artifact. The spec rides in the tool call's arguments; the result only
+ * confirms the harness validated it.
+ */
+const captureRenderUiSpec = async (
+  threadId: string,
+  toolCallId: string,
+  args: Record<string, unknown> | undefined,
+) => {
+  if (!args || args.component !== "flashcards") return;
+  let props = args.props;
+  if (typeof props === "string") {
+    try {
+      props = JSON.parse(props);
+    } catch {
+      return;
+    }
+  }
+  if (!props || typeof props !== "object" || Array.isArray(props)) return;
+  const spec = props as { title?: unknown; cards?: unknown };
+  if (!Array.isArray(spec.cards) || spec.cards.length === 0) return;
+  await artifactRegistry.addSpec({
+    threadId,
+    title:
+      typeof spec.title === "string" && spec.title.trim()
+        ? spec.title.trim()
+        : "Kad Imbas",
+    type: "flashcards",
+    spec,
+    dedupeKey: `render_ui:${toolCallId}`,
+  });
+};
+
 const WORKSPACE_FILE_URL = /\/api\/workspace\/files\/[^\s)"'<>`]+/g;
 const IMAGE_URL = /\/api\/images\/[A-Za-z0-9._-]+/g;
 const trimTail = (url: string) => url.replace(/[.,;:!?]+$/, "");
@@ -154,6 +188,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
       const pendingToolIds = new Map<string, string[]>();
       const openToolIds = new Set<string>();
       const completedToolIds = new Set<string>();
+      const renderUiArgs = new Map<string, Record<string, unknown>>();
       let lastToolId: string | null = null;
 
       const closeText = () => {
@@ -196,6 +231,12 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
               closeText();
               lastToolId = event.id;
               openToolIds.add(event.id);
+              if (event.name === "render_ui" && event.args && typeof event.args === "object") {
+                renderUiArgs.set(
+                  event.id,
+                  event.args as Record<string, unknown>,
+                );
+              }
               const queued = pendingToolIds.get(event.name) ?? [];
               queued.push(event.id);
               pendingToolIds.set(event.name, queued);
@@ -230,6 +271,15 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
                   threadId
                 ) {
                   await captureSharedArtifacts(threadId, event.content);
+                }
+                if (
+                  event.name === "render_ui" &&
+                  event.ok !== false &&
+                  threadId
+                ) {
+                  const args = renderUiArgs.get(toolCallId);
+                  renderUiArgs.delete(toolCallId);
+                  await captureRenderUiSpec(threadId, toolCallId, args);
                 }
                 if (event.ok === false) {
                   writer.write({

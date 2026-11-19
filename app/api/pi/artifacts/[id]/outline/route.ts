@@ -38,7 +38,12 @@ export async function GET(
 ) {
   const { id } = await params;
   const artifact = await artifactRegistry.get(id);
-  if (!artifact || artifact.type !== "slides" || !piConfigured()) {
+  if (
+    !artifact ||
+    artifact.type !== "slides" ||
+    typeof artifact.url !== "string" ||
+    !piConfigured()
+  ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

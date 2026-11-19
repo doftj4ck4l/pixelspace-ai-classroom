@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FC } from "react";
+import { useAui } from "@assistant-ui/react";
 import {
   AlignLeftIcon,
   ChartColumnIcon,
@@ -55,12 +56,10 @@ import {
   type CreateDialogInput,
 } from "@/components/assistant-ui/create-dialog";
 import { FlashcardViewer } from "@/components/assistant-ui/flashcard-viewer";
-import { GenerationView } from "@/components/assistant-ui/generation-view";
+import { type FlashcardSpec } from "@/components/assistant-ui/flashcard-deck";
 import {
-  streamGeneration,
   type GeneratedContent,
   type GenerationArtifact,
-  type GenerationInput,
   type GenerationSource,
 } from "@/components/assistant-ui/harness";
 import {
@@ -109,6 +108,8 @@ type Doc = {
   artifactId?: string;
   /** Set on local slide copies created from a shared pptx. */
   originArtifactId?: string;
+  /** Present on generative-UI deck artifacts (render_ui flashcards). */
+  spec?: FlashcardSpec;
   /** Companion files (same base name) offered inside the slide editor. */
   downloads?: { name: string; url: string }[];
 };
@@ -117,7 +118,9 @@ type SharedArtifact = {
   id: string;
   title: string;
   type: string;
-  url: string;
+  kind?: "file" | "spec";
+  url?: string;
+  spec?: unknown;
 };
 
 const baseName = (name: string) => name.replace(/\.[^.]+$/, "").toLowerCase();
@@ -387,7 +390,8 @@ const ALL_TABS = ["Suggested", "Favorites", "Your items", "Shared with you"];
 const MODULE_TABS = ["All", "Pinned", "Favorites", "Shared with you"];
 
 export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
-  const { setSection } = useSidebarNav();
+  const { setSection, setView } = useSidebarNav();
+  const aui = useAui();
   const [docs, setDocs] = useState<Doc[] | null>(null);
   const [tab, setTab] = useState<string>(mode === "all" ? "Suggested" : "All");
   const [query, setQuery] = useState("");
@@ -399,15 +403,14 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const [sharedArtifacts, setSharedArtifacts] = useState<SharedArtifact[]>([]);
   const [showNewPresentation, setShowNewPresentation] = useState(false);
   const [createKind, setCreateKind] = useState<ModuleKind | null>(null);
-  const [generation, setGeneration] = useState<GenerationInput | null>(null);
-  const [genSteps, setGenSteps] = useState<string[]>([]);
-  const [genError, setGenError] = useState<string | null>(null);
-  const genAbortRef = useRef<AbortController | null>(null);
-  const genTargetRef = useRef<string | null>(null);
   const templatesRef = useRef<HTMLDivElement>(null);
 
-  const editingDoc = docs?.find((doc) => doc.id === editingId) ?? null;
-  const viewingDoc = docs?.find((doc) => doc.id === viewingId) ?? null;
+  const findDoc = (id: string | null) =>
+    id
+      ? ([...(docs ?? []), ...artifactDocs].find((doc) => doc.id === id) ?? null)
+      : null;
+  const editingDoc = findDoc(editingId);
+  const viewingDoc = findDoc(viewingId);
 
   useEffect(() => {
     try {
@@ -452,6 +455,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         source: "chat" as const,
         url: artifact.url,
         artifactId: artifact.id,
+        ...(artifact.kind === "spec" && artifact.spec
+          ? { spec: artifact.spec as FlashcardSpec }
+          : {}),
       })),
     [sharedArtifacts],
   );
@@ -529,8 +535,15 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
 
   const siblingsOf = (doc: Doc) =>
     sharedArtifacts
-      .filter((artifact) => baseName(artifact.title) === baseName(doc.title))
-      .map((artifact) => ({ name: artifact.title, url: artifact.url }));
+      .filter(
+        (artifact) =>
+          typeof artifact.url === "string" &&
+          baseName(artifact.title) === baseName(doc.title),
+      )
+      .map((artifact) => ({
+        name: artifact.title,
+        url: artifact.url as string,
+      }));
 
   const openSharedArtifact = async (doc: Doc) => {
     if (!doc.artifactId || !doc.url) return;
@@ -579,86 +592,41 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     );
   };
 
-  const finishGeneration = (
-    input: GenerationInput,
-    content: GeneratedContent,
-    sources: GenerationSource[],
-    artifacts: GenerationArtifact[],
+  /**
+   * Generations run as conversations on the pi harness: create a thread, switch
+   * to it, and send the request — the agent researches, designs the artifact
+   * (render_ui flashcards / a shared pptx), and it lands in Spaces.
+   */
+  const generateInThread = async (
+    kind: "flashcards" | "slides",
+    input: CreateDialogInput,
   ) => {
-    const slides =
-      content.kind === "slides"
-        ? content.slides.map((slide) => ({
-            id: crypto.randomUUID(),
-            title: slide.title,
-            subtitle: slide.subtitle,
-            notes: "",
-          }))
-        : undefined;
-    const targetId = genTargetRef.current;
-    genTargetRef.current = null;
-
-    if (targetId) {
-      updateDoc(targetId, {
-        title: input.topic,
-        content,
-        sources,
-        artifacts,
-        ...(slides ? { slides } : {}),
-      });
-      setEditingId(targetId);
-    } else {
-      const doc: Doc = {
-        ...newDoc(input.kind, input.topic),
-        content,
-        sources,
-        artifacts,
-        ...(slides ? { slides } : {}),
-      };
-      setDocs((prev) => [doc, ...(prev ?? [])]);
-      if (input.kind === "slides") setEditingId(doc.id);
-      else setViewingId(doc.id);
-    }
-
-    setGeneration(null);
-    setGenSteps([]);
-    setGenError(null);
-    genAbortRef.current = null;
-  };
-
-  const startGeneration = (input: GenerationInput, targetDocId?: string) => {
-    genAbortRef.current?.abort();
-    const controller = new AbortController();
-    genAbortRef.current = controller;
-    genTargetRef.current = targetDocId ?? null;
     setCreateKind(null);
-    setGeneration(input);
-    setGenSteps([]);
-    setGenError(null);
-    void streamGeneration(
-      input,
-      (event) => {
-        if (event.type === "step") {
-          setGenSteps((prev) => [...prev, event.label]);
-        } else if (event.type === "done") {
-          finishGeneration(input, event.content, event.sources, event.artifacts);
-        } else {
-          setGenError(event.message);
-        }
-      },
-      controller.signal,
-    ).catch((error: unknown) => {
-      if ((error as Error)?.name !== "AbortError") {
-        setGenError(error instanceof Error ? error.message : "Generation failed");
-      }
-    });
-  };
-
-  const cancelGeneration = () => {
-    genAbortRef.current?.abort();
-    genAbortRef.current = null;
-    setGeneration(null);
-    setGenSteps([]);
-    setGenError(null);
+    try {
+      const { id } = (await fetch("/api/pi/threads", {
+        method: "POST",
+      }).then((res) => res.json())) as { id: string };
+      await aui.threads.switchToThread(id);
+      setView("home");
+      const language =
+        input.language === "bm"
+          ? "Jawab dalam bahasa Malaysia."
+          : input.language === "en"
+            ? "Answer in English."
+            : "Gunakan bahasa Malaysia, boleh campur istilah Inggeris.";
+      const attachmentNote =
+        input.files.length > 0
+          ? ` Rujuk juga fail yang dilampirkan: ${input.files.join(", ")}.`
+          : "";
+      const prompt =
+        kind === "flashcards"
+          ? `Buat kad imbas tentang ${input.topic}. ${language} Gunakan render_ui flashcards supaya kad boleh terus dilihat dan diacak.${attachmentNote}`
+          : `Buat slide deck tentang ${input.topic}. ${language} Hasilkan fail .pptx yang kemas, semak visualnya, dan share_file kepadanya.${attachmentNote}`;
+      aui.composer.setText(prompt);
+      aui.composer.send();
+    } catch {
+      // the dialog simply closes; the user can retry
+    }
   };
 
   const startFromTemplate = () => {
@@ -681,28 +649,14 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
             ? "No items match your search"
             : "Nothing here yet — create something to get started";
 
-  if (generation) {
-    return (
-      <GenerationView
-        kind={generation.kind}
-        topic={generation.topic}
-        steps={genSteps}
-        error={genError}
-        onCancel={cancelGeneration}
-        onRetry={() => startGeneration(generation, genTargetRef.current ?? undefined)}
-      />
-    );
-  }
-
   if (viewingDoc) {
-    const cards =
-      viewingDoc.content?.kind === "flashcards" ? viewingDoc.content.cards : [];
+    const spec: FlashcardSpec =
+      viewingDoc.spec ??
+      (viewingDoc.content?.kind === "flashcards"
+        ? { title: viewingDoc.title, cards: viewingDoc.content.cards }
+        : { title: viewingDoc.title, cards: [] });
     return (
-      <FlashcardViewer
-        title={viewingDoc.title}
-        cards={cards}
-        onClose={() => setViewingId(null)}
-      />
+      <FlashcardViewer spec={spec} onClose={() => setViewingId(null)} />
     );
   }
 
@@ -721,10 +675,11 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         onTitleChange={(title) => updateDoc(editingDoc.id, { title })}
         onSlidesChange={(slides) => updateDoc(editingDoc.id, { slides })}
         onGenerateWithAi={(topic) =>
-          startGeneration(
-            { kind: "slides", topic, language: "both", files: [] },
-            editingDoc.id,
-          )
+          void generateInThread("slides", {
+            topic,
+            language: "both",
+            files: [],
+          })
         }
         onClose={() => setEditingId(null)}
       />
@@ -1036,10 +991,10 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
           if (!open) setCreateKind(null);
         }}
         onGenerate={(input: CreateDialogInput) =>
-          startGeneration({
-            kind: createKind === "flashcards" ? "flashcards" : "slides",
-            ...input,
-          })
+          void generateInThread(
+            createKind === "flashcards" ? "flashcards" : "slides",
+            input,
+          )
         }
         onCreateEmpty={() => {
           if (createKind) addDoc(createKind);

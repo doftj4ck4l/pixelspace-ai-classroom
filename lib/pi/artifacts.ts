@@ -15,12 +15,18 @@ export type PiArtifact = {
   threadId: string;
   /** Display name (file basename). */
   title: string;
-  /** Our gallery doc type, e.g. "slides" | "reports" | "infographics". */
+  /** Our gallery doc type, e.g. "slides" | "reports" | "flashcards". */
   type: string;
-  /** Same-origin URL to open/download (proxied paths). */
-  url: string;
+  /** "file" artifacts carry a url; "spec" artifacts carry a render_ui spec. */
+  kind?: "file" | "spec";
+  /** Same-origin URL to open/download (proxied paths; file artifacts only). */
+  url?: string;
   /** Workspace-relative path for files; the image id for images. */
-  path: string;
+  path?: string;
+  /** The generative-UI spec (spec artifacts only). */
+  spec?: unknown;
+  /** Dedupe key for spec artifacts (the render_ui tool-call id). */
+  dedupeKey?: string;
   createdAt: string;
 };
 
@@ -102,8 +108,35 @@ export const artifactRegistry = {
       threadId: input.threadId,
       title: input.title,
       type: typeForPath(input.title || input.path),
+      kind: "file",
       url: input.url,
       path: input.path,
+      createdAt: new Date().toISOString(),
+    };
+    artifacts.push(artifact);
+    await save();
+    return artifact;
+  },
+  /** A generative-UI block the agent designed (e.g. a render_ui flashcards deck). */
+  async addSpec(input: {
+    threadId: string;
+    title: string;
+    type: string;
+    spec: unknown;
+    dedupeKey: string;
+  }): Promise<PiArtifact | null> {
+    const artifacts = await load();
+    if (artifacts.some((artifact) => artifact.dedupeKey === input.dedupeKey)) {
+      return null;
+    }
+    const artifact: PiArtifact = {
+      id: newId(),
+      threadId: input.threadId,
+      title: input.title,
+      type: input.type,
+      kind: "spec",
+      spec: input.spec,
+      dedupeKey: input.dedupeKey,
       createdAt: new Date().toISOString(),
     };
     artifacts.push(artifact);
