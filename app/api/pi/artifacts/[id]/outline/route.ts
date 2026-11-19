@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
 import { unzipSync } from "fflate";
+import { requireApiUser } from "@/lib/auth-session";
 import { artifactRegistry } from "@/lib/pi/artifacts";
 import { piConfigured, piFetch } from "@/lib/pi/client";
-
-/**
- * Extract a slide outline from a shared .pptx so it can open in our slide
- * editor. A pptx is a zip of XML; each slide's paragraphs are read in order —
- * the first becomes the title, the rest the subtitle line.
- */
 
 const slideNumber = (name: string) =>
   Number(name.match(/slide(\d+)\.xml$/)?.[1] ?? 0);
@@ -32,12 +27,16 @@ const extractParagraphs = (xml: string): string[] => {
   return paragraphs;
 };
 
+/** Extract a slide outline from an owned shared .pptx for the slide editor. */
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const { user, response } = await requireApiUser();
+  if (!user) return response;
+
   const { id } = await params;
-  const artifact = await artifactRegistry.get(id);
+  const artifact = await artifactRegistry.get(user.id, id);
   if (
     !artifact ||
     artifact.type !== "slides" ||

@@ -9,6 +9,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type FC } from "react";
+import { useRouter } from "next/navigation";
+import { signOut, useSession } from "@/lib/auth-client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +49,8 @@ const MENU_LINKS: MenuLink[] = [
 ];
 
 export const ProfileMenu: FC = () => {
+  const router = useRouter();
+  const { data: session } = useSession();
   const [language, setLanguage] = useState<LanguageId>("en");
 
   useEffect(() => {
@@ -74,9 +78,11 @@ export const ProfileMenu: FC = () => {
         <div className="flex items-center gap-3 px-2 py-1.5">
           <div className={`${BRAND_GRADIENT} size-9 shrink-0 rounded-full`} />
           <div className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-medium">Guest</span>
+            <span className="truncate text-sm font-medium">
+              {session?.user?.name ?? "Account"}
+            </span>
             <span className="text-muted-foreground truncate text-xs">
-              Not signed in
+              {session?.user?.email ?? ""}
             </span>
           </div>
         </div>
@@ -117,8 +123,10 @@ export const ProfileMenu: FC = () => {
 
         <DropdownMenuItem
           variant="destructive"
-          render={<a href="/login" />}
           className="gap-2"
+          onClick={() => {
+            void signOut().then(() => router.push("/login"));
+          }}
         >
           <LogOut className="size-4" />
           Sign out

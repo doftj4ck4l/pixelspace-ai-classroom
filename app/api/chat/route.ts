@@ -8,6 +8,7 @@ import {
   createUIMessageStreamResponse,
   type UIMessage,
 } from "ai";
+import { requireApiUser } from "@/lib/auth-session";
 import { artifactRegistry } from "@/lib/pi/artifacts";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
@@ -72,6 +73,7 @@ type PiEvent = { type?: string; [key: string]: unknown };
  * confirms the harness validated it.
  */
 const captureRenderUiSpec = async (
+  userId: string,
   threadId: string,
   toolCallId: string,
   args: Record<string, unknown> | undefined,
@@ -88,7 +90,7 @@ const captureRenderUiSpec = async (
   if (!props || typeof props !== "object" || Array.isArray(props)) return;
   const spec = props as { title?: unknown; cards?: unknown };
   if (!Array.isArray(spec.cards) || spec.cards.length === 0) return;
-  await artifactRegistry.addSpec({
+  await artifactRegistry.addSpec(userId, {
     threadId,
     title:
       typeof spec.title === "string" && spec.title.trim()
@@ -109,7 +111,11 @@ const trimTail = (url: string) => url.replace(/[.,;:!?]+$/, "");
  * as cards in Spaces. Only explicitly shared files — never a workspace listing,
  * which would fill the gallery with scratch files.
  */
-const captureSharedArtifacts = async (threadId: string, content: string) => {
+const captureSharedArtifacts = async (
+  userId: string,
+  threadId: string,
+  content: string,
+) => {
   const seen = new Set<string>();
 
   for (const match of content.matchAll(WORKSPACE_FILE_URL)) {
@@ -124,7 +130,7 @@ const captureSharedArtifacts = async (threadId: string, content: string) => {
       // keep the encoded form
     }
     const title = filePath.split("/").pop() || filePath;
-    await artifactRegistry.add({ threadId, title, path: filePath, url });
+    await artifactRegistry.add(userId, { threadId, title, path: filePath, url });
   }
 
   for (const match of content.matchAll(IMAGE_URL)) {
@@ -132,7 +138,7 @@ const captureSharedArtifacts = async (threadId: string, content: string) => {
     if (seen.has(url)) continue;
     seen.add(url);
     const imageId = url.replace("/api/images/", "");
-    await artifactRegistry.add({
+    await artifactRegistry.add(userId, {
       threadId,
       title: `image-${imageId.slice(0, 8)}.png`,
       path: imageId,
@@ -142,13 +148,17 @@ const captureSharedArtifacts = async (threadId: string, content: string) => {
 };
 
 /** Relay one turn through the pi harness. Returns null to fall back to the gateway. */
-const piChat = async (req: Request, body: ChatBody): Promise<Response | null> => {
+const piChat = async (
+  req: Request,
+  body: ChatBody,
+  userId: string,
+): Promise<Response | null> => {
   if (!piConfigured()) return null;
   const userText = newUserText(body.messages);
   if (userText === null || userText.length === 0) return null;
 
   const threadId = body.id ?? body.threadId;
-  const thread = threadId ? await registry.get(threadId) : undefined;
+  const thread = threadId ? await registry.get(userId, threadId) : undefined;
 
   let upstream: Response;
   try {
@@ -270,7 +280,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
                   typeof event.content === "string" &&
                   threadId
                 ) {
-                  await captureSharedArtifacts(threadId, event.content);
+                  await captureSharedArtifacts(userId, threadId, event.content);
                 }
                 if (
                   event.name === "render_ui" &&
@@ -279,7 +289,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
                 ) {
                   const args = renderUiArgs.get(toolCallId);
                   renderUiArgs.delete(toolCallId);
-                  await captureRenderUiSpec(threadId, toolCallId, args);
+                  await captureRenderUiSpec(userId, threadId, toolCallId, args);
                 }
                 if (event.ok === false) {
                   writer.write({
@@ -325,13 +335,13 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
               typeof event.id === "string" &&
               threadId
             ) {
-              await registry.update(threadId, { conversationId: event.id });
+              await registry.update(userId, threadId, { conversationId: event.id });
             } else if (
               event.type === "title" &&
               typeof event.title === "string" &&
               threadId
             ) {
-              await registry.update(threadId, { title: event.title });
+              await registry.update(userId, threadId, { title: event.title });
             } else if (
               event.type === "error" &&
               typeof event.message === "string"
@@ -360,7 +370,7 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
       if (failure) throw new Error(failure);
 
       if (threadId) {
-        await registry.update(threadId, {
+        await registry.update(userId, threadId, {
           lastMessageAt: new Date().toISOString(),
         });
       }
@@ -374,9 +384,12 @@ const piChat = async (req: Request, body: ChatBody): Promise<Response | null> =>
 };
 
 export async function POST(req: Request) {
+  const { user, response } = await requireApiUser();
+  if (!user) return response;
+
   const body = (await req.json()) as ChatBody;
 
-  const viaPi = await piChat(req, body);
+  const viaPi = await piChat(req, body, user.id);
   if (viaPi) return viaPi;
 
   if (newUserText(body.messages) === null) {

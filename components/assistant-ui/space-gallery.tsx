@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FC } from "react";
+import { useRouter } from "next/navigation";
 import { useAui } from "@assistant-ui/react";
 import {
   AlignLeftIcon,
@@ -124,8 +125,6 @@ type SharedArtifact = {
 };
 
 const baseName = (name: string) => name.replace(/\.[^.]+$/, "").toLowerCase();
-
-const STORAGE_KEY = "paic-space-docs-v3";
 
 const TYPE_STYLES: Record<DocType, { Icon: LucideIcon; color: string }> = {
   flashcards: { Icon: LayersIcon, color: "text-amber-500" },
@@ -407,6 +406,7 @@ const MODULE_TABS = ["All", "Pinned", "Favorites", "Shared with you"];
 export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const { setSection, setView } = useSidebarNav();
   const aui = useAui();
+  const router = useRouter();
   const [docs, setDocs] = useState<Doc[] | null>(null);
   const [tab, setTab] = useState<string>(mode === "all" ? "Suggested" : "All");
   const [query, setQuery] = useState("");
@@ -422,12 +422,18 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
 
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      setDocs(raw ? (JSON.parse(raw) as Doc[]) : []);
-    } catch {
-      setDocs([]);
-    }
+    let cancelled = false;
+    fetch("/api/docs")
+      .then((res) => res.json())
+      .then((data: { docs?: Doc[] }) => {
+        if (!cancelled) setDocs(data.docs ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setDocs([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -442,16 +448,6 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (docs) {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
-      } catch {
-        // storage unavailable
-      }
-    }
-  }, [docs]);
 
   const artifactDocs = useMemo<Doc[]>(
     () =>
@@ -503,36 +499,55 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     }
   }, [docs, artifactDocs, mode, tab, query, sort]);
 
+  /** Persist a new doc server-side (optimistic — the UI already shows it). */
+  const persistDoc = (doc: Doc) => {
+    void fetch("/api/docs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: doc.id,
+        type: doc.type,
+        title: doc.title,
+        ...(doc.content ? { content: doc.content } : {}),
+        ...(doc.slides ? { slides: doc.slides } : {}),
+        ...(doc.downloads ? { downloads: doc.downloads } : {}),
+        ...(doc.originArtifactId
+          ? { originArtifactId: doc.originArtifactId }
+          : {}),
+      }),
+    }).catch(() => {});
+  };
+
   const addDoc = (type: DocType, title?: string) => {
-    setDocs((prev) => [newDoc(type, title), ...(prev ?? [])]);
+    const doc = newDoc(type, title);
+    setDocs((prev) => [doc, ...(prev ?? [])]);
+    persistDoc(doc);
   };
 
   const togglePin = (id: string) => {
-    setDocs(
-      (prev) =>
-        prev?.map((doc) =>
-          doc.id === id ? { ...doc, pinned: !doc.pinned } : doc,
-        ) ?? null,
-    );
+    const doc = (docs ?? []).find((entry) => entry.id === id);
+    if (doc) updateDoc(id, { pinned: !doc.pinned });
   };
 
   const toggleFavorite = (id: string) => {
-    setDocs(
-      (prev) =>
-        prev?.map((doc) =>
-          doc.id === id ? { ...doc, favorite: !doc.favorite } : doc,
-        ) ?? null,
-    );
+    const doc = (docs ?? []).find((entry) => entry.id === id);
+    if (doc) updateDoc(id, { favorite: !doc.favorite });
   };
 
   const removeDoc = (id: string) => {
     setDocs((prev) => prev?.filter((doc) => doc.id !== id) ?? null);
+    void fetch(`/api/docs/${id}`, { method: "DELETE" }).catch(() => {});
   };
 
   const updateDoc = (id: string, patch: Partial<Doc>) => {
     setDocs(
       (prev) => prev?.map((doc) => (doc.id === id ? { ...doc, ...patch } : doc)) ?? null,
     );
+    void fetch(`/api/docs/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).catch(() => {});
   };
 
   const openDeck = (doc: Doc) => {
@@ -547,6 +562,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const createDeck = (title: string, slides: SlideData[]) => {
     const doc: Doc = { ...newDoc("slides", title), slides };
     setDocs((prev) => [doc, ...(prev ?? [])]);
+    persistDoc(doc);
     setShowNewPresentation(false);
     setEditingId(doc.id);
   };
@@ -566,7 +582,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const openSharedArtifact = async (doc: Doc) => {
     if (!doc.artifactId) return;
     if (doc.spec) {
-      setViewingId(doc.id);
+      router.push(`/spaces/flashcards/${doc.artifactId}`);
       return;
     }
     if (!doc.url) return;
@@ -598,6 +614,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
             })),
           };
           setDocs((prev) => [local, ...(prev ?? [])]);
+          persistDoc(local);
           setEditingId(local.id);
           return;
         }
@@ -865,7 +882,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                   key={doc.id}
                   onClick={
                     doc.spec
-                      ? () => setViewingId(doc.id)
+                      ? () => router.push(`/spaces/flashcards/${doc.artifactId}`)
                       : doc.artifactId
                         ? () => void openSharedArtifact(doc)
                         : doc.type === "slides"
@@ -935,7 +952,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                   key={doc.id}
                   onClick={
                     doc.spec
-                      ? () => setViewingId(doc.id)
+                      ? () => router.push(`/spaces/flashcards/${doc.artifactId}`)
                       : doc.artifactId
                         ? () => void openSharedArtifact(doc)
                         : doc.type === "slides"

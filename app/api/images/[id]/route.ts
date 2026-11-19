@@ -1,3 +1,4 @@
+import { requireApiUser } from "@/lib/auth-session";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 
 /**
@@ -9,6 +10,9 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const { user, response } = await requireApiUser();
+  if (!user) return response;
+
   if (!piConfigured()) return new Response("Not found", { status: 404 });
 
   const { id } = await params;

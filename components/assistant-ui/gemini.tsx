@@ -41,12 +41,7 @@ import {
   ToolGroupRoot,
   ToolGroupTrigger,
 } from "@/components/assistant-ui/elements/tool-group.aui";
-import {
-  CloneThreadShell,
-  useSidebarNav,
-} from "@/components/assistant-ui/clone-thread-shell";
-import { SpaceGallery } from "@/components/assistant-ui/space-gallery";
-import type { ModuleKind } from "@/components/assistant-ui/space-gallery";
+import { useSidebarNav } from "@/components/assistant-ui/clone-thread-shell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,40 +81,17 @@ const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
   );
 };
 
-export const Gemini: FC = () => {
+/**
+ * The chat surface, rendered by /chat and /chat/<threadId>. The runtime and
+ * shell live in AppShell; this is only the thread itself.
+ */
+export const ThreadView: FC = () => {
   return (
-    <CloneThreadShell>
+    <>
       <AskUserDataUI />
-      <MainContent />
-    </CloneThreadShell>
+      <ThreadContent />
+    </>
   );
-};
-
-const MODULE_SECTIONS = new Set<string>([
-  "flashcards",
-  "quizzes",
-  "mindmaps",
-  "slides",
-  "reports",
-  "infographics",
-  "podcasts",
-  "notes",
-  "transformations",
-]);
-
-const MainContent: FC = () => {
-  const { view, section } = useSidebarNav();
-  if (view === "space") {
-    if (section === "all") {
-      // key=section remounts the gallery per section, so an open viewer or
-      // editor never leaks across pages and filters reset like real routes.
-      return <SpaceGallery key="all" mode="all" />;
-    }
-    if (MODULE_SECTIONS.has(section)) {
-      return <SpaceGallery key={section} mode={section as ModuleKind} />;
-    }
-  }
-  return <ThreadContent />;
 };
 
 const ThreadContent: FC = () => {

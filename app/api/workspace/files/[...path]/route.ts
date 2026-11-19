@@ -1,3 +1,4 @@
+import { requireApiUser } from "@/lib/auth-session";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 
 /**
@@ -11,6 +12,9 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ path: string[] }> },
 ) {
+  const { user, response } = await requireApiUser();
+  if (!user) return response;
+
   if (!piConfigured()) return new Response("File not found", { status: 404 });
 
   const { path } = await params;

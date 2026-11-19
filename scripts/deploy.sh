@@ -19,6 +19,16 @@ git reset --hard "origin/$BRANCH"
 echo "==> Installing dependencies"
 pnpm install --frozen-lockfile
 
+echo "==> Ensuring the database is up"
+docker compose -f docker-compose.db.yml up -d
+for i in $(seq 1 15); do
+  docker exec paic2-db pg_isready -U pixelspace -d pixelspace_classroom >/dev/null 2>&1 && break
+  sleep 2
+done
+
+echo "==> Applying migrations"
+pnpm db:migrate
+
 echo "==> Building"
 pnpm build
 

@@ -47,6 +47,8 @@ import {
   WaypointsIcon,
   type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   createContext,
@@ -147,18 +149,31 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [section, setSection] = useState("all");
-  const [view, setView] = useState<SidebarView>("home");
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Navigation is the URL now: /chat*, /spaces/<section>, /scheduled.
+  const inSpace = pathname.startsWith("/spaces");
+  const view: SidebarView = pathname.startsWith("/scheduled")
+    ? "scheduled"
+    : inSpace
+      ? "space"
+      : "home";
+  const section = inSpace ? (pathname.split("/")[2] ?? "all") : "all";
   const nav = useMemo(
-    () => ({ view, section, setSection, setView }),
-    [view, section],
+    () => ({
+      view,
+      section,
+      setSection: (next: string) => router.push(`/spaces/${next}`),
+      setView: (next: SidebarView) =>
+        router.push(
+          next === "home" ? "/chat" : next === "space" ? "/spaces/all" : "/scheduled",
+        ),
+    }),
+    [view, section, router],
   );
   const hasThreads = useAuiState((s) => s.threads.threadIds.length > 0);
   const aui = useAui();
-
-  const selectSection = (item: NavItem) => {
-    setSection(item.id);
-  };
 
   // A controlled value means the caller renders the chrome that drives it, so
   // the shell omits its own toggle / trigger and forwards changes instead.
@@ -223,7 +238,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               const wasCollapsed = sidebarCollapsed;
               if (wasCollapsed) setSidebarCollapsed(false);
               if (view !== "home") {
-                setView("home");
+                router.push("/chat");
                 return;
               }
               if (!wasCollapsed) void aui.threads.switchToNewThread();
@@ -239,7 +254,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             side="right"
             onClick={() => {
               setSidebarCollapsed(false);
-              setView(view === "space" ? "home" : "space");
+              router.push(view === "space" ? "/chat" : "/spaces/all");
             }}
             className={cn(
               "size-8",
@@ -255,7 +270,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             side="right"
             onClick={() => {
               setSidebarCollapsed(false);
-              setView(view === "scheduled" ? "home" : "scheduled");
+              router.push(view === "scheduled" ? "/chat" : "/scheduled");
             }}
             className={cn(
               "size-8",
@@ -356,10 +371,9 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             {view === "space" ? (
               <nav className="mt-2 flex flex-col gap-0.5">
                 {NAV_ITEMS.map((item) => (
-                  <button
+                  <Link
                     key={item.id}
-                    type="button"
-                    onClick={() => selectSection(item)}
+                    href={`/spaces/${item.id}`}
                     className={cn(
                       "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
                       section === item.id
@@ -369,7 +383,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   >
                     <item.Icon className="size-4 shrink-0" />
                     <span className="truncate">{item.label}</span>
-                  </button>
+                  </Link>
                 ))}
               </nav>
             ) : view === "scheduled" ? (

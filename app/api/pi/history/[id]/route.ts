@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
+import { requireApiUser } from "@/lib/auth-session";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
 
-type PiMessage = {
-  id?: string;
-  kind?: string;
-  text?: string;
-};
-
+type PiMessage = { id?: string; kind?: string; text?: string };
 type PiToolRow = {
   name?: string;
   args?: unknown;
@@ -15,7 +11,6 @@ type PiToolRow = {
   ms?: number;
   ok?: boolean;
 };
-
 type HistoryRow = {
   id: string;
   parentId: string | null;
@@ -26,16 +21,18 @@ type HistoryRow = {
 const MAX_RESULT = 4000;
 
 /**
- * Rebuild the UI message history from pi's transcript, including tool calls
- * and render_ui blocks (which pi stores as `tool` rows) so a reloaded thread
- * looks like the one you watched — the same as pixelspacev3's transcript.
+ * Rebuild the UI message history from pi's transcript for one owned thread,
+ * including tool calls and render_ui blocks.
  */
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const { user, response } = await requireApiUser();
+  if (!user) return response;
+
   const { id } = await params;
-  const thread = await registry.get(id);
+  const thread = await registry.get(user.id, id);
   if (!thread?.conversationId || !piConfigured()) {
     return NextResponse.json({ messages: [] });
   }
@@ -117,7 +114,6 @@ export async function GET(
               }),
         });
       }
-      // thinking / iteration / anything else draws no row.
     }
 
     flushAssistant();

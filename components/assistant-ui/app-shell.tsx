@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   AssistantRuntimeProvider,
   CompositeAttachmentAdapter,
@@ -13,7 +14,7 @@ import {
 } from "@assistant-ui/react";
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/ai-sdk";
 import { createAssistantStream } from "assistant-stream";
-import { Gemini } from "@/components/assistant-ui/gemini";
+import { CloneThreadShell } from "@/components/assistant-ui/clone-thread-shell";
 
 type HistoryRow = {
   id: string;
@@ -147,8 +148,24 @@ const threadListAdapter: RemoteThreadListAdapter = {
   unstable_useAdapters: useThreadListAdapters,
 };
 
-export const Assistant = () => {
+/**
+ * The authenticated app: one runtime and one shell around every route, so
+ * navigating between pages never remounts the conversation. The URL is the
+ * source of truth — /chat/<threadId> drives which thread the runtime shows,
+ * and thread switches write the URL back.
+ */
+export const AppShell = ({ children }: { children: ReactNode }) => {
+  const pathname = usePathname();
+  const router = useRouter();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+
+  const threadId = pathname.startsWith("/chat/")
+    ? decodeURIComponent(pathname.split("/")[2] ?? "")
+    : undefined;
+
   const runtime = useRemoteThreadListRuntime({
+    threadId,
     runtimeHook: () =>
       useChatRuntime({
         // No sendAutomaticallyWhen: every tool executes server-side inside the
@@ -160,14 +177,27 @@ export const Assistant = () => {
             new SimpleTextAttachmentAdapter(),
           ]),
         },
+        onThreadIdChange: (id) => {
+          const target = id ? `/chat/${id}` : "/chat";
+          const current = pathnameRef.current;
+          const onChat = current.startsWith("/chat");
+          if (!onChat) return;
+          if (current !== target) router.replace(target);
+        },
       }),
     adapter: threadListAdapter,
   });
 
+  // The provider must not remount between routes; a stable shell keeps the
+  // conversation mounted while the URL changes.
+  useEffect(() => {
+    // no-op: kept to make the intent explicit next to the URL wiring
+  }, [threadId]);
+
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <div className="h-dvh w-full overflow-hidden">
-        <Gemini />
+        <CloneThreadShell>{children}</CloneThreadShell>
       </div>
     </AssistantRuntimeProvider>
   );

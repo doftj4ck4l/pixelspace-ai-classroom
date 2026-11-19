@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { generateId } from "ai";
+import { requireApiUser } from "@/lib/auth-session";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
 
 type PiConversation = { id: string; title?: string; updatedAt?: number };
 
 export async function GET() {
-  const threads = await registry.list();
+  const { user, response } = await requireApiUser();
+  if (!user) return response;
+
+  const threads = await registry.list(user.id);
 
   if (piConfigured()) {
     try {
@@ -22,7 +26,10 @@ export async function GET() {
           if (!thread.conversationId) continue;
           const conv = byConversation.get(thread.conversationId);
           if (conv?.title && conv.title !== thread.title) {
-            await registry.update(thread.remoteId, { title: conv.title });
+            await registry.update(user.id, thread.remoteId, {
+              title: conv.title,
+            });
+            thread.title = conv.title;
           }
         }
       }
@@ -31,9 +38,6 @@ export async function GET() {
     }
   }
 
-  threads.sort((a, b) =>
-    (b.lastMessageAt ?? "").localeCompare(a.lastMessageAt ?? ""),
-  );
   return NextResponse.json({
     threads: threads.map((thread) => ({
       remoteId: thread.remoteId,
@@ -45,7 +49,10 @@ export async function GET() {
 }
 
 export async function POST() {
+  const { user, response } = await requireApiUser();
+  if (!user) return response;
+
   const id = generateId();
-  await registry.create(id);
+  await registry.create(user.id, id);
   return NextResponse.json({ id });
 }

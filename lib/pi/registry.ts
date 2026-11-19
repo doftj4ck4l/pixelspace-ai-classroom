@@ -1,13 +1,12 @@
-/**
- * File-backed registry mapping app thread ids to pi conversation ids.
- *
- * Threads are created locally (before pi knows about them); the mapping is
- * filled in by the chat relay when pi opens the conversation on the first
- * message. Kept on disk so history and titles survive app restarts.
- */
+import { and, desc, eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { threads } from "@/lib/db/schema";
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+/**
+ * Thread registry in Postgres: maps app thread ids to pi conversation ids,
+ * scoped to the owning account. Every method takes the user id and filters by
+ * it, so one account can never read or write another's threads.
+ */
 
 export type PiThread = {
   remoteId: string;
@@ -17,60 +16,63 @@ export type PiThread = {
   lastMessageAt?: string;
 };
 
-const FILE = path.join(process.cwd(), "data", "pi-threads.json");
+type ThreadRow = typeof threads.$inferSelect;
 
-let cache: Record<string, PiThread> | null = null;
-let writing: Promise<void> = Promise.resolve();
-
-const load = async (): Promise<Record<string, PiThread>> => {
-  if (cache) return cache;
-  try {
-    cache = JSON.parse(await readFile(FILE, "utf8")) as Record<
-      string,
-      PiThread
-    >;
-  } catch {
-    cache = {};
-  }
-  return cache;
-};
-
-const save = () => {
-  const snapshot = JSON.stringify(cache ?? {}, null, 2);
-  writing = writing
-    .then(() => mkdir(path.dirname(FILE), { recursive: true }))
-    .then(() => writeFile(FILE, snapshot))
-    .catch(() => {});
-  return writing;
-};
+const toPiThread = (row: ThreadRow): PiThread => ({
+  remoteId: row.id,
+  ...(row.piConversationId ? { conversationId: row.piConversationId } : {}),
+  ...(row.title ? { title: row.title } : {}),
+  status: row.status === "archived" ? "archived" : "regular",
+  ...(row.lastMessageAt
+    ? { lastMessageAt: row.lastMessageAt.toISOString() }
+    : {}),
+});
 
 export const registry = {
-  async list(): Promise<PiThread[]> {
-    return Object.values(await load());
+  async list(userId: string): Promise<PiThread[]> {
+    const rows = await db
+      .select()
+      .from(threads)
+      .where(eq(threads.userId, userId))
+      .orderBy(desc(threads.lastMessageAt), desc(threads.createdAt));
+    return rows.map(toPiThread);
   },
-  async get(id: string): Promise<PiThread | undefined> {
-    return (await load())[id];
+
+  async get(userId: string, id: string): Promise<PiThread | undefined> {
+    const [row] = await db
+      .select()
+      .from(threads)
+      .where(and(eq(threads.id, id), eq(threads.userId, userId)));
+    return row ? toPiThread(row) : undefined;
   },
-  async create(id: string): Promise<PiThread> {
-    const threads = await load();
-    threads[id] = { remoteId: id, status: "regular" };
-    await save();
-    return threads[id];
+
+  async create(userId: string, id: string): Promise<void> {
+    await db.insert(threads).values({ id, userId }).onConflictDoNothing();
   },
-  async update(id: string, patch: Partial<PiThread>): Promise<PiThread> {
-    const threads = await load();
-    threads[id] = {
-      ...{ remoteId: id, status: "regular" as const },
-      ...threads[id],
-      ...patch,
-      remoteId: id,
-    };
-    await save();
-    return threads[id];
+
+  async update(
+    userId: string,
+    id: string,
+    patch: Partial<PiThread>,
+  ): Promise<void> {
+    await db
+      .update(threads)
+      .set({
+        ...(patch.conversationId !== undefined
+          ? { piConversationId: patch.conversationId }
+          : {}),
+        ...(patch.title !== undefined ? { title: patch.title } : {}),
+        ...(patch.status !== undefined ? { status: patch.status } : {}),
+        ...(patch.lastMessageAt !== undefined
+          ? { lastMessageAt: new Date(patch.lastMessageAt) }
+          : {}),
+      })
+      .where(and(eq(threads.id, id), eq(threads.userId, userId)));
   },
-  async remove(id: string): Promise<void> {
-    const threads = await load();
-    delete threads[id];
-    await save();
+
+  async remove(userId: string, id: string): Promise<void> {
+    await db
+      .delete(threads)
+      .where(and(eq(threads.id, id), eq(threads.userId, userId)));
   },
 };
