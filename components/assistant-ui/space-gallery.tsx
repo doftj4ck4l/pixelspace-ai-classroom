@@ -420,12 +420,6 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const [createKind, setCreateKind] = useState<ModuleKind | null>(null);
   const templatesRef = useRef<HTMLDivElement>(null);
 
-  const findDoc = (id: string | null) =>
-    id
-      ? ([...(docs ?? []), ...artifactDocs].find((doc) => doc.id === id) ?? null)
-      : null;
-  const editingDoc = findDoc(editingId);
-  const viewingDoc = findDoc(viewingId);
 
   useEffect(() => {
     try {
@@ -476,6 +470,15 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       })),
     [sharedArtifacts],
   );
+
+  // Resolves both local docs and artifact cards; declared after artifactDocs
+  // so the closure never reads it in its temporal dead zone.
+  const findDoc = (id: string | null) =>
+    id
+      ? ([...(docs ?? []), ...artifactDocs].find((doc) => doc.id === id) ?? null)
+      : null;
+  const editingDoc = findDoc(editingId);
+  const viewingDoc = findDoc(viewingId);
 
   const filtered = useMemo(() => {
     if (!docs) return [];
