@@ -69,8 +69,6 @@ type AccentTheme = {
   bar: string;
   chip: string;
   badge: string;
-  cardRing: string;
-  glow: string;
   cover: string;
   pill: string;
 };
@@ -81,8 +79,6 @@ const ACCENTS: Record<string, AccentTheme> = {
     bar: "bg-teal-500",
     chip: "bg-teal-500/10 text-teal-700 dark:text-teal-300",
     badge: "bg-teal-500/15 text-teal-700 dark:text-teal-300",
-    cardRing: "ring-teal-500/20",
-    glow: "bg-teal-400/20 dark:bg-teal-500/10",
     cover:
       "bg-gradient-to-br from-teal-300/50 via-teal-200/40 to-cyan-100/30 dark:from-teal-900/60 dark:via-teal-950/50 dark:to-cyan-950/40",
     pill: "bg-teal-500/15 text-teal-800 dark:text-teal-200",
@@ -92,8 +88,6 @@ const ACCENTS: Record<string, AccentTheme> = {
     bar: "bg-blue-500",
     chip: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
     badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
-    cardRing: "ring-blue-500/20",
-    glow: "bg-blue-400/20 dark:bg-blue-500/10",
     cover:
       "bg-gradient-to-br from-blue-300/50 via-sky-200/40 to-indigo-100/30 dark:from-blue-900/60 dark:via-sky-950/50 dark:to-indigo-950/40",
     pill: "bg-blue-500/15 text-blue-800 dark:text-blue-200",
@@ -103,8 +97,6 @@ const ACCENTS: Record<string, AccentTheme> = {
     bar: "bg-amber-500",
     chip: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
     badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-    cardRing: "ring-amber-500/20",
-    glow: "bg-amber-400/20 dark:bg-amber-500/10",
     cover:
       "bg-gradient-to-br from-amber-300/50 via-orange-200/40 to-yellow-100/30 dark:from-amber-900/60 dark:via-orange-950/50 dark:to-yellow-950/40",
     pill: "bg-amber-500/15 text-amber-800 dark:text-amber-200",
@@ -114,8 +106,6 @@ const ACCENTS: Record<string, AccentTheme> = {
     bar: "bg-violet-500",
     chip: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
     badge: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
-    cardRing: "ring-violet-500/20",
-    glow: "bg-violet-400/20 dark:bg-violet-500/10",
     cover:
       "bg-gradient-to-br from-violet-300/50 via-purple-200/40 to-fuchsia-100/30 dark:from-violet-900/60 dark:via-purple-950/50 dark:to-fuchsia-950/40",
     pill: "bg-violet-500/15 text-violet-800 dark:text-violet-200",
@@ -125,8 +115,6 @@ const ACCENTS: Record<string, AccentTheme> = {
     bar: "bg-rose-500",
     chip: "bg-rose-500/10 text-rose-700 dark:text-rose-300",
     badge: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
-    cardRing: "ring-rose-500/20",
-    glow: "bg-rose-400/20 dark:bg-rose-500/10",
     cover:
       "bg-gradient-to-br from-rose-300/50 via-pink-200/40 to-red-100/30 dark:from-rose-900/60 dark:via-pink-950/50 dark:to-red-950/40",
     pill: "bg-rose-500/15 text-rose-800 dark:text-rose-200",
@@ -136,8 +124,6 @@ const ACCENTS: Record<string, AccentTheme> = {
     bar: "bg-emerald-500",
     chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
     badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-    cardRing: "ring-emerald-500/20",
-    glow: "bg-emerald-400/20 dark:bg-emerald-500/10",
     cover:
       "bg-gradient-to-br from-emerald-300/50 via-green-200/40 to-lime-100/30 dark:from-emerald-900/60 dark:via-green-950/50 dark:to-lime-950/40",
     pill: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
@@ -889,21 +875,7 @@ export const FlashcardDeck: FC<{
                   transition={{ type: "spring", stiffness: 320, damping: 30 }}
                   className="relative"
                 >
-                  <div className="relative overflow-hidden rounded-3xl">
-                    <div
-                      aria-hidden="true"
-                      className={cn(
-                        "pointer-events-none absolute -top-16 -right-16 size-48 rounded-full blur-2xl",
-                        theme.glow,
-                      )}
-                    />
-                    <div
-                      aria-hidden="true"
-                      className={cn(
-                        "pointer-events-none absolute -bottom-20 -left-16 size-52 rounded-full blur-3xl",
-                        theme.glow,
-                      )}
-                    />
+                  <div className="bg-card relative overflow-hidden rounded-3xl">
                     <FlipCard
                       card={card}
                       flipped={flipped}
@@ -1153,8 +1125,7 @@ const CardFace: FC<{
   return (
     <div
       className={cn(
-        "border-border/60 absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border px-6 text-center ring-1 [backface-visibility:hidden] ring-inset",
-        theme.cardRing,
+        "border-border/60 absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-hidden rounded-3xl border px-6 text-center [backface-visibility:hidden]",
         isBack && "[transform:rotateY(180deg)]",
         presentation ? "bg-white text-[#1f1f1f]" : "bg-card",
       )}
