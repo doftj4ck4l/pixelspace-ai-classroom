@@ -379,16 +379,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   No scheduled tasks
                 </span>
               </div>
-            ) : (
-              <div className="mt-4 flex flex-col">
-                <span className="text-muted-foreground px-3 py-1 text-xs font-medium">
-                  Projects
-                </span>
-                <span className="text-muted-foreground/70 px-3 py-1 text-sm">
-                  No projects
-                </span>
-              </div>
-            )}
+            ) : null}
 
             {searchOpen && !sidebarCollapsed && hasThreads && (
               <div className="pt-1 pb-1">
