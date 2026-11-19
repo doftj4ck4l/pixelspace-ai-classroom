@@ -344,6 +344,19 @@ const DocMenu: FC<{
   </DropdownMenu>
 );
 
+const downloadSpecJson = (doc: Doc) => {
+  if (!doc.spec) return;
+  const blob = new Blob([JSON.stringify(doc.spec, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${doc.title || "flashcards"}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 const SharedArtifactMenu: FC<{
   doc: Doc;
   siblings: { name: string; url: string }[];
@@ -360,7 +373,9 @@ const SharedArtifactMenu: FC<{
         <MoreHorizontalIcon className="size-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="bottom">
-        <DropdownMenuItem onClick={() => onDownload(doc)}>
+        <DropdownMenuItem
+          onClick={() => (doc.spec ? downloadSpecJson(doc) : onDownload(doc))}
+        >
           <DownloadIcon className="size-4" />
           Download
         </DropdownMenuItem>
@@ -546,7 +561,12 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       }));
 
   const openSharedArtifact = async (doc: Doc) => {
-    if (!doc.artifactId || !doc.url) return;
+    if (!doc.artifactId) return;
+    if (doc.spec) {
+      setViewingId(doc.id);
+      return;
+    }
+    if (!doc.url) return;
     if (doc.type === "slides") {
       const downloads = siblingsOf(doc);
       const existing = (docs ?? []).find(
@@ -841,17 +861,20 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 <div
                   key={doc.id}
                   onClick={
-                    doc.artifactId
-                      ? () => void openSharedArtifact(doc)
-                      : doc.type === "slides"
-                        ? () => openDeck(doc)
-                        : doc.type === "flashcards"
-                          ? () => setViewingId(doc.id)
-                          : undefined
+                    doc.spec
+                      ? () => setViewingId(doc.id)
+                      : doc.artifactId
+                        ? () => void openSharedArtifact(doc)
+                        : doc.type === "slides"
+                          ? () => openDeck(doc)
+                          : doc.type === "flashcards"
+                            ? () => setViewingId(doc.id)
+                            : undefined
                   }
                   className={cn(
                     "group border-border/60 bg-card relative rounded-xl border p-3 transition-shadow hover:shadow-md",
-                    (doc.artifactId ||
+                    (doc.spec ||
+                      doc.artifactId ||
                       doc.type === "slides" ||
                       doc.type === "flashcards") &&
                       "cursor-pointer",
@@ -908,17 +931,20 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 <div
                   key={doc.id}
                   onClick={
-                    doc.artifactId
-                      ? () => void openSharedArtifact(doc)
-                      : doc.type === "slides"
-                        ? () => openDeck(doc)
-                        : doc.type === "flashcards"
-                          ? () => setViewingId(doc.id)
-                          : undefined
+                    doc.spec
+                      ? () => setViewingId(doc.id)
+                      : doc.artifactId
+                        ? () => void openSharedArtifact(doc)
+                        : doc.type === "slides"
+                          ? () => openDeck(doc)
+                          : doc.type === "flashcards"
+                            ? () => setViewingId(doc.id)
+                            : undefined
                   }
                   className={cn(
                     "group hover:bg-muted/50 relative flex h-11 items-center gap-3 rounded-lg px-3 transition-colors",
-                    (doc.artifactId ||
+                    (doc.spec ||
+                      doc.artifactId ||
                       doc.type === "slides" ||
                       doc.type === "flashcards") &&
                       "cursor-pointer",
