@@ -111,10 +111,12 @@ const MainContent: FC = () => {
   const { view, section } = useSidebarNav();
   if (view === "space") {
     if (section === "all") {
-      return <SpaceGallery mode="all" />;
+      // key=section remounts the gallery per section, so an open viewer or
+      // editor never leaks across pages and filters reset like real routes.
+      return <SpaceGallery key="all" mode="all" />;
     }
     if (MODULE_SECTIONS.has(section)) {
-      return <SpaceGallery mode={section as ModuleKind} />;
+      return <SpaceGallery key={section} mode={section as ModuleKind} />;
     }
   }
   return <ThreadContent />;
