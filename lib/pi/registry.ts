@@ -14,6 +14,7 @@ export type PiThread = {
   title?: string;
   status: "regular" | "archived";
   lastMessageAt?: string;
+  createdAt?: string;
 };
 
 type ThreadRow = typeof threads.$inferSelect;
@@ -26,6 +27,7 @@ const toPiThread = (row: ThreadRow): PiThread => ({
   ...(row.lastMessageAt
     ? { lastMessageAt: row.lastMessageAt.toISOString() }
     : {}),
+  createdAt: row.createdAt.toISOString(),
 });
 
 export const registry = {

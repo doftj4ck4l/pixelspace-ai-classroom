@@ -44,6 +44,7 @@ export async function GET() {
       status: thread.status,
       title: thread.title,
       lastMessageAt: thread.lastMessageAt,
+      createdAt: thread.createdAt,
     })),
   });
 }

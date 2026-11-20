@@ -45,6 +45,7 @@ type ThreadJson = {
   status: "regular" | "archived";
   title?: string;
   lastMessageAt?: string;
+  createdAt?: string;
 };
 
 function useThreadListAdapters() {
@@ -105,9 +106,13 @@ const threadListAdapter: RemoteThreadListAdapter = {
         remoteId: thread.remoteId,
         status: thread.status,
         title: thread.title,
+        // Threads without activity (e.g. migrated ones) group by creation
+        // date instead of defaulting into "Today".
         lastMessageAt: thread.lastMessageAt
           ? new Date(thread.lastMessageAt)
-          : undefined,
+          : thread.createdAt
+            ? new Date(thread.createdAt)
+            : undefined,
       })),
     };
   },
@@ -152,7 +157,9 @@ const threadListAdapter: RemoteThreadListAdapter = {
       title: thread.title,
       lastMessageAt: thread.lastMessageAt
         ? new Date(thread.lastMessageAt)
-        : undefined,
+        : thread.createdAt
+          ? new Date(thread.createdAt)
+          : undefined,
     };
   },
   async generateTitle(remoteId, messages) {
