@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
-import { AuthForm } from "@/components/auth/auth-form";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Create account — Pixelspace AI Classroom",
-};
-
+/** Legacy route: registration now happens per role on the landing page. */
 export default function RegisterPage() {
-  return <AuthForm mode="register" />;
+  redirect("/");
 }
