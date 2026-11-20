@@ -1,0 +1,124 @@
+{
+  "canvas": [375, 414],
+  "source": "references/pixi-expressions.png",
+  "expressions": {
+    "smile": {
+      "image": "base-smile.png",
+      "layers": [
+        {
+          "file": "smile-eyes.png",
+          "offset": [115, 222],
+          "size": [147, 48],
+          "pivot": [189.8, 247.5],
+          "role": "eyes"
+        }
+      ]
+    },
+    "joyful": {
+      "image": "base-joyful.png",
+      "layers": [
+        {
+          "file": "joyful-eye-0.png",
+          "offset": [103, 220],
+          "size": [62, 43],
+          "pivot": [135.3, 243.3],
+          "role": "eye-0"
+        },
+        {
+          "file": "joyful-eye-1.png",
+          "offset": [213, 220],
+          "size": [63, 43],
+          "pivot": [246.3, 243.3],
+          "role": "eye-1"
+        }
+      ]
+    },
+    "surprised": {
+      "image": "base-surprised.png",
+      "layers": [
+        {
+          "file": "surprised-mouth.png",
+          "offset": [159, 257],
+          "size": [60, 60],
+          "pivot": [190.5, 288.6],
+          "role": "mouth"
+        }
+      ]
+    },
+    "thinking": {
+      "image": "base-thinking.png",
+      "layers": [
+        {
+          "file": "thinking-accent-0.png",
+          "offset": [105, 43],
+          "size": [44, 43],
+          "pivot": [128.6, 65.8],
+          "role": "accent-0"
+        },
+        {
+          "file": "thinking-accent-1.png",
+          "offset": [158, 43],
+          "size": [43, 43],
+          "pivot": [181.1, 65.8],
+          "role": "accent-1"
+        },
+        {
+          "file": "thinking-accent-2.png",
+          "offset": [211, 43],
+          "size": [42, 43],
+          "pivot": [233.5, 65.8],
+          "role": "accent-2"
+        }
+      ]
+    },
+    "sparkle": {
+      "image": "base-sparkle.png",
+      "layers": [
+        {
+          "file": "sparkle-eye-0.png",
+          "offset": [98, 204],
+          "size": [72, 75],
+          "pivot": [135.7, 243.0],
+          "role": "eye-0"
+        },
+        {
+          "file": "sparkle-eye-1.png",
+          "offset": [207, 204],
+          "size": [72, 75],
+          "pivot": [244.5, 243.1],
+          "role": "eye-1"
+        }
+      ]
+    },
+    "sleeping": {
+      "image": "base-sleeping.png",
+      "layers": [
+        {
+          "file": "sleeping-accent.png",
+          "offset": [207, 8],
+          "size": [116, 93],
+          "pivot": [267.9, 56.9],
+          "role": "accent"
+        }
+      ]
+    }
+  },
+  "hashes": {
+    "smile-eyes.png": "a73994000d",
+    "base-smile.png": "648db2fe5a",
+    "joyful-eye-0.png": "9b041a7969",
+    "joyful-eye-1.png": "30624989c2",
+    "base-joyful.png": "d0e759390c",
+    "surprised-mouth.png": "dc1d29cc31",
+    "base-surprised.png": "798fb5ff46",
+    "thinking-accent-0.png": "3357992fd2",
+    "thinking-accent-1.png": "d91d66b794",
+    "thinking-accent-2.png": "8994fd0ca8",
+    "base-thinking.png": "6cbda7a6ce",
+    "sparkle-eye-0.png": "cb3ae1d6f4",
+    "sparkle-eye-1.png": "215d94829a",
+    "base-sparkle.png": "da85289ead",
+    "sleeping-accent.png": "fcd67c4414",
+    "base-sleeping.png": "b1099283db"
+  }
+}
