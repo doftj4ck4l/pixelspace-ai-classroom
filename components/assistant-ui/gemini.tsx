@@ -30,7 +30,7 @@ import {
   ThumbsUp,
   XIcon,
 } from "lucide-react";
-import { type FC, type PropsWithChildren, useState } from "react";
+import { type FC, type PropsWithChildren, useState, useMemo } from "react";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
 import { AskUserDataUI } from "@/components/assistant-ui/ask-user";
@@ -299,7 +299,9 @@ const ChatMessage: FC = () => {
   // Retries (or repeated calls) of the same generative-UI component would
   // otherwise render every draft inline. Only the last render_ui per
   // component in a message is shown; earlier drafts collapse to a note.
-  const superseded = useAuiState((state) => {
+  // The selector must return a stable primitive — a fresh Set each call
+  // would loop the store forever.
+  const supersededIds = useAuiState((state) => {
     const parts = state.message.parts as unknown as {
       type?: string;
       toolName?: string;
@@ -313,7 +315,7 @@ const ChatMessage: FC = () => {
         typeof part.args?.component === "string" ? part.args.component : "?";
       if (part.toolCallId) lastByComponent.set(component, part.toolCallId);
     }
-    const set = new Set<string>();
+    const ids: string[] = [];
     for (const part of parts) {
       if (part.type !== "tool-call" || part.toolName !== "render_ui") continue;
       const component =
@@ -322,11 +324,15 @@ const ChatMessage: FC = () => {
         part.toolCallId &&
         lastByComponent.get(component) !== part.toolCallId
       ) {
-        set.add(part.toolCallId);
+        ids.push(part.toolCallId);
       }
     }
-    return set;
+    return ids.join(",");
   });
+  const superseded = useMemo(
+    () => new Set(supersededIds ? supersededIds.split(",") : []),
+    [supersededIds],
+  );
 
   return (
     <MessagePrimitive.Root className="group/message mx-auto mb-7 flex w-full max-w-3xl flex-col px-4">
