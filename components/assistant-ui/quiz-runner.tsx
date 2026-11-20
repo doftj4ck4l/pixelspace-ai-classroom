@@ -76,10 +76,13 @@ const shuffleIndices = (length: number) => {
 const allIndices = (length: number) => Array.from({ length }, (_, i) => i);
 
 /** Fill-blank: exact match, case-insensitive; `/` separates alternatives. */
-const matchesFillBlank = (input: string, answer: string) => {
+const normalizeAnswer = (answer: unknown): string =>
+  Array.isArray(answer) ? answer.map(String).join(" / ") : String(answer ?? "");
+
+const matchesFillBlank = (input: string, rawAnswer: unknown) => {
   const normalized = input.trim().toLowerCase();
   if (!normalized) return false;
-  return answer
+  return normalizeAnswer(rawAnswer)
     .split("/")
     .map((part) => part.trim().toLowerCase())
     .filter(Boolean)
@@ -1013,7 +1016,7 @@ const QuestionBody: FC<{
   }
 
   if (question.type === "fill-blank") {
-    const correct = matchesFillBlank(text, question.answer);
+    const correct = matchesFillBlank(text, question.answer as unknown);
     return (
       <div className="grid gap-2">
         <div className="flex items-center gap-2">
@@ -1061,7 +1064,9 @@ const QuestionBody: FC<{
               <>
                 <XIcon className="mr-1.5 inline size-4 text-rose-600" />
                 Jawapan:{" "}
-                <strong>{question.answer.split("/")[0]?.trim()}</strong>
+                <strong>
+                  {normalizeAnswer(question.answer).split("/")[0]?.trim()}
+                </strong>
               </>
             )}
           </p>

@@ -821,10 +821,18 @@ const NodeAsk: FC<{ mapId: string; nodeId: string }> = ({ mapId, nodeId }) => {
 
 /* ------------------------------------------------------------- challenges */
 
-const matchesFill = (input: string, accepted: string) => {
+const normalizeAccepted = (challenge: MindMapChallenge): string => {
+  const raw =
+    (challenge as { accepted?: unknown; answer?: unknown }).accepted ??
+    (challenge as { answer?: unknown }).answer ??
+    "";
+  return Array.isArray(raw) ? raw.map(String).join(" / ") : String(raw);
+};
+
+const matchesFill = (input: string, challenge: MindMapChallenge) => {
   const normalized = input.trim().toLowerCase();
   if (!normalized) return false;
-  return accepted
+  return normalizeAccepted(challenge)
     .split("/")
     .map((part) => part.trim().toLowerCase())
     .filter(Boolean)
@@ -915,7 +923,7 @@ const ChallengeCard: FC<{
             onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter" && text.trim() && !checked) {
-                answer(matchesFill(text, challenge.accepted ?? ""));
+                answer(matchesFill(text, challenge));
               }
             }}
             disabled={checked}
@@ -929,9 +937,7 @@ const ChallengeCard: FC<{
                 theme.bar,
               )}
               disabled={!text.trim()}
-              onClick={() =>
-                answer(matchesFill(text, challenge.accepted ?? ""))
-              }
+              onClick={() => answer(matchesFill(text, challenge))}
             >
               Semak
             </Button>
@@ -1007,7 +1013,7 @@ const ChallengeCard: FC<{
                   : challenge.type === "true-false"
                     ? tf === challenge.answer
                     : challenge.type === "fill-blank"
-                      ? matchesFill(text, challenge.accepted ?? "")
+                      ? matchesFill(text, challenge)
                       : true
               )
                 ? "text-emerald-600"
