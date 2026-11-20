@@ -139,7 +139,22 @@ export const artifactRegistry = {
           eq(artifacts.dedupeKey, input.dedupeKey),
         ),
       );
-    if (existing.length > 0) return null;
+    if (existing.length > 0) {
+      // Same run regenerated this component (e.g. a retry after a validation
+      // failure): replace the spec in place so Spaces keeps one card.
+      const id = existing[0]!.id;
+      await db
+        .update(artifacts)
+        .set({
+          spec: input.spec as Record<string, unknown>,
+          title: input.title,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(artifacts.id, id), eq(artifacts.userId, userId)));
+      return artifactRegistry
+        .get(userId, id)
+        .then((artifact) => artifact ?? null);
+    }
 
     const row: typeof artifacts.$inferInsert = {
       id: newId(),

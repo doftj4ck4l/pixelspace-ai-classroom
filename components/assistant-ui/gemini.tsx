@@ -296,6 +296,38 @@ const actionBtnClass =
   "flex size-8 items-center justify-center rounded-full text-[#444746] transition-colors hover:bg-[#444746]/8 hover:text-[#1f1f1f] dark:text-[#c4c7c5] dark:hover:bg-[#c4c7c5]/10 dark:hover:text-[#e3e3e3]";
 
 const ChatMessage: FC = () => {
+  // Retries (or repeated calls) of the same generative-UI component would
+  // otherwise render every draft inline. Only the last render_ui per
+  // component in a message is shown; earlier drafts collapse to a note.
+  const superseded = useAuiState((state) => {
+    const parts = state.message.parts as unknown as {
+      type?: string;
+      toolName?: string;
+      toolCallId?: string;
+      args?: { component?: unknown };
+    }[];
+    const lastByComponent = new Map<string, string>();
+    for (const part of parts) {
+      if (part.type !== "tool-call" || part.toolName !== "render_ui") continue;
+      const component =
+        typeof part.args?.component === "string" ? part.args.component : "?";
+      if (part.toolCallId) lastByComponent.set(component, part.toolCallId);
+    }
+    const set = new Set<string>();
+    for (const part of parts) {
+      if (part.type !== "tool-call" || part.toolName !== "render_ui") continue;
+      const component =
+        typeof part.args?.component === "string" ? part.args.component : "?";
+      if (
+        part.toolCallId &&
+        lastByComponent.get(component) !== part.toolCallId
+      ) {
+        set.add(part.toolCallId);
+      }
+    }
+    return set;
+  });
+
   return (
     <MessagePrimitive.Root className="group/message mx-auto mb-7 flex w-full max-w-3xl flex-col px-4">
       <AuiIf condition={(s) => s.message.role === "user"}>
@@ -335,6 +367,13 @@ const ChatMessage: FC = () => {
                     return <MarkdownText />;
                   case "tool-call":
                     if (part.toolName === "render_ui") {
+                      if (part.toolCallId && superseded.has(part.toolCallId)) {
+                        return (
+                          <p className="text-muted-foreground my-2 text-xs">
+                            Draf terdahulu digantikan dengan versi terkini.
+                          </p>
+                        );
+                      }
                       return (
                         <RenderUiBlock
                           args={part.args}

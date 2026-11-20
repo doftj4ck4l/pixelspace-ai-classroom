@@ -201,9 +201,14 @@ function validateQuizzes(p: Record<string, unknown>): UiValidation {
         errors.push(\`quizzes.questions[\${i}].answer must be true or false\`)
       }
     } else if (q.type === 'fill-blank') {
-      if (typeof q.answer !== 'string' || !q.answer.trim()) {
-        errors.push(\`quizzes.questions[\${i}].answer is required\`)
-      } else if (q.answer.length > 120) {
+      const answer = Array.isArray(q.answer)
+        ? q.answer.filter((a) => typeof a === 'string' && a.trim()).join(' / ')
+        : typeof q.answer === 'string'
+          ? q.answer
+          : ''
+      if (!answer.trim()) {
+        errors.push(\`quizzes.questions[\${i}].answer is required (string or array of accepted answers)\`)
+      } else if (answer.length > 120) {
         errors.push(\`quizzes.questions[\${i}].answer must be 120 characters or fewer\`)
       }
     }
@@ -305,8 +310,17 @@ function validateMindmaps(p: Record<string, unknown>): UiValidation {
               errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].answer must be true or false\`)
             }
           } else if (c.type === 'fill-blank') {
-            if (typeof c.accepted !== 'string' || !c.accepted.trim()) {
-              errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].accepted is required\`)
+            const accepted = Array.isArray(c.accepted)
+              ? c.accepted.filter((a) => typeof a === 'string' && a.trim()).join(' / ')
+              : typeof c.accepted === 'string'
+                ? c.accepted
+                : Array.isArray(c.answer)
+                  ? c.answer.filter((a) => typeof a === 'string' && a.trim()).join(' / ')
+                  : typeof c.answer === 'string'
+                    ? c.answer
+                    : ''
+            if (!accepted.trim()) {
+              errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].accepted is required (string or array of accepted answers)\`)
             }
           } else if (typeof c.modelAnswer !== 'string' || !c.modelAnswer.trim()) {
             errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].modelAnswer is required\`)

@@ -122,9 +122,18 @@ const validateChallenge = (
     };
   }
   if (type === "fill-blank") {
-    const accepted = str(c.accepted) || str(c.answer);
-    if (!accepted)
+    // Models often emit alternatives as an array — accept both shapes.
+    const joinAnswers = (value: unknown) =>
+      Array.isArray(value)
+        ? value
+            .map((part) => str(part))
+            .filter(Boolean)
+            .join(" / ")
+        : str(value);
+    const accepted = joinAnswers(c.accepted) || joinAnswers(c.answer);
+    if (!accepted) {
       return { ok: false, error: `${at} needs an accepted answer.` };
+    }
     if (accepted.length > 120) {
       return { ok: false, error: `${at} answer exceeds 120 characters.` };
     }

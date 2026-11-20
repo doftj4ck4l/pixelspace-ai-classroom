@@ -439,6 +439,10 @@ const piChat = async (
   const userText = newUserText(body.messages);
   if (userText === null || userText.length === 0) return null;
 
+  // Stable within one turn: groups retries of the same render_ui component.
+  const runKey =
+    body.messages[body.messages.length - 1]?.id ?? String(Date.now());
+
   const artifactEditTargetId =
     typeof body.artifactEditTargetId === "string"
       ? body.artifactEditTargetId
@@ -653,12 +657,7 @@ const piChat = async (
                   if (artifactEditTargetId) {
                     await applyArtifactEdit(userId, artifactEditTargetId, args);
                   } else {
-                    await captureRenderUiSpec(
-                      userId,
-                      threadId,
-                      toolCallId,
-                      args,
-                    );
+                    await captureRenderUiSpec(userId, threadId, runKey, args);
                   }
                 }
                 if (event.ok === false) {

@@ -210,7 +210,13 @@ export const validateQuizSpec = (input: unknown): QuizSpecValidation => {
       }
       questions.push({ ...base, type: "true-false", answer: q.answer });
     } else {
-      const answer = str(q.answer);
+      // Models often emit alternatives as an array — accept both shapes.
+      const answer = Array.isArray(q.answer)
+        ? q.answer
+            .map((part) => str(part))
+            .filter(Boolean)
+            .join(" / ")
+        : str(q.answer);
       if (!answer) {
         return { ok: false, error: `Question ${at} needs an answer.` };
       }
