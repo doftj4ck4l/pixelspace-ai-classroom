@@ -171,6 +171,23 @@ export const mindmapProgress = pgTable(
   ],
 );
 
+/** Per-account study-notes checklist progress: section id → checked indices. */
+export const notesProgress = pgTable(
+  "notes_progress",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    notesId: text("notes_id").notNull(),
+    done: jsonb("done").notNull().default({}),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("notes_progress_user_idx").on(table.userId),
+    index("notes_progress_notes_idx").on(table.userId, table.notesId),
+  ],
+);
+
 /** Gallery documents (scratch decks, local slides, etc.), per account. */
 export const docs = pgTable(
   "docs",

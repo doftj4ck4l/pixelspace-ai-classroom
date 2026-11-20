@@ -18,6 +18,8 @@ import { remapQuizProgress } from "@/lib/quizzes/progress";
 import { validateQuizSpec, type QuizSpec } from "@/lib/quizzes/spec";
 import { remapMindMapProgress } from "@/lib/mindmaps/remap";
 import { validateMindMapSpec, type MindMapSpec } from "@/lib/mindmaps/spec";
+import { remapNotesProgress } from "@/lib/notes/progress";
+import { validateNotesSpec, type NotesSpec } from "@/lib/notes/spec";
 
 export const maxDuration = 300;
 
@@ -100,7 +102,8 @@ const captureRenderUiSpec = async (
   if (
     component !== "flashcards" &&
     component !== "quizzes" &&
-    component !== "mindmaps"
+    component !== "mindmaps" &&
+    component !== "notes"
   ) {
     return;
   }
@@ -118,13 +121,16 @@ const captureRenderUiSpec = async (
     cards?: unknown;
     questions?: unknown;
     nodes?: unknown;
+    sections?: unknown;
   };
   const list =
     component === "flashcards"
       ? spec.cards
       : component === "quizzes"
         ? spec.questions
-        : spec.nodes;
+        : component === "mindmaps"
+          ? spec.nodes
+          : spec.sections;
   if (!Array.isArray(list) || list.length === 0) return;
   // Store the normalized spec (arrays joined, fields trimmed) so the app's
   // renderers and graders always see the same shape the validators accept.
@@ -133,14 +139,18 @@ const captureRenderUiSpec = async (
       ? validateDeckSpec(props)
       : component === "quizzes"
         ? validateQuizSpec(props)
-        : validateMindMapSpec(props);
+        : component === "mindmaps"
+          ? validateMindMapSpec(props)
+          : validateNotesSpec(props);
   if (!normalized.ok) return;
   const fallbackTitle =
     component === "flashcards"
       ? "Kad Imbas"
       : component === "quizzes"
         ? "Kuiz"
-        : "Peta Pembelajaran";
+        : component === "mindmaps"
+          ? "Peta Pembelajaran"
+          : "Nota";
   await artifactRegistry.addSpec(userId, {
     threadId,
     title:
@@ -163,6 +173,32 @@ const buildArtifactEditContext = (
   artifact: PiArtifact,
   focusedIndex?: number,
 ) => {
+  if (artifact.type === "notes" && artifact.kind === "spec") {
+    const spec = artifact.spec as NotesSpec | undefined;
+    const sections = spec?.sections ?? [];
+    const lines = [
+      "[Artifact edit session]",
+      "You are editing EXISTING structured study notes. Do NOT create new notes.",
+      `Notes: ${artifact.title} (id ${artifact.id})`,
+      `Current spec JSON: ${JSON.stringify(artifact.spec)}`,
+      "Section schema: { id (stable slug, KEEP IDS OF UNCHANGED SECTIONS EXACTLY), heading (<=80 chars), body? (markdown-lite, <=1500 chars), bullets? (up to 8 strings), checklist? (up to 10 items: string or { text }) }.",
+    ];
+    if (typeof focusedIndex === "number" && Number.isInteger(focusedIndex)) {
+      const section = sections[focusedIndex];
+      lines.push(
+        section
+          ? `The user is currently reading section "${section.heading}" (id ${section.id}, #${focusedIndex + 1} of ${sections.length}). If they say "this section", "this one", or refer to the section on screen, they mean section id "${section.id}".`
+          : `The user is currently looking at section #${focusedIndex + 1}.`,
+      );
+    }
+    lines.push(
+      'When done, call render_ui with component "notes" containing the COMPLETE updated notes — every section, with only the requested changes applied. Keep unmentioned sections byte-identical (same ids).',
+      "For small edits do NOT run web searches — apply the change directly and return quickly.",
+      "If the request does not say what to change, ask one short clarifying question with the ask_user tool (never a plain-text question, which would end the run without an edit).",
+    );
+    return lines.join("\n");
+  }
+
   if (artifact.type === "mindmaps" && artifact.kind === "spec") {
     const spec = artifact.spec as MindMapSpec | undefined;
     const nodes = spec?.nodes ?? [];
@@ -272,6 +308,28 @@ const buildArtifactEditContext = (
  * tutor. No thread, no capture — the answer stays in the node panel.
  */
 const buildMindMapAskContext = (artifact: PiArtifact, nodeId?: string) => {
+  if (artifact.type === "notes") {
+    const notesSpec = artifact.spec as NotesSpec | undefined;
+    const section = nodeId
+      ? notesSpec?.sections.find((s) => s.id === nodeId)
+      : undefined;
+    const lines = [
+      "[Study notes Q&A]",
+      `The user is reading structured study notes: ${artifact.title} (id ${artifact.id}).`,
+      `Notes JSON: ${JSON.stringify(artifact.spec)}`,
+    ];
+    if (section) {
+      lines.push(
+        `They are asking about the section "${section.heading}" (id ${section.id})${section.body ? ` — body: ${section.body}` : ""}.`,
+      );
+    }
+    lines.push(
+      "Answer their question as a helpful tutor for a school student, in the language they use (Bahasa Malaysia unless they write in English). Keep it concise (2-6 sentences) unless they ask for more depth. If they ask for practice, give one short question with its answer.",
+      "Do NOT modify the notes, do NOT call render_ui, and do NOT use tools unless the question truly requires a lookup — just answer as text.",
+    );
+    return lines.join("\n");
+  }
+
   const spec = artifact.spec as MindMapSpec | undefined;
   const node = nodeId ? spec?.nodes.find((n) => n.id === nodeId) : undefined;
   const lines = [
@@ -301,7 +359,8 @@ const applyArtifactEdit = async (
   if (
     component !== "flashcards" &&
     component !== "quizzes" &&
-    component !== "mindmaps"
+    component !== "mindmaps" &&
+    component !== "notes"
   ) {
     return;
   }
@@ -334,6 +393,19 @@ const applyArtifactEdit = async (
       oldSpec?.nodes ?? [],
       result.spec.nodes,
     );
+    return;
+  }
+
+  if (component === "notes") {
+    const result = validateNotesSpec(props);
+    if (!result.ok) return;
+    await artifactRegistry.updateSpec(
+      userId,
+      artifactId,
+      result.spec,
+      result.spec.title ?? artifact.title,
+    );
+    await remapNotesProgress(userId, artifactId, result.spec.sections);
     return;
   }
 
@@ -481,7 +553,11 @@ const piChat = async (
 
   if (!artifactEditTargetId && artifactAskTargetId) {
     const artifact = await artifactRegistry.get(userId, artifactAskTargetId);
-    if (artifact && artifact.kind === "spec" && artifact.type === "mindmaps") {
+    if (
+      artifact &&
+      artifact.kind === "spec" &&
+      (artifact.type === "mindmaps" || artifact.type === "notes")
+    ) {
       deckEditContext = buildMindMapAskContext(
         artifact,
         body.artifactAskNodeId,
@@ -498,7 +574,8 @@ const piChat = async (
       ((artifact.kind === "spec" &&
         (artifact.type === "flashcards" ||
           artifact.type === "quizzes" ||
-          artifact.type === "mindmaps")) ||
+          artifact.type === "mindmaps" ||
+          artifact.type === "notes")) ||
         (artifact.kind === "file" &&
           (artifact.type === "slides" ||
             artifact.type === "reports" ||

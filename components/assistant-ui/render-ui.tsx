@@ -23,6 +23,10 @@ import {
   LearningMap,
   type MindMapSpec,
 } from "@/components/assistant-ui/learning-map";
+import {
+  NotesViewer,
+  type NotesSpec,
+} from "@/components/assistant-ui/notes-viewer";
 import { cn } from "@/lib/utils";
 
 /**
@@ -118,6 +122,8 @@ export const RenderUiBlock: FC<{
       return <QuizRunner spec={spec.props as QuizSpec} variant="inline" />;
     case "mindmaps":
       return <LearningMap spec={spec.props as MindMapSpec} variant="inline" />;
+    case "notes":
+      return <NotesViewer spec={spec.props as NotesSpec} variant="inline" />;
     default:
       return <ErrorNote reason={`unknown component "${spec.component}"`} />;
   }

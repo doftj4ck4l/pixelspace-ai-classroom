@@ -52,6 +52,7 @@ export const ArtifactAiPanel: FC<{
     | "quizzes"
     | "slides"
     | "mindmaps"
+    | "notes"
     | "reports"
     | "infographics";
   open: boolean;
@@ -70,6 +71,7 @@ export const ArtifactAiPanel: FC<{
 }) => {
   const isQuiz = kind === "quizzes";
   const isMap = kind === "mindmaps";
+  const isNotes = kind === "notes";
   // File-backed artifacts are edited by the agent re-sharing the file.
   const isFile =
     kind === "slides" || kind === "reports" || kind === "infographics";
@@ -84,7 +86,9 @@ export const ArtifactAiPanel: FC<{
           ? "question"
           : isMap
             ? "node"
-            : "card";
+            : isNotes
+              ? "section"
+              : "card";
   const setWord =
     kind === "reports"
       ? "report"
@@ -94,7 +98,9 @@ export const ArtifactAiPanel: FC<{
           ? "quiz"
           : isMap
             ? "map"
-            : "deck";
+            : isNotes
+              ? "notes"
+              : "deck";
   const editTool = isFile ? "share_file" : "render_ui";
   const [messages, setMessages] = useState<PanelMessage[]>([]);
   const [input, setInput] = useState("");
@@ -258,7 +264,7 @@ export const ArtifactAiPanel: FC<{
           ...prev,
           {
             role: "system",
-            text: `${isQuiz ? "Quiz" : isSlides ? "Slides" : isMap ? "Map" : kind === "reports" ? "Report" : kind === "infographics" ? "Infographic" : "Deck"} updated — changes saved.`,
+            text: `${isQuiz ? "Quiz" : isSlides ? "Slides" : isMap ? "Map" : isNotes ? "Notes" : kind === "reports" ? "Report" : kind === "infographics" ? "Infographic" : "Deck"} updated — changes saved.`,
           },
         ]);
         onDeckUpdated();
@@ -331,7 +337,15 @@ export const ArtifactAiPanel: FC<{
       >
         {messages.length === 0 && (
           <p className="text-muted-foreground text-xs leading-relaxed">
-            {kind === "reports" ? (
+            {isNotes ? (
+              <>
+                Ask for changes to <strong>these notes</strong> — e.g.
+                &ldquo;add a section about condensation&rdquo;, &ldquo;expand
+                section 3&rdquo;, &ldquo;turn section 2 into a checklist&rdquo;.
+                Ask about a section in its panel instead — that never edits the
+                notes.
+              </>
+            ) : kind === "reports" ? (
               <>
                 Ask for changes to <strong>this report</strong> — the agent
                 edits the actual file and re-shares it. e.g. &ldquo;shorten the

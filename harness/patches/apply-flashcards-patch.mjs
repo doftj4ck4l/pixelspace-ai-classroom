@@ -218,6 +218,70 @@ function validateQuizzes(p: Record<string, unknown>): UiValidation {
 
 `;
 
+const NOTES_VALIDATOR = `const NOTES_ACCENTS = ['teal', 'blue', 'amber', 'violet', 'rose', 'emerald'] as const
+
+/** Structured study notes: 2-20 sections with bullets and checklists. */
+function validateNotes(p: Record<string, unknown>): UiValidation {
+  const errors: string[] = []
+  if (p.title !== undefined && typeof p.title !== 'string') {
+    errors.push('notes.title must be a string')
+  }
+  if (p.subject !== undefined && typeof p.subject !== 'string') {
+    errors.push('notes.subject must be a string')
+  }
+  if (p.accent !== undefined && (typeof p.accent !== 'string' || !NOTES_ACCENTS.includes(p.accent as never))) {
+    errors.push(\`notes.accent must be one of: \${NOTES_ACCENTS.join(', ')}\`)
+  }
+  const sections = p.sections
+  if (!Array.isArray(sections) || sections.length === 0) {
+    errors.push('notes.sections must be a non-empty array')
+    return done(errors)
+  }
+  if (sections.length > 30) errors.push('notes.sections supports at most 30 sections')
+  const ids = new Set<string>()
+  sections.slice(0, 30).forEach((s, i) => {
+    if (!isRecord(s)) {
+      errors.push(\`notes.sections[\${i}] must be an object\`)
+      return
+    }
+    if (typeof s.id !== 'string' || !/^[a-z0-9-]{1,40}$/.test(s.id)) {
+      errors.push(\`notes.sections[\${i}].id must be a short slug (a-z, 0-9, dashes)\`)
+    } else if (ids.has(s.id)) {
+      errors.push(\`notes.sections[\${i}].id "\${s.id}" is duplicated\`)
+    } else {
+      ids.add(s.id)
+    }
+    if (typeof s.heading !== 'string' || !s.heading.trim()) {
+      errors.push(\`notes.sections[\${i}].heading is required\`)
+    } else if (s.heading.length > 80) {
+      errors.push(\`notes.sections[\${i}].heading must be 80 characters or fewer\`)
+    }
+    if (s.body !== undefined && (typeof s.body !== 'string' || s.body.length > 1500)) {
+      errors.push(\`notes.sections[\${i}].body must be 1500 characters or fewer\`)
+    }
+    if (s.bullets !== undefined) {
+      if (!Array.isArray(s.bullets) || s.bullets.length > 8 || s.bullets.some((b) => typeof b !== 'string' || !b.trim() || b.length > 200)) {
+        errors.push(\`notes.sections[\${i}].bullets must be up to 8 strings of 200 characters or fewer\`)
+      }
+    }
+    if (s.checklist !== undefined) {
+      if (!Array.isArray(s.checklist) || s.checklist.length > 10) {
+        errors.push(\`notes.sections[\${i}].checklist must be up to 10 items\`)
+      } else {
+        s.checklist.forEach((c: unknown, ci: number) => {
+          if (typeof c === 'string') return
+          if (!isRecord(c) || typeof c.text !== 'string' || !c.text.trim() || c.text.length > 120) {
+            errors.push(\`notes.sections[\${i}].checklist[\${ci}] must be a string or { text } of 120 characters or fewer\`)
+          }
+        })
+      }
+    }
+  })
+  return done(errors)
+}
+
+`;
+
 const MINDMAP_VALIDATOR = `const MINDMAP_ACCENTS = ['teal', 'blue', 'amber', 'violet', 'rose', 'emerald'] as const
 
 /** An interactive learning map: 8-30 nodes (cap 60) with challenges. */
@@ -443,6 +507,37 @@ function validateMindmaps(p: Record<string, unknown>): UiValidation {
   } else {
     console.log("already patched: ui-catalog.ts (mindmaps)");
   }
+
+  s = read("ui-catalog.ts");
+  if (!s.includes("validateNotes")) {
+    const caseAnchor =
+      "    case 'mindmaps':\n      return validateMindmaps(props)";
+    if (!s.includes(caseAnchor))
+      throw new Error("ui-catalog: mindmaps case anchor missing");
+    s = s.replace(
+      caseAnchor,
+      `${caseAnchor}\n    case 'notes':\n      return validateNotes(props)`,
+    );
+
+    const listAnchor =
+      "use one of: chart, table, stat, card, flashcards, quizzes, mindmaps`)";
+    if (!s.includes(listAnchor))
+      throw new Error("ui-catalog: component list anchor missing (notes)");
+    s = s.replace(
+      listAnchor,
+      "use one of: chart, table, stat, card, flashcards, quizzes, mindmaps, notes`)",
+    );
+
+    const fnAnchor = "// A colour is written into an SVG `fill`";
+    if (!s.includes(fnAnchor))
+      throw new Error("ui-catalog: function anchor missing (notes)");
+    s = s.replace(fnAnchor, `${NOTES_VALIDATOR}${fnAnchor}`);
+
+    write("ui-catalog.ts", s);
+    console.log("patched: ui-catalog.ts (notes)");
+  } else {
+    console.log("already patched: ui-catalog.ts (notes)");
+  }
 }
 
 {
@@ -454,7 +549,7 @@ function validateMindmaps(p: Record<string, unknown>): UiValidation {
       throw new Error("tools.ts: intro anchor missing");
     s = s.replace(
       introAnchor,
-      '"Render a rich UI component inline in your answer to the user: a chart, a sortable table, a KPI stat tile, a titled card, a study flashcard deck, an interactive quiz, or an interactive learning map. " +',
+      '"Render a rich UI component inline in your answer to the user: a chart, a sortable table, a KPI stat tile, a titled card, a study flashcard deck, an interactive quiz, an interactive learning map, or structured study notes. " +',
     );
 
     const cardAnchor =
@@ -463,7 +558,7 @@ function validateMindmaps(p: Record<string, unknown>): UiValidation {
       throw new Error("tools.ts: card line anchor missing");
     s = s.replace(
       cardAnchor,
-      `"- card: title?, body? (markdown), fields? (array of { label, value }), accent? ('default'|'primary'|'success'|'warning'|'destructive') \\n" +\n      "- flashcards: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), cards (6 to 40 of { front, back, hint?, tags? (up to 3), type? ('term'|'question'|'cloze'|'formula') }) — a study deck for memorisation \\n" +\n      "- quizzes: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), questions (4 to 20 of { question, type: 'multiple-choice' (options 2-6 + answerIndex) | 'open-ended' (modelAnswer, keywords? up to 5) | 'true-false' (answer: boolean) | 'fill-blank' (answer; '/' separates accepted alternatives), explanation?, tags? (up to 3) }) — an interactive quiz that mixes objective and open-ended questions \\n" +\n      "- mindmaps: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), nodes (8 to 30 of { id (stable slug), label, emoji?, parent? (tree edge), summary? (<=300 chars), details? (<=1200 chars), kind? ('concept'|'example'|'formula'|'question'), source? (grounding ref), aiAdded?, challenges? (up to 2 of the quiz question shapes) }), edges? (up to 80 cross-links { from, to, label? }) — an interactive learning map grounded in the user's sources",`,
+      `"- card: title?, body? (markdown), fields? (array of { label, value }), accent? ('default'|'primary'|'success'|'warning'|'destructive') \\n" +\n      "- flashcards: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), cards (6 to 40 of { front, back, hint?, tags? (up to 3), type? ('term'|'question'|'cloze'|'formula') }) — a study deck for memorisation \\n" +\n      "- quizzes: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), questions (4 to 20 of { question, type: 'multiple-choice' (options 2-6 + answerIndex) | 'open-ended' (modelAnswer, keywords? up to 5) | 'true-false' (answer: boolean) | 'fill-blank' (answer; '/' separates accepted alternatives), explanation?, tags? (up to 3) }) — an interactive quiz that mixes objective and open-ended questions \\n" +\n      "- mindmaps: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), nodes (8 to 30 of { id (stable slug), label, emoji?, parent? (tree edge), summary? (<=300 chars), details? (<=1200 chars), kind? ('concept'|'example'|'formula'|'question'), source? (grounding ref), aiAdded?, challenges? (up to 2 of the quiz question shapes) }), edges? (up to 80 cross-links { from, to, label? }) — an interactive learning map grounded in the user's sources \\n" +\n      "- notes: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), sections (2 to 20 of { id (stable slug), heading, body? (markdown-lite, <=1500 chars), bullets? (up to 8), checklist? (up to 10 items: string or { text }) }) — structured study notes with checklists",`,
     );
 
     write("tools.ts", s);
@@ -484,6 +579,7 @@ function validateMindmaps(p: Record<string, unknown>): UiValidation {
       `${anchor}
 A study deck is a flashcards block: when the user asks for flashcards, kad imbas, or study cards, research the topic first and build one with enough cards to cover it — never answer a flashcard request with a plain list.
 A quiz is a quizzes block: when the user asks for a quiz, kuiz, soalan latihan, or practice questions, research the topic first and build one with render_ui quizzes. Mix question types (multiple-choice, true-false, fill-blank, open-ended) unless the user asks for one type. When editing an existing quiz, convert question types on request (e.g. "change q1 to open-ended") — never answer a quiz request with a plain list.
+Structured study notes are a notes block: when the user asks for notes, nota, ringkasan, or a study summary, research the topic first and build it with render_ui notes — clear section headings, short bodies, bullets for key points, and checklists for action items or revision lists. When editing existing notes, keep the ids of unchanged sections EXACTLY the same.
 A learning map is a mindmaps block: when the user asks for a mind map, peta minda, peta pembelajaran, or learning map, research the topic first and build one with render_ui mindmaps. Ground every node in the user's source material when files are attached, add a source reference per node (e.g. "Bab 5 · ms 42"), and mark nodes that go beyond the sources with aiAdded: true. Give most nodes a summary, add challenges (up to 2) to key concept nodes, and use cross-link edges for relationships that are not parent/child. When editing an existing map, keep the ids of unchanged nodes EXACTLY the same. Never answer a mind-map request with a plain list.`,
     );
     write("gen-ui-prompt.ts", s);

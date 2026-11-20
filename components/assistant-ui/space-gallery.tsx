@@ -245,7 +245,8 @@ const MODULE_HEADER: Record<
   notes: {
     Icon: StickyNoteIcon,
     color: "text-green-600",
-    subtitle: "Catatan ringkas untuk rujukan pantas.",
+    subtitle:
+      "Nota kajian berstruktur — ringkasan, bulet dan senarai semak yang boleh ditanda.",
   },
   transformations: {
     Icon: WandSparklesIcon,
@@ -1004,7 +1005,13 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
    * (render_ui flashcards / a shared pptx), and it lands in Spaces.
    */
   const generateInThread = async (
-    kind: "flashcards" | "quizzes" | "mindmaps" | "slides" | "reports",
+    kind:
+      | "flashcards"
+      | "quizzes"
+      | "mindmaps"
+      | "notes"
+      | "slides"
+      | "reports",
     input: CreateDialogInput,
   ) => {
     setCreateKind(null);
@@ -1033,7 +1040,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
               ? `Buat peta pembelajaran tentang ${input.topic}. ${language} Gunakan render_ui mindmaps — setiap nod ada ringkasan ringkas, tambah cabaran (challenges) pada nod konsep utama, dan tandakan nod yang melangkaui sumber dengan aiAdded.${attachmentNote}`
               : kind === "reports"
                 ? `Tulis laporan tentang ${input.topic}. ${language} Hasilkan fail PDF yang kemas dan tersusun (tajuk, ringkasan, bahagian-bahagian, kesimpulan), semak visualnya, dan share_file kepadanya.${attachmentNote}`
-                : `Buat slide deck tentang ${input.topic}. ${language} Hasilkan fail .pptx yang kemas, semak visualnya, dan share_file kepadanya.${attachmentNote}`;
+                : kind === "notes"
+                  ? `Buat nota kajian tentang ${input.topic}. ${language} Gunakan render_ui notes — bahagian yang jelas, isi ringkas, bulet poin utama, dan senarai semak untuk ulang kaji.${attachmentNote}`
+                  : `Buat slide deck tentang ${input.topic}. ${language} Hasilkan fail .pptx yang kemas, semak visualnya, dan share_file kepadanya.${attachmentNote}`;
       aui.composer.setText(prompt);
       aui.composer.send();
     } catch {
@@ -1139,8 +1148,14 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const isMindMaps = mode === "mindmaps";
   const isReports = mode === "reports";
   const isInfographics = mode === "infographics";
+  const isNotes = mode === "notes";
   const isModule =
-    isFlashcards || isQuizzes || isMindMaps || isReports || isInfographics;
+    isFlashcards ||
+    isQuizzes ||
+    isMindMaps ||
+    isReports ||
+    isInfographics ||
+    isNotes;
 
   const openDeckDoc = (doc: Doc) => {
     if (doc.spec) {
@@ -1154,6 +1169,10 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       return;
     }
     if (doc.artifactId) {
+      if (doc.type === "notes") {
+        router.push(`/spaces/notes/${doc.artifactId}`);
+        return;
+      }
       if (doc.type === "reports" && doc.url) {
         router.push(`/spaces/reports/${doc.artifactId}`);
         return;
@@ -1227,7 +1246,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                           ? "Search reports..."
                           : isInfographics
                             ? "Search infographics..."
-                            : "Search"
+                            : isNotes
+                              ? "Search notes..."
+                              : "Search"
                 }
                 aria-label="Search"
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
@@ -1436,7 +1457,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                           ? "Buat laporan baharu"
                           : isInfographics
                             ? "Buat infografik baharu"
-                            : "Buat set baharu"}
+                            : isNotes
+                              ? "Buat nota baharu"
+                              : "Buat set baharu"}
                   </span>
                   <span className="text-muted-foreground max-w-44 text-xs">
                     {isQuizzes
@@ -1447,7 +1470,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                           ? "Hasilkan laporan dengan AI"
                           : isInfographics
                             ? "Jana infografik dengan model imej AI"
-                            : "Hasilkan kad imbas dengan AI atau secara manual"}
+                            : isNotes
+                              ? "Hasilkan nota kajian berstruktur dengan AI"
+                              : "Hasilkan kad imbas dengan AI atau secara manual"}
                   </span>
                 </button>
               )}
@@ -1575,6 +1600,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
           createKind === "flashcards" ||
           createKind === "quizzes" ||
           createKind === "mindmaps" ||
+          createKind === "notes" ||
           createKind === "reports" ||
           createKind === "infographics"
         }
@@ -1595,7 +1621,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                   ? "mindmaps"
                   : createKind === "reports"
                     ? "reports"
-                    : "slides",
+                    : createKind === "notes"
+                      ? "notes"
+                      : "slides",
             input,
           );
         }}
