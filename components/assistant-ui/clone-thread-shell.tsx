@@ -47,7 +47,6 @@ import {
   WaypointsIcon,
   type LucideIcon,
   LayoutDashboardIcon,
-  ShieldCheckIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -394,15 +393,6 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   >
                     <LayoutDashboardIcon className="size-4 shrink-0" />
                     <span className="truncate">KPM Dashboard</span>
-                  </Link>
-                )}
-                {role === "superadmin" && (
-                  <Link
-                    href="/admin"
-                    className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors"
-                  >
-                    <ShieldCheckIcon className="size-4 shrink-0" />
-                    <span className="truncate">Admin</span>
                   </Link>
                 )}
                 {NAV_ITEMS.map((item) => (
