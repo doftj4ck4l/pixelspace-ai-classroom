@@ -100,12 +100,14 @@ export const artifactRegistry = {
       .where(and(eq(artifacts.userId, userId), eq(artifacts.url, input.url)));
     if (existing.length > 0) return null;
 
+    // Prefer whichever of path/title carries a known extension.
+    const byPath = typeForPath(input.path);
     const row: typeof artifacts.$inferInsert = {
       id: newId(),
       userId,
       threadId: input.threadId,
       title: input.title,
-      type: typeForPath(input.title || input.path),
+      type: byPath !== "other" ? byPath : typeForPath(input.title),
       kind: "file",
       url: input.url,
       path: input.path,

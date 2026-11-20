@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       const id = saveGeneratedImage(bytes, { prompt, kind: "infographics" });
       await artifactRegistry.updateFile(user.id, body.artifactId, {
         url: `/api/generated/${id}`,
-        path: id,
+        path: `${id}.png`,
       });
       return NextResponse.json({ artifactId: body.artifactId });
     }
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     const artifact = await artifactRegistry.add(user.id, {
       threadId: "",
       title: `${title} — Infografik`,
-      path: id,
+      path: `${id}.png`,
       url: `/api/generated/${id}`,
     });
     if (!artifact) {

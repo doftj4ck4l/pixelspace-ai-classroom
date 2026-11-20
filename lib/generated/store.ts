@@ -32,16 +32,20 @@ export const saveGeneratedImage = (
   return id;
 };
 
+const bareId = (id: string) => id.replace(/\.png$/i, "");
+
 export const readGeneratedImage = (id: string): Buffer | null => {
-  if (!/^gen_[a-z0-9_]+$/.test(id)) return null;
-  const file = path.join(DIR, `${id}.png`);
+  const clean = bareId(id);
+  if (!/^gen_[a-z0-9_]+$/.test(clean)) return null;
+  const file = path.join(DIR, `${clean}.png`);
   if (!existsSync(file)) return null;
   return readFileSync(file);
 };
 
 export const readGeneratedMeta = (id: string): GeneratedMeta | null => {
-  if (!/^gen_[a-z0-9_]+$/.test(id)) return null;
-  const file = path.join(DIR, `${id}.json`);
+  const clean = bareId(id);
+  if (!/^gen_[a-z0-9_]+$/.test(clean)) return null;
+  const file = path.join(DIR, `${clean}.json`);
   if (!existsSync(file)) return null;
   try {
     return JSON.parse(readFileSync(file, "utf8")) as GeneratedMeta;
