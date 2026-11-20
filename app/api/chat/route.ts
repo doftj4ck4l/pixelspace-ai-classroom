@@ -93,7 +93,7 @@ type PiEvent = { type?: string; [key: string]: unknown };
 const captureRenderUiSpec = async (
   userId: string,
   threadId: string,
-  toolCallId: string,
+  runKey: string,
   args: Record<string, unknown> | undefined,
 ) => {
   const component = args?.component;
@@ -126,6 +126,15 @@ const captureRenderUiSpec = async (
         ? spec.questions
         : spec.nodes;
   if (!Array.isArray(list) || list.length === 0) return;
+  // Store the normalized spec (arrays joined, fields trimmed) so the app's
+  // renderers and graders always see the same shape the validators accept.
+  const normalized =
+    component === "flashcards"
+      ? validateDeckSpec(props)
+      : component === "quizzes"
+        ? validateQuizSpec(props)
+        : validateMindMapSpec(props);
+  if (!normalized.ok) return;
   const fallbackTitle =
     component === "flashcards"
       ? "Kad Imbas"
@@ -135,12 +144,14 @@ const captureRenderUiSpec = async (
   await artifactRegistry.addSpec(userId, {
     threadId,
     title:
-      typeof spec.title === "string" && spec.title.trim()
-        ? spec.title.trim()
+      typeof normalized.spec.title === "string" && normalized.spec.title.trim()
+        ? normalized.spec.title.trim()
         : fallbackTitle,
     type: component,
-    spec,
-    dedupeKey: `render_ui:${toolCallId}`,
+    spec: normalized.spec,
+    // One artifact per run+component: retries within the same turn replace
+    // the spec instead of piling up duplicate cards.
+    dedupeKey: `render_ui:${threadId}:${runKey}:${component}`,
   });
 };
 
