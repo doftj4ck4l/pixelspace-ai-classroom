@@ -8,6 +8,6 @@ export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const user = await getSessionUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/");
   return <AppShell role={roleOf(user)}>{children}</AppShell>;
 }

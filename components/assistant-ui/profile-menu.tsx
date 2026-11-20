@@ -125,7 +125,7 @@ export const ProfileMenu: FC = () => {
           variant="destructive"
           className="gap-2"
           onClick={() => {
-            void signOut().then(() => router.push("/login"));
+            void signOut().then(() => router.push("/"));
           }}
         >
           <LogOut className="size-4" />
