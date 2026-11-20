@@ -1,0 +1,92 @@
+{
+  "character": "pixi",
+  "canvas": [1312, 1199],
+  "alpha_bbox": [196, 19, 1091, 1122],
+  "body_pivot": [643, 1122],
+  "panel_color": [252, 236, 210],
+  "layers": [
+    {
+      "name": "eye-left",
+      "file": "eye-left.png",
+      "offset": [563, 454],
+      "size": [67, 88],
+      "pivot": [596.0, 497.9],
+      "role": "eyes",
+      "source": "cut from original pixels"
+    },
+    {
+      "name": "eye-right",
+      "file": "eye-right.png",
+      "offset": [780, 430],
+      "size": [64, 86],
+      "pivot": [811.5, 472.4],
+      "role": "eyes",
+      "source": "cut from original pixels"
+    },
+    {
+      "name": "mouth",
+      "file": "mouth.png",
+      "offset": [657, 497],
+      "size": [111, 76],
+      "pivot": [713.5, 538.6],
+      "role": "mouth",
+      "source": "cut from original pixels"
+    },
+    {
+      "name": "mouth-o",
+      "file": "mouth-o.png",
+      "offset": [690, 511],
+      "size": [46, 54],
+      "pivot": [713.5, 538.6],
+      "role": "mouth-o",
+      "default_hidden": true,
+      "source": "derived 'o' sleep-mouth (sampled color/edge from original mouth pixels; smile layer untouched)"
+    },
+    {
+      "name": "ray-1",
+      "file": "ray-1.png",
+      "offset": [845, 15],
+      "size": [112, 139],
+      "pivot": [899.0, 81.7],
+      "role": "accent-rays",
+      "source": "cut from original pixels"
+    },
+    {
+      "name": "ray-2",
+      "file": "ray-2.png",
+      "offset": [905, 93],
+      "size": [128, 111],
+      "pivot": [970.1, 148.9],
+      "role": "accent-rays",
+      "source": "cut from original pixels"
+    },
+    {
+      "name": "ray-3",
+      "file": "ray-3.png",
+      "offset": [946, 191],
+      "size": [113, 70],
+      "pivot": [1005.4, 228.7],
+      "role": "accent-rays",
+      "source": "cut from original pixels"
+    }
+  ],
+  "hashes": {
+    "body.png": "a531e88148",
+    "original.png": "bb6efc8f44",
+    "eye-left.png": "7b51eeda10",
+    "eye-right.png": "be12fb0281",
+    "mouth.png": "c89280bcb6",
+    "mouth-o.png": "589be5c783",
+    "ray-1.png": "46401f15ac",
+    "ray-2.png": "4d3868a000",
+    "ray-3.png": "97ee758b51"
+  },
+  "limitations": [
+    "Right (waving) arm overlaps the torso and shares outline strokes with the body; separating it would require reconstructing hidden body/outline pixels, so arm motion is expressed via whole-character transform (bounce/tilt) instead.",
+    "Legs merge into the body silhouette with shared outlines; not separated.",
+    "Head and headphones are a single shape fused with the torso outline at the neck; head tilt is approximated by gentle whole-character rotation.",
+    "Facial expressions come from the user-approved 6-panel expression sheet (references/pixi-expressions.png) extracted by tools/extract_expressions.py; the default face remains the original cut pixels. No invented face artwork.",
+    "The derived 'o' sleep-mouth asset is retained but unused by default: the sleeping state now uses the approved sheet expression (closed lids + small mouth + zz)."
+  ],
+  "source": "references/pixi.png (untouched copy at public/mascots/pixi/original.png)"
+}

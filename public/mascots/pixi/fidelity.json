@@ -1,0 +1,7 @@
+{
+  "mean_abs_diff_per_px": 0.0308,
+  "p99_diff": 0,
+  "max_diff": 6,
+  "pct_pixels_changed_gt24": 0.0,
+  "verdict": "visually identical at normal display size"
+}

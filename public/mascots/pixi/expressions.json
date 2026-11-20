@@ -1,0 +1,214 @@
+{
+  "source": "references/pixi-expressions.png (approved 6-panel expression sheet)",
+  "tilt_deg": -6.75,
+  "scale": 1.9221,
+  "pix_screen_bbox": [464, 311, 908, 677],
+  "expressions": {
+    "smile": {
+      "eyes": [
+        {
+          "name": "smile-eye-0",
+          "file": "expr/smile-eye-0.png",
+          "offset": [546, 427],
+          "size": [73, 93],
+          "pivot": [582.3, 473.9],
+          "role": "eyes"
+        },
+        {
+          "name": "smile-eye-1",
+          "file": "expr/smile-eye-1.png",
+          "offset": [754, 452],
+          "size": [75, 93],
+          "pivot": [791.4, 498.6],
+          "role": "eyes"
+        }
+      ],
+      "mouth": {
+        "name": "smile-mouth",
+        "file": "expr/smile-mouth.png",
+        "offset": [620, 507],
+        "size": [119, 74],
+        "pivot": [679.8, 543.8],
+        "role": "mouth"
+      }
+    },
+    "joyful": {
+      "eyes": [
+        {
+          "name": "joyful-eye-0",
+          "file": "expr/joyful-eye-0.png",
+          "offset": [522, 419],
+          "size": [123, 90],
+          "pivot": [583.8, 463.7],
+          "role": "eyes"
+        },
+        {
+          "name": "joyful-eye-1",
+          "file": "expr/joyful-eye-1.png",
+          "offset": [736, 444],
+          "size": [125, 90],
+          "pivot": [798.7, 489.1],
+          "role": "eyes"
+        }
+      ],
+      "mouth": {
+        "name": "joyful-mouth",
+        "file": "expr/joyful-mouth.png",
+        "offset": [620, 507],
+        "size": [123, 74],
+        "pivot": [681.9, 543.8],
+        "role": "mouth"
+      }
+    },
+    "surprised": {
+      "eyes": [
+        {
+          "name": "surprised-eye-0",
+          "file": "expr/surprised-eye-0.png",
+          "offset": [550, 425],
+          "size": [74, 94],
+          "pivot": [586.9, 472.3],
+          "role": "eyes"
+        },
+        {
+          "name": "surprised-eye-1",
+          "file": "expr/surprised-eye-1.png",
+          "offset": [755, 450],
+          "size": [76, 94],
+          "pivot": [793.5, 496.9],
+          "role": "eyes"
+        }
+      ],
+      "mouth": {
+        "name": "surprised-mouth",
+        "file": "expr/surprised-mouth.png",
+        "offset": [619, 507],
+        "size": [123, 123],
+        "pivot": [680.5, 568.6],
+        "role": "mouth"
+      }
+    },
+    "thinking": {
+      "eyes": [
+        {
+          "name": "thinking-eye-0",
+          "file": "expr/thinking-eye-0.png",
+          "offset": [531, 447],
+          "size": [98, 56],
+          "pivot": [579.6, 475.3],
+          "role": "eyes"
+        },
+        {
+          "name": "thinking-eye-1",
+          "file": "expr/thinking-eye-1.png",
+          "offset": [744, 473],
+          "size": [98, 56],
+          "pivot": [792.7, 500.5],
+          "role": "eyes"
+        }
+      ],
+      "mouth": {
+        "name": "thinking-mouth",
+        "file": "expr/thinking-mouth.png",
+        "offset": [620, 518],
+        "size": [117, 68],
+        "pivot": [678.7, 552.0],
+        "role": "mouth"
+      },
+      "accent": {
+        "name": "thinking-accent",
+        "file": "expr/thinking-accent.png",
+        "offset": [562, 73],
+        "size": [302, 124],
+        "pivot": [712.8, 134.6],
+        "role": "accent"
+      }
+    },
+    "sparkle": {
+      "eyes": [
+        {
+          "name": "sparkle-eye-0",
+          "file": "expr/sparkle-eye-0.png",
+          "offset": [511, 386],
+          "size": [148, 154],
+          "pivot": [584.9, 462.8],
+          "role": "eyes"
+        },
+        {
+          "name": "sparkle-eye-1",
+          "file": "expr/sparkle-eye-1.png",
+          "offset": [721, 411],
+          "size": [148, 154],
+          "pivot": [795.2, 487.8],
+          "role": "eyes"
+        }
+      ],
+      "mouth": {
+        "name": "sparkle-mouth",
+        "file": "expr/sparkle-mouth.png",
+        "offset": [634, 520],
+        "size": [94, 53],
+        "pivot": [681.4, 546.8],
+        "role": "mouth"
+      }
+    },
+    "sleeping": {
+      "eyes": [
+        {
+          "name": "sleeping-eye-0",
+          "file": "expr/sleeping-eye-0.png",
+          "offset": [517, 462],
+          "size": [120, 77],
+          "pivot": [576.8, 500.5],
+          "role": "eyes"
+        },
+        {
+          "name": "sleeping-eye-1",
+          "file": "expr/sleeping-eye-1.png",
+          "offset": [740, 488],
+          "size": [120, 77],
+          "pivot": [800.4, 526.9],
+          "role": "eyes"
+        }
+      ],
+      "mouth": {
+        "name": "sleeping-mouth",
+        "file": "expr/sleeping-mouth.png",
+        "offset": [626, 514],
+        "size": [115, 73],
+        "pivot": [683.4, 550.9],
+        "role": "mouth"
+      },
+      "accent": {
+        "name": "sleeping-accent",
+        "file": "expr/sleeping-accent.png",
+        "offset": [753, 37],
+        "size": [251, 211],
+        "pivot": [878.2, 142.7],
+        "role": "accent"
+      }
+    }
+  },
+  "hashes": {
+    "expr/smile-eye-0.png": "37e31e227b",
+    "expr/smile-eye-1.png": "4ef6cf6308",
+    "expr/smile-mouth.png": "85633de41d",
+    "expr/joyful-eye-0.png": "6aa6b7b02f",
+    "expr/joyful-eye-1.png": "e7e9746066",
+    "expr/joyful-mouth.png": "9eafa6d5a5",
+    "expr/surprised-eye-0.png": "f4c470b5a0",
+    "expr/surprised-eye-1.png": "9d1b68f9e1",
+    "expr/surprised-mouth.png": "20bba0c00d",
+    "expr/thinking-eye-0.png": "4ae38ac900",
+    "expr/thinking-eye-1.png": "d940431d6c",
+    "expr/thinking-mouth.png": "1fb017deb6",
+    "expr/thinking-accent.png": "b4373a7db9",
+    "expr/sparkle-eye-0.png": "8bad255aac",
+    "expr/sparkle-eye-1.png": "50fb11b317",
+    "expr/sparkle-mouth.png": "fd80316eaf",
+    "expr/sleeping-eye-0.png": "8f25ce5ccd",
+    "expr/sleeping-eye-1.png": "d6fc2de5f4",
+    "expr/sleeping-mouth.png": "40ed88e8ad",
+    "expr/sleeping-accent.png": "c7b84fad12"
+  }
+}
