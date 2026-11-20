@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { PagePlaceholder } from "@/components/page-placeholder";
+import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth-session";
+import { getRoleHome, roleOf } from "@/lib/roles";
+import { KpmDashboard } from "@/components/kpm/kpm-dashboard";
 
 export const metadata: Metadata = {
   title: "KPM Dashboard — Pixelspace AI Classroom",
 };
 
-/** KPM analytics dashboard (built in the analytics phase). */
-export default function KpmDashboardPage() {
-  return (
-    <PagePlaceholder
-      title="KPM Dashboard"
-      description="Analitik aktiviti guru dan pelajar mengikut sekolah akan muncul di sini."
-    />
-  );
+export default async function KpmDashboardPage() {
+  const user = await getSessionUser();
+  const role = roleOf(user);
+  if (role !== "kpm" && role !== "superadmin") redirect(getRoleHome(role));
+  return <KpmDashboard />;
 }
