@@ -189,18 +189,31 @@ const buildArtifactEditContext = (
     return lines.join("\n");
   }
 
-  if (artifact.type === "slides" && artifact.kind === "file") {
+  if (
+    artifact.kind === "file" &&
+    (artifact.type === "slides" ||
+      artifact.type === "reports" ||
+      artifact.type === "infographics")
+  ) {
+    const label =
+      artifact.type === "slides"
+        ? "slide deck"
+        : artifact.type === "reports"
+          ? "report document"
+          : "infographic image";
     const lines = [
       "[Artifact edit session]",
-      "You are editing an EXISTING slide deck file. Do NOT create a new deck.",
-      `Deck: ${artifact.title} (id ${artifact.id})`,
-      `File: ${artifact.path ?? "the shared .pptx in your workspace"}`,
+      `You are editing an EXISTING ${label} file. Do NOT create a new one.`,
+      `Title: ${artifact.title} (id ${artifact.id})`,
+      `File: ${artifact.path ?? "the shared file in your workspace"}`,
     ];
     if (typeof focusedIndex === "number" && Number.isInteger(focusedIndex)) {
       lines.push(`The user is currently viewing slide #${focusedIndex + 1}.`);
     }
     lines.push(
-      "Apply the requested changes to the ACTUAL .pptx file — edit it in place (LibreOffice is available) or regenerate the deck, then verify it renders and share_file the updated .pptx with the SAME filename so the app replaces the existing file.",
+      artifact.type === "infographics"
+        ? "Apply the requested changes by regenerating the image (python + pillow/matplotlib are available), then share_file the updated image with the SAME filename so the app replaces the existing file."
+        : "Apply the requested changes to the ACTUAL file — edit it in place (LibreOffice is available) or regenerate it, then verify it renders and share_file the updated file with the SAME filename so the app replaces the existing one.",
       "For small edits do NOT run web searches — apply the change directly and return quickly.",
       "If the request does not say what to change, ask one short clarifying question with the ask_user tool (never a plain-text question, which would end the run without an edit).",
     );
@@ -389,7 +402,7 @@ const captureSharedArtifacts = async (
       const base = baseNameOf(target.title);
       editableArtifacts = all.filter(
         (artifact) =>
-          artifact.type === "slides" && baseNameOf(artifact.title) === base,
+          artifact.kind === "file" && baseNameOf(artifact.title) === base,
       );
     }
   }
@@ -487,7 +500,9 @@ const piChat = async (
           artifact.type === "quizzes" ||
           artifact.type === "mindmaps")) ||
         (artifact.kind === "file" &&
-          artifact.type === "slides" &&
+          (artifact.type === "slides" ||
+            artifact.type === "reports" ||
+            artifact.type === "infographics") &&
           typeof artifact.url === "string"));
     if (!editable) {
       return null;

@@ -47,7 +47,13 @@ type Ask = {
 export const ArtifactAiPanel: FC<{
   artifactId: string;
   /** Drives the copy and which tool signals a completed edit. */
-  kind: "flashcards" | "quizzes" | "slides" | "mindmaps";
+  kind:
+    | "flashcards"
+    | "quizzes"
+    | "slides"
+    | "mindmaps"
+    | "reports"
+    | "infographics";
   open: boolean;
   onOpenChange: (open: boolean) => void;
   prefill?: { text: string; nonce: number } | null;
@@ -63,18 +69,33 @@ export const ArtifactAiPanel: FC<{
   onDeckUpdated,
 }) => {
   const isQuiz = kind === "quizzes";
-  const isSlides = kind === "slides";
   const isMap = kind === "mindmaps";
+  // File-backed artifacts are edited by the agent re-sharing the file.
+  const isFile =
+    kind === "slides" || kind === "reports" || kind === "infographics";
+  const isSlides = kind === "slides";
   const itemWord = isSlides
     ? "slide"
-    : isQuiz
-      ? "question"
-      : isMap
-        ? "node"
-        : "card";
-  const setWord = isQuiz ? "quiz" : isMap ? "map" : "deck";
-  // Slides edits are complete when the agent shares the updated file.
-  const editTool = isSlides ? "share_file" : "render_ui";
+    : kind === "reports"
+      ? "report"
+      : kind === "infographics"
+        ? "infographic"
+        : isQuiz
+          ? "question"
+          : isMap
+            ? "node"
+            : "card";
+  const setWord =
+    kind === "reports"
+      ? "report"
+      : kind === "infographics"
+        ? "infographic"
+        : isQuiz
+          ? "quiz"
+          : isMap
+            ? "map"
+            : "deck";
+  const editTool = isFile ? "share_file" : "render_ui";
   const [messages, setMessages] = useState<PanelMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -237,7 +258,7 @@ export const ArtifactAiPanel: FC<{
           ...prev,
           {
             role: "system",
-            text: `${isQuiz ? "Quiz" : isSlides ? "Slides" : isMap ? "Map" : "Deck"} updated — changes saved.`,
+            text: `${isQuiz ? "Quiz" : isSlides ? "Slides" : isMap ? "Map" : kind === "reports" ? "Report" : kind === "infographics" ? "Infographic" : "Deck"} updated — changes saved.`,
           },
         ]);
         onDeckUpdated();
@@ -310,7 +331,20 @@ export const ArtifactAiPanel: FC<{
       >
         {messages.length === 0 && (
           <p className="text-muted-foreground text-xs leading-relaxed">
-            {isMap ? (
+            {kind === "reports" ? (
+              <>
+                Ask for changes to <strong>this report</strong> — the agent
+                edits the actual file and re-shares it. e.g. &ldquo;shorten the
+                executive summary&rdquo;, &ldquo;add a chart of the monthly
+                trend&rdquo;, &ldquo;translate it to English&rdquo;.
+              </>
+            ) : kind === "infographics" ? (
+              <>
+                Ask for changes to <strong>this infographic</strong> — the agent
+                regenerates the image and re-shares it. e.g. &ldquo;warmer
+                colours&rdquo;, &ldquo;add a section about condensation&rdquo;.
+              </>
+            ) : isMap ? (
               <>
                 Ask for changes to <strong>this map</strong> — e.g. &ldquo;add a
                 branch about asteroid&rdquo;, &ldquo;make the Marikh node

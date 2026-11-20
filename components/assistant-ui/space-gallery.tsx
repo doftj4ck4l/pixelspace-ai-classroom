@@ -1004,7 +1004,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
    * (render_ui flashcards / a shared pptx), and it lands in Spaces.
    */
   const generateInThread = async (
-    kind: "flashcards" | "quizzes" | "mindmaps" | "slides",
+    kind: "flashcards" | "quizzes" | "mindmaps" | "slides" | "reports",
     input: CreateDialogInput,
   ) => {
     setCreateKind(null);
@@ -1031,9 +1031,28 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
             ? `Buat kuiz tentang ${input.topic}. ${language} Gunakan render_ui quizzes — campurkan jenis soalan (pilihan aneka, benar/palsu, isi tempat kosong, soalan terbuka) supaya kuiz ini menguji kefahaman.${attachmentNote}`
             : kind === "mindmaps"
               ? `Buat peta pembelajaran tentang ${input.topic}. ${language} Gunakan render_ui mindmaps — setiap nod ada ringkasan ringkas, tambah cabaran (challenges) pada nod konsep utama, dan tandakan nod yang melangkaui sumber dengan aiAdded.${attachmentNote}`
-              : `Buat slide deck tentang ${input.topic}. ${language} Hasilkan fail .pptx yang kemas, semak visualnya, dan share_file kepadanya.${attachmentNote}`;
+              : kind === "reports"
+                ? `Tulis laporan tentang ${input.topic}. ${language} Hasilkan fail PDF yang kemas dan tersusun (tajuk, ringkasan, bahagian-bahagian, kesimpulan), semak visualnya, dan share_file kepadanya.${attachmentNote}`
+                : `Buat slide deck tentang ${input.topic}. ${language} Hasilkan fail .pptx yang kemas, semak visualnya, dan share_file kepadanya.${attachmentNote}`;
       aui.composer.setText(prompt);
       aui.composer.send();
+    } catch {
+      // the dialog simply closes; the user can retry
+    }
+  };
+
+  const generateInfographic = async (input: CreateDialogInput) => {
+    setCreateKind(null);
+    try {
+      const res = await fetch("/api/images/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: input.topic, language: input.language }),
+      });
+      const data = (await res.json()) as { artifactId?: string };
+      if (data.artifactId) {
+        router.push(`/spaces/infographics/${data.artifactId}`);
+      }
     } catch {
       // the dialog simply closes; the user can retry
     }
@@ -1118,7 +1137,10 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const isFlashcards = mode === "flashcards";
   const isQuizzes = mode === "quizzes";
   const isMindMaps = mode === "mindmaps";
-  const isModule = isFlashcards || isQuizzes || isMindMaps;
+  const isReports = mode === "reports";
+  const isInfographics = mode === "infographics";
+  const isModule =
+    isFlashcards || isQuizzes || isMindMaps || isReports || isInfographics;
 
   const openDeckDoc = (doc: Doc) => {
     if (doc.spec) {
@@ -1132,6 +1154,14 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       return;
     }
     if (doc.artifactId) {
+      if (doc.type === "reports" && doc.url) {
+        router.push(`/spaces/reports/${doc.artifactId}`);
+        return;
+      }
+      if (doc.type === "infographics" && doc.url) {
+        router.push(`/spaces/infographics/${doc.artifactId}`);
+        return;
+      }
       void openSharedArtifact(doc);
       return;
     }
@@ -1193,7 +1223,11 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                       ? "Search flashcards..."
                       : isMindMaps
                         ? "Search learning maps..."
-                        : "Search"
+                        : isReports
+                          ? "Search reports..."
+                          : isInfographics
+                            ? "Search infographics..."
+                            : "Search"
                 }
                 aria-label="Search"
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
@@ -1398,14 +1432,22 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                       ? "Buat kuiz baharu"
                       : isMindMaps
                         ? "Buat peta baharu"
-                        : "Buat set baharu"}
+                        : isReports
+                          ? "Buat laporan baharu"
+                          : isInfographics
+                            ? "Buat infografik baharu"
+                            : "Buat set baharu"}
                   </span>
                   <span className="text-muted-foreground max-w-44 text-xs">
                     {isQuizzes
                       ? "Hasilkan kuiz dengan AI atau secara manual"
                       : isMindMaps
                         ? "Hasilkan peta pembelajaran dengan AI"
-                        : "Hasilkan kad imbas dengan AI atau secara manual"}
+                        : isReports
+                          ? "Hasilkan laporan dengan AI"
+                          : isInfographics
+                            ? "Jana infografik dengan model imej AI"
+                            : "Hasilkan kad imbas dengan AI atau secara manual"}
                   </span>
                 </button>
               )}
@@ -1532,12 +1574,18 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
           createKind === "slides" ||
           createKind === "flashcards" ||
           createKind === "quizzes" ||
-          createKind === "mindmaps"
+          createKind === "mindmaps" ||
+          createKind === "reports" ||
+          createKind === "infographics"
         }
         onOpenChange={(open) => {
           if (!open) setCreateKind(null);
         }}
-        onGenerate={(input: CreateDialogInput) =>
+        onGenerate={(input: CreateDialogInput) => {
+          if (createKind === "infographics") {
+            void generateInfographic(input);
+            return;
+          }
           void generateInThread(
             createKind === "flashcards"
               ? "flashcards"
@@ -1545,10 +1593,12 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                 ? "quizzes"
                 : createKind === "mindmaps"
                   ? "mindmaps"
-                  : "slides",
+                  : createKind === "reports"
+                    ? "reports"
+                    : "slides",
             input,
-          )
-        }
+          );
+        }}
         onCreateEmpty={() => {
           if (createKind) addDoc(createKind);
           setCreateKind(null);
