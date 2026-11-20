@@ -101,7 +101,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "all", label: "All", Icon: Columns3Icon },
   { id: "flashcards", label: "Flashcards", Icon: LayersIcon },
   { id: "quizzes", label: "Quizzes", Icon: CircleHelpIcon },
-  { id: "mindmaps", label: "Mind Maps", Icon: WaypointsIcon },
+  { id: "mindmaps", label: "Learning Map", Icon: WaypointsIcon },
   { id: "slides", label: "Slides", Icon: PresentationIcon },
   { id: "reports", label: "Reports", Icon: FileTextIcon },
   { id: "infographics", label: "Infographics", Icon: ChartColumnIcon },

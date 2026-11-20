@@ -16,6 +16,8 @@ import { remapDeckProgress } from "@/lib/flashcards/progress";
 import { validateDeckSpec, type FlashcardSpec } from "@/lib/flashcards/spec";
 import { remapQuizProgress } from "@/lib/quizzes/progress";
 import { validateQuizSpec, type QuizSpec } from "@/lib/quizzes/spec";
+import { remapMindMapProgress } from "@/lib/mindmaps/remap";
+import { validateMindMapSpec, type MindMapSpec } from "@/lib/mindmaps/spec";
 
 export const maxDuration = 300;
 
@@ -32,10 +34,13 @@ type ChatBody = {
   id?: string;
   /** Kept for compatibility with callers that pass the thread explicitly. */
   threadId?: string;
-  /** When set, this turn edits that deck/quiz artifact instead of creating one. */
+  /** When set, this turn edits that deck/quiz/map artifact instead of creating one. */
   artifactEditTargetId?: string;
   /** The card/question the user is looking at, for targeted edits. */
   focusedIndex?: number;
+  /** When set, this turn answers a question about a node of that map (no edit). */
+  artifactAskTargetId?: string;
+  artifactAskNodeId?: string;
 };
 
 const messageText = (message: UIMessage) =>
@@ -92,7 +97,13 @@ const captureRenderUiSpec = async (
   args: Record<string, unknown> | undefined,
 ) => {
   const component = args?.component;
-  if (component !== "flashcards" && component !== "quizzes") return;
+  if (
+    component !== "flashcards" &&
+    component !== "quizzes" &&
+    component !== "mindmaps"
+  ) {
+    return;
+  }
   let props = args?.props;
   if (typeof props === "string") {
     try {
@@ -106,17 +117,27 @@ const captureRenderUiSpec = async (
     title?: unknown;
     cards?: unknown;
     questions?: unknown;
+    nodes?: unknown;
   };
-  const list = component === "flashcards" ? spec.cards : spec.questions;
+  const list =
+    component === "flashcards"
+      ? spec.cards
+      : component === "quizzes"
+        ? spec.questions
+        : spec.nodes;
   if (!Array.isArray(list) || list.length === 0) return;
+  const fallbackTitle =
+    component === "flashcards"
+      ? "Kad Imbas"
+      : component === "quizzes"
+        ? "Kuiz"
+        : "Peta Pembelajaran";
   await artifactRegistry.addSpec(userId, {
     threadId,
     title:
       typeof spec.title === "string" && spec.title.trim()
         ? spec.title.trim()
-        : component === "flashcards"
-          ? "Kad Imbas"
-          : "Kuiz",
+        : fallbackTitle,
     type: component,
     spec,
     dedupeKey: `render_ui:${toolCallId}`,
@@ -131,6 +152,32 @@ const buildArtifactEditContext = (
   artifact: PiArtifact,
   focusedIndex?: number,
 ) => {
+  if (artifact.type === "mindmaps" && artifact.kind === "spec") {
+    const spec = artifact.spec as MindMapSpec | undefined;
+    const nodes = spec?.nodes ?? [];
+    const lines = [
+      "[Artifact edit session]",
+      "You are editing an EXISTING learning map (interactive knowledge graph). Do NOT create a new map.",
+      `Map: ${artifact.title} (id ${artifact.id})`,
+      `Current spec JSON: ${JSON.stringify(artifact.spec)}`,
+      "Node schema: { id (stable slug, KEEP IDS OF UNCHANGED NODES EXACTLY), label, emoji?, parent? (tree edge), summary? (<=300 chars), details? (<=1200), kind? (concept|example|formula|question), source?, aiAdded?, challenges? (up to 2 of multiple-choice {options, answerIndex} | true-false {answer:boolean} | fill-blank {accepted} | open-ended {modelAnswer, keywords?}) } plus optional cross-link edges [{from,to,label?}].",
+    ];
+    if (typeof focusedIndex === "number" && Number.isInteger(focusedIndex)) {
+      const node = nodes[focusedIndex];
+      lines.push(
+        node
+          ? `The user is currently viewing node "${node.label}" (id ${node.id}, #${focusedIndex + 1} of ${nodes.length}). If they say "this node", "this one", or refer to the node on screen, they mean node id "${node.id}".`
+          : `The user is currently looking at node #${focusedIndex + 1}.`,
+      );
+    }
+    lines.push(
+      'When done, call render_ui with component "mindmaps" containing the COMPLETE updated map — every node, with only the requested changes applied. Keep unmentioned nodes byte-identical (same ids, same content).',
+      "For small edits do NOT run web searches — apply the change directly and return quickly.",
+      "If the request does not say what to change, ask one short clarifying question with the ask_user tool (never a plain-text question, which would end the run without an edit).",
+    );
+    return lines.join("\n");
+  }
+
   if (artifact.type === "slides" && artifact.kind === "file") {
     const lines = [
       "[Artifact edit session]",
@@ -196,6 +243,30 @@ const buildArtifactEditContext = (
   return lines.join("\n");
 };
 
+/**
+ * Learning-map node Q&A: the user asks about a node, the agent answers as a
+ * tutor. No thread, no capture — the answer stays in the node panel.
+ */
+const buildMindMapAskContext = (artifact: PiArtifact, nodeId?: string) => {
+  const spec = artifact.spec as MindMapSpec | undefined;
+  const node = nodeId ? spec?.nodes.find((n) => n.id === nodeId) : undefined;
+  const lines = [
+    "[Learning map Q&A]",
+    `The user is exploring a learning map: ${artifact.title} (id ${artifact.id}).`,
+    `Map JSON: ${JSON.stringify(artifact.spec)}`,
+  ];
+  if (node) {
+    lines.push(
+      `They are asking about the node "${node.label}" (id ${node.id})${node.summary ? ` — summary: ${node.summary}` : ""}${node.details ? ` — details: ${node.details}` : ""}${node.source ? ` — source: ${node.source}` : ""}.`,
+    );
+  }
+  lines.push(
+    "Answer their question as a helpful tutor for a school student, in the language they use (Bahasa Malaysia unless they write in English). Keep it concise (2-6 sentences) unless they ask for more depth. If they ask for practice, give one short question with its answer.",
+    "Do NOT modify the map, do NOT call render_ui, and do NOT use tools unless the question truly requires a lookup — just answer as text.",
+  );
+  return lines.join("\n");
+};
+
 /** Persist an AI-edited deck or quiz over its artifact, remapping progress. */
 const applyArtifactEdit = async (
   userId: string,
@@ -203,7 +274,13 @@ const applyArtifactEdit = async (
   args: Record<string, unknown> | undefined,
 ) => {
   const component = args?.component;
-  if (component !== "flashcards" && component !== "quizzes") return;
+  if (
+    component !== "flashcards" &&
+    component !== "quizzes" &&
+    component !== "mindmaps"
+  ) {
+    return;
+  }
   let props = args?.props;
   if (typeof props === "string") {
     try {
@@ -214,6 +291,25 @@ const applyArtifactEdit = async (
   }
   const artifact = await artifactRegistry.get(userId, artifactId);
   if (!artifact || artifact.kind !== "spec" || artifact.type !== component) {
+    return;
+  }
+
+  if (component === "mindmaps") {
+    const result = validateMindMapSpec(props);
+    if (!result.ok) return;
+    const oldSpec = artifact.spec as MindMapSpec | undefined;
+    await artifactRegistry.updateSpec(
+      userId,
+      artifactId,
+      result.spec,
+      result.spec.title ?? artifact.title,
+    );
+    await remapMindMapProgress(
+      userId,
+      artifactId,
+      oldSpec?.nodes ?? [],
+      result.spec.nodes,
+    );
     return;
   }
 
@@ -350,12 +446,31 @@ const piChat = async (
   let deckEditContext: string | null = null;
   let threadId = body.id ?? body.threadId;
 
+  const artifactAskTargetId =
+    typeof body.artifactAskTargetId === "string"
+      ? body.artifactAskTargetId
+      : undefined;
+
+  if (!artifactEditTargetId && artifactAskTargetId) {
+    const artifact = await artifactRegistry.get(userId, artifactAskTargetId);
+    if (artifact && artifact.kind === "spec" && artifact.type === "mindmaps") {
+      deckEditContext = buildMindMapAskContext(
+        artifact,
+        body.artifactAskNodeId,
+      );
+      // Session-only: no thread, so nothing lands in the sidebar or history.
+      threadId = undefined;
+    }
+  }
+
   if (artifactEditTargetId) {
     const artifact = await artifactRegistry.get(userId, artifactEditTargetId);
     const editable =
       artifact &&
       ((artifact.kind === "spec" &&
-        (artifact.type === "flashcards" || artifact.type === "quizzes")) ||
+        (artifact.type === "flashcards" ||
+          artifact.type === "quizzes" ||
+          artifact.type === "mindmaps")) ||
         (artifact.kind === "file" &&
           artifact.type === "slides" &&
           typeof artifact.url === "string"));

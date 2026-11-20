@@ -153,6 +153,24 @@ export const quizProgress = pgTable(
   ],
 );
 
+/** Per-account learning-map mastery: node id → level/streak/schedule. */
+export const mindmapProgress = pgTable(
+  "mindmap_progress",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    mapId: text("map_id").notNull(),
+    nodeState: jsonb("node_state").notNull().default({}),
+    total: text("total").notNull(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("mindmap_progress_user_idx").on(table.userId),
+    index("mindmap_progress_map_idx").on(table.userId, table.mapId),
+  ],
+);
+
 /** Gallery documents (scratch decks, local slides, etc.), per account. */
 export const docs = pgTable(
   "docs",

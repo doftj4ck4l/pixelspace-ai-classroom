@@ -213,6 +213,132 @@ function validateQuizzes(p: Record<string, unknown>): UiValidation {
 
 `;
 
+const MINDMAP_VALIDATOR = `const MINDMAP_ACCENTS = ['teal', 'blue', 'amber', 'violet', 'rose', 'emerald'] as const
+
+/** An interactive learning map: 8-30 nodes (cap 60) with challenges. */
+function validateMindmaps(p: Record<string, unknown>): UiValidation {
+  const errors: string[] = []
+  if (p.title !== undefined && typeof p.title !== 'string') {
+    errors.push('mindmaps.title must be a string')
+  }
+  if (p.subject !== undefined && typeof p.subject !== 'string') {
+    errors.push('mindmaps.subject must be a string')
+  }
+  if (p.accent !== undefined && (typeof p.accent !== 'string' || !MINDMAP_ACCENTS.includes(p.accent as never))) {
+    errors.push(\`mindmaps.accent must be one of: \${MINDMAP_ACCENTS.join(', ')}\`)
+  }
+  const nodes = p.nodes
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    errors.push('mindmaps.nodes must be a non-empty array')
+    return done(errors)
+  }
+  if (nodes.length > 60) errors.push('mindmaps.nodes supports at most 60 nodes')
+  const ids = new Set<string>()
+  nodes.slice(0, 60).forEach((n, i) => {
+    if (!isRecord(n)) {
+      errors.push(\`mindmaps.nodes[\${i}] must be an object\`)
+      return
+    }
+    if (typeof n.id !== 'string' || !/^[a-z0-9-]{1,40}$/.test(n.id)) {
+      errors.push(\`mindmaps.nodes[\${i}].id must be a short slug (a-z, 0-9, dashes)\`)
+    } else if (ids.has(n.id)) {
+      errors.push(\`mindmaps.nodes[\${i}].id "\${n.id}" is duplicated\`)
+    } else {
+      ids.add(n.id)
+    }
+    if (typeof n.label !== 'string' || !n.label.trim()) {
+      errors.push(\`mindmaps.nodes[\${i}].label is required\`)
+    } else if (n.label.length > 60) {
+      errors.push(\`mindmaps.nodes[\${i}].label must be 60 characters or fewer\`)
+    }
+    if (n.emoji !== undefined && typeof n.emoji !== 'string') {
+      errors.push(\`mindmaps.nodes[\${i}].emoji must be a string\`)
+    }
+    if (n.parent !== undefined && typeof n.parent !== 'string') {
+      errors.push(\`mindmaps.nodes[\${i}].parent must be a node id string\`)
+    }
+    if (n.summary !== undefined && (typeof n.summary !== 'string' || n.summary.length > 300)) {
+      errors.push(\`mindmaps.nodes[\${i}].summary must be 300 characters or fewer\`)
+    }
+    if (n.details !== undefined && (typeof n.details !== 'string' || n.details.length > 1200)) {
+      errors.push(\`mindmaps.nodes[\${i}].details must be 1200 characters or fewer\`)
+    }
+    if (n.kind !== undefined && (typeof n.kind !== 'string' || !['concept', 'example', 'formula', 'question'].includes(n.kind))) {
+      errors.push(\`mindmaps.nodes[\${i}].kind must be concept, example, formula or question\`)
+    }
+    if (n.source !== undefined && (typeof n.source !== 'string' || n.source.length > 120)) {
+      errors.push(\`mindmaps.nodes[\${i}].source must be a string of 120 characters or fewer\`)
+    }
+    if (n.aiAdded !== undefined && typeof n.aiAdded !== 'boolean') {
+      errors.push(\`mindmaps.nodes[\${i}].aiAdded must be a boolean\`)
+    }
+    if (n.challenges !== undefined) {
+      if (!Array.isArray(n.challenges) || n.challenges.length > 2) {
+        errors.push(\`mindmaps.nodes[\${i}].challenges must be up to 2 challenges\`)
+      } else {
+        n.challenges.forEach((c: unknown, ci: number) => {
+          if (!isRecord(c)) {
+            errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}] must be an object\`)
+            return
+          }
+          if (typeof c.question !== 'string' || !c.question.trim()) {
+            errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].question is required\`)
+          }
+          if (typeof c.type !== 'string' || !['multiple-choice', 'true-false', 'fill-blank', 'open-ended'].includes(c.type)) {
+            errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].type must be one of: multiple-choice, true-false, fill-blank, open-ended\`)
+            return
+          }
+          if (c.type === 'multiple-choice') {
+            const options = c.options
+            if (!Array.isArray(options) || options.length < 2 || options.length > 6) {
+              errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].options must be 2-6 strings\`)
+            } else if (
+              typeof c.answerIndex !== 'number' ||
+              !Number.isInteger(c.answerIndex) ||
+              c.answerIndex < 0 ||
+              c.answerIndex >= options.length
+            ) {
+              errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].answerIndex must point at one of its options\`)
+            }
+          } else if (c.type === 'true-false') {
+            if (typeof c.answer !== 'boolean') {
+              errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].answer must be true or false\`)
+            }
+          } else if (c.type === 'fill-blank') {
+            if (typeof c.accepted !== 'string' || !c.accepted.trim()) {
+              errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].accepted is required\`)
+            }
+          } else if (typeof c.modelAnswer !== 'string' || !c.modelAnswer.trim()) {
+            errors.push(\`mindmaps.nodes[\${i}].challenges[\${ci}].modelAnswer is required\`)
+          }
+        })
+      }
+    }
+  })
+  nodes.slice(0, 60).forEach((n, i) => {
+    if (isRecord(n) && typeof n.parent === 'string' && n.parent && !ids.has(n.parent)) {
+      errors.push(\`mindmaps.nodes[\${i}].parent "\${n.parent}" does not match any node id\`)
+    }
+  })
+  const edges = p.edges
+  if (edges !== undefined) {
+    if (!Array.isArray(edges) || edges.length > 80) {
+      errors.push('mindmaps.edges must be up to 80 { from, to, label? } objects')
+    } else {
+      edges.forEach((e: unknown, i: number) => {
+        if (!isRecord(e) || typeof e.from !== 'string' || typeof e.to !== 'string') {
+          errors.push(\`mindmaps.edges[\${i}] must have from and to node ids\`)
+        } else if (!ids.has(e.from) || !ids.has(e.to)) {
+          errors.push(\`mindmaps.edges[\${i}] references an unknown node\`)
+        }
+      })
+    }
+  }
+  return done(errors)
+}
+
+`;
+
 {
   let s = read("ui-catalog.ts");
   if (!s.includes("validateFlashcards")) {
@@ -272,6 +398,37 @@ function validateQuizzes(p: Record<string, unknown>): UiValidation {
   } else {
     console.log("already patched: ui-catalog.ts (quizzes)");
   }
+
+  s = read("ui-catalog.ts");
+  if (!s.includes("validateMindmaps")) {
+    const caseAnchor =
+      "    case 'quizzes':\n      return validateQuizzes(props)";
+    if (!s.includes(caseAnchor))
+      throw new Error("ui-catalog: quizzes case anchor missing");
+    s = s.replace(
+      caseAnchor,
+      `${caseAnchor}\n    case 'mindmaps':\n      return validateMindmaps(props)`,
+    );
+
+    const listAnchor =
+      "use one of: chart, table, stat, card, flashcards, quizzes`)";
+    if (!s.includes(listAnchor))
+      throw new Error("ui-catalog: component list anchor missing (mindmaps)");
+    s = s.replace(
+      listAnchor,
+      "use one of: chart, table, stat, card, flashcards, quizzes, mindmaps`)",
+    );
+
+    const fnAnchor = "// A colour is written into an SVG `fill`";
+    if (!s.includes(fnAnchor))
+      throw new Error("ui-catalog: function anchor missing (mindmaps)");
+    s = s.replace(fnAnchor, `${MINDMAP_VALIDATOR}${fnAnchor}`);
+
+    write("ui-catalog.ts", s);
+    console.log("patched: ui-catalog.ts (mindmaps)");
+  } else {
+    console.log("already patched: ui-catalog.ts (mindmaps)");
+  }
 }
 
 {
@@ -283,7 +440,7 @@ function validateQuizzes(p: Record<string, unknown>): UiValidation {
       throw new Error("tools.ts: intro anchor missing");
     s = s.replace(
       introAnchor,
-      '"Render a rich UI component inline in your answer to the user: a chart, a sortable table, a KPI stat tile, a titled card, a study flashcard deck, or an interactive quiz. " +',
+      '"Render a rich UI component inline in your answer to the user: a chart, a sortable table, a KPI stat tile, a titled card, a study flashcard deck, an interactive quiz, or an interactive learning map. " +',
     );
 
     const cardAnchor =
@@ -292,7 +449,7 @@ function validateQuizzes(p: Record<string, unknown>): UiValidation {
       throw new Error("tools.ts: card line anchor missing");
     s = s.replace(
       cardAnchor,
-      `"- card: title?, body? (markdown), fields? (array of { label, value }), accent? ('default'|'primary'|'success'|'warning'|'destructive') \\n" +\n      "- flashcards: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), cards (6 to 40 of { front, back, hint?, tags? (up to 3), type? ('term'|'question'|'cloze'|'formula') }) — a study deck for memorisation \\n" +\n      "- quizzes: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), questions (4 to 20 of { question, type: 'multiple-choice' (options 2-6 + answerIndex) | 'open-ended' (modelAnswer, keywords? up to 5) | 'true-false' (answer: boolean) | 'fill-blank' (answer; '/' separates accepted alternatives), explanation?, tags? (up to 3) }) — an interactive quiz that mixes objective and open-ended questions",`,
+      `"- card: title?, body? (markdown), fields? (array of { label, value }), accent? ('default'|'primary'|'success'|'warning'|'destructive') \\n" +\n      "- flashcards: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), cards (6 to 40 of { front, back, hint?, tags? (up to 3), type? ('term'|'question'|'cloze'|'formula') }) — a study deck for memorisation \\n" +\n      "- quizzes: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), questions (4 to 20 of { question, type: 'multiple-choice' (options 2-6 + answerIndex) | 'open-ended' (modelAnswer, keywords? up to 5) | 'true-false' (answer: boolean) | 'fill-blank' (answer; '/' separates accepted alternatives), explanation?, tags? (up to 3) }) — an interactive quiz that mixes objective and open-ended questions \\n" +\n      "- mindmaps: title?, subject?, language?, accent? ('teal'|'blue'|'amber'|'violet'|'rose'|'emerald'), nodes (8 to 30 of { id (stable slug), label, emoji?, parent? (tree edge), summary? (<=300 chars), details? (<=1200 chars), kind? ('concept'|'example'|'formula'|'question'), source? (grounding ref), aiAdded?, challenges? (up to 2 of the quiz question shapes) }), edges? (up to 80 cross-links { from, to, label? }) — an interactive learning map grounded in the user's sources",`,
     );
 
     write("tools.ts", s);
@@ -312,7 +469,8 @@ function validateQuizzes(p: Record<string, unknown>): UiValidation {
       anchor,
       `${anchor}
 A study deck is a flashcards block: when the user asks for flashcards, kad imbas, or study cards, research the topic first and build one with enough cards to cover it — never answer a flashcard request with a plain list.
-A quiz is a quizzes block: when the user asks for a quiz, kuiz, soalan latihan, or practice questions, research the topic first and build one with render_ui quizzes. Mix question types (multiple-choice, true-false, fill-blank, open-ended) unless the user asks for one type. When editing an existing quiz, convert question types on request (e.g. "change q1 to open-ended") — never answer a quiz request with a plain list.`,
+A quiz is a quizzes block: when the user asks for a quiz, kuiz, soalan latihan, or practice questions, research the topic first and build one with render_ui quizzes. Mix question types (multiple-choice, true-false, fill-blank, open-ended) unless the user asks for one type. When editing an existing quiz, convert question types on request (e.g. "change q1 to open-ended") — never answer a quiz request with a plain list.
+A learning map is a mindmaps block: when the user asks for a mind map, peta minda, peta pembelajaran, or learning map, research the topic first and build one with render_ui mindmaps. Ground every node in the user's source material when files are attached, add a source reference per node (e.g. "Bab 5 · ms 42"), and mark nodes that go beyond the sources with aiAdded: true. Give most nodes a summary, add challenges (up to 2) to key concept nodes, and use cross-link edges for relationships that are not parent/child. When editing an existing map, keep the ids of unchanged nodes EXACTLY the same. Never answer a mind-map request with a plain list.`,
     );
     write("gen-ui-prompt.ts", s);
     console.log("patched: gen-ui-prompt.ts");

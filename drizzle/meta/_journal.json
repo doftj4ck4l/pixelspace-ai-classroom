@@ -29,6 +29,13 @@
       "when": 1795097802485,
       "tag": "0003_whole_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795146247146,
+      "tag": "0004_steady_loners",
+      "breakpoints": true
     }
   ]
 }

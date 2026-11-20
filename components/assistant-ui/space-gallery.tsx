@@ -185,7 +185,7 @@ const MODULE_TITLES: Record<ModuleKind | "all", string> = {
   all: "All",
   flashcards: "Flashcards",
   quizzes: "Quizzes",
-  mindmaps: "Mind Maps",
+  mindmaps: "Learning Map",
   slides: "Slides",
   reports: "Reports",
   infographics: "Infographics",
@@ -219,7 +219,8 @@ const MODULE_HEADER: Record<
   mindmaps: {
     Icon: WaypointsIcon,
     color: "text-violet-500",
-    subtitle: "Susun idea dan konsep dalam peta minda yang jelas.",
+    subtitle:
+      "Peta pembelajaran interaktif — terokai setiap konsep, jawab cabaran pantas dan kuasai topik.",
   },
   slides: {
     Icon: PresentationIcon,
@@ -434,7 +435,8 @@ const deckInfoOf = (doc: Doc, progress: Record<string, DeckProgress>) => {
       : undefined);
   const questions = (doc.spec as { questions?: unknown[] } | undefined)
     ?.questions;
-  const items = spec?.cards ?? questions ?? [];
+  const nodes = (doc.spec as { nodes?: unknown[] } | undefined)?.nodes;
+  const items = spec?.cards ?? questions ?? nodes ?? [];
   const row = progress[doc.artifactId ?? doc.id];
   const total = row?.total || items.length;
   return { total, known: row?.knownCount ?? 0 };
@@ -545,10 +547,17 @@ const GalleryCard: FC<{
             <>
               {doc.type === "quizzes" ? (
                 <CircleHelpIcon className="size-3.5" />
+              ) : doc.type === "mindmaps" ? (
+                <WaypointsIcon className="size-3.5" />
               ) : (
                 <LayersIcon className="size-3.5" />
               )}
-              {total} {doc.type === "quizzes" ? "soalan" : "kad"}
+              {total}{" "}
+              {doc.type === "quizzes"
+                ? "soalan"
+                : doc.type === "mindmaps"
+                  ? "konsep"
+                  : "kad"}
             </>
           ) : (
             <>
@@ -724,14 +733,24 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       fetch("/api/quizzes/progress")
         .then((res) => res.json())
         .catch(() => ({})),
+      fetch("/api/mindmaps/progress")
+        .then((res) => res.json())
+        .catch(() => ({})),
     ])
       .then(
-        ([decks, quizzes]: [
+        ([decks, quizzes, mindmaps]: [
           { progress?: (DeckProgress & { deckId: string })[] },
           {
             progress?: {
               quizId: string;
               correctCount: number;
+              total: number;
+            }[];
+          },
+          {
+            progress?: {
+              mapId: string;
+              masteredCount: number;
               total: number;
             }[];
           },
@@ -744,6 +763,12 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
           for (const row of quizzes.progress ?? []) {
             map[row.quizId] = {
               knownCount: row.correctCount,
+              total: row.total,
+            };
+          }
+          for (const row of mindmaps.progress ?? []) {
+            map[row.mapId] = {
+              knownCount: row.masteredCount,
               total: row.total,
             };
           }
@@ -979,7 +1004,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
    * (render_ui flashcards / a shared pptx), and it lands in Spaces.
    */
   const generateInThread = async (
-    kind: "flashcards" | "quizzes" | "slides",
+    kind: "flashcards" | "quizzes" | "mindmaps" | "slides",
     input: CreateDialogInput,
   ) => {
     setCreateKind(null);
@@ -1004,7 +1029,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
           ? `Buat kad imbas tentang ${input.topic}. ${language} Gunakan render_ui flashcards supaya kad boleh terus dilihat dan diacak.${attachmentNote}`
           : kind === "quizzes"
             ? `Buat kuiz tentang ${input.topic}. ${language} Gunakan render_ui quizzes — campurkan jenis soalan (pilihan aneka, benar/palsu, isi tempat kosong, soalan terbuka) supaya kuiz ini menguji kefahaman.${attachmentNote}`
-            : `Buat slide deck tentang ${input.topic}. ${language} Hasilkan fail .pptx yang kemas, semak visualnya, dan share_file kepadanya.${attachmentNote}`;
+            : kind === "mindmaps"
+              ? `Buat peta pembelajaran tentang ${input.topic}. ${language} Gunakan render_ui mindmaps — setiap nod ada ringkasan ringkas, tambah cabaran (challenges) pada nod konsep utama, dan tandakan nod yang melangkaui sumber dengan aiAdded.${attachmentNote}`
+              : `Buat slide deck tentang ${input.topic}. ${language} Hasilkan fail .pptx yang kemas, semak visualnya, dan share_file kepadanya.${attachmentNote}`;
       aui.composer.setText(prompt);
       aui.composer.send();
     } catch {
@@ -1090,14 +1117,17 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
 
   const isFlashcards = mode === "flashcards";
   const isQuizzes = mode === "quizzes";
-  const isModule = isFlashcards || isQuizzes;
+  const isMindMaps = mode === "mindmaps";
+  const isModule = isFlashcards || isQuizzes || isMindMaps;
 
   const openDeckDoc = (doc: Doc) => {
     if (doc.spec) {
       router.push(
         doc.type === "quizzes"
           ? `/spaces/quizzes/${doc.artifactId}`
-          : `/spaces/flashcards/${doc.artifactId}`,
+          : doc.type === "mindmaps"
+            ? `/spaces/mindmaps/${doc.artifactId}`
+            : `/spaces/flashcards/${doc.artifactId}`,
       );
       return;
     }
@@ -1161,7 +1191,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                     ? "Search quizzes..."
                     : isFlashcards
                       ? "Search flashcards..."
-                      : "Search"
+                      : isMindMaps
+                        ? "Search learning maps..."
+                        : "Search"
                 }
                 aria-label="Search"
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
@@ -1362,12 +1394,18 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                     <PlusIcon className="size-5" />
                   </span>
                   <span className="text-sm font-semibold">
-                    {isQuizzes ? "Buat kuiz baharu" : "Buat set baharu"}
+                    {isQuizzes
+                      ? "Buat kuiz baharu"
+                      : isMindMaps
+                        ? "Buat peta baharu"
+                        : "Buat set baharu"}
                   </span>
                   <span className="text-muted-foreground max-w-44 text-xs">
                     {isQuizzes
                       ? "Hasilkan kuiz dengan AI atau secara manual"
-                      : "Hasilkan kad imbas dengan AI atau secara manual"}
+                      : isMindMaps
+                        ? "Hasilkan peta pembelajaran dengan AI"
+                        : "Hasilkan kad imbas dengan AI atau secara manual"}
                   </span>
                 </button>
               )}
@@ -1493,7 +1531,8 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         supported={
           createKind === "slides" ||
           createKind === "flashcards" ||
-          createKind === "quizzes"
+          createKind === "quizzes" ||
+          createKind === "mindmaps"
         }
         onOpenChange={(open) => {
           if (!open) setCreateKind(null);
@@ -1504,7 +1543,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
               ? "flashcards"
               : createKind === "quizzes"
                 ? "quizzes"
-                : "slides",
+                : createKind === "mindmaps"
+                  ? "mindmaps"
+                  : "slides",
             input,
           )
         }

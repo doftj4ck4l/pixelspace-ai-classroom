@@ -47,7 +47,7 @@ type Ask = {
 export const ArtifactAiPanel: FC<{
   artifactId: string;
   /** Drives the copy and which tool signals a completed edit. */
-  kind: "flashcards" | "quizzes" | "slides";
+  kind: "flashcards" | "quizzes" | "slides" | "mindmaps";
   open: boolean;
   onOpenChange: (open: boolean) => void;
   prefill?: { text: string; nonce: number } | null;
@@ -64,8 +64,15 @@ export const ArtifactAiPanel: FC<{
 }) => {
   const isQuiz = kind === "quizzes";
   const isSlides = kind === "slides";
-  const itemWord = isSlides ? "slide" : isQuiz ? "question" : "card";
-  const setWord = isQuiz ? "quiz" : "deck";
+  const isMap = kind === "mindmaps";
+  const itemWord = isSlides
+    ? "slide"
+    : isQuiz
+      ? "question"
+      : isMap
+        ? "node"
+        : "card";
+  const setWord = isQuiz ? "quiz" : isMap ? "map" : "deck";
   // Slides edits are complete when the agent shares the updated file.
   const editTool = isSlides ? "share_file" : "render_ui";
   const [messages, setMessages] = useState<PanelMessage[]>([]);
@@ -230,7 +237,7 @@ export const ArtifactAiPanel: FC<{
           ...prev,
           {
             role: "system",
-            text: `${isQuiz ? "Quiz" : isSlides ? "Slides" : "Deck"} updated — changes saved.`,
+            text: `${isQuiz ? "Quiz" : isSlides ? "Slides" : isMap ? "Map" : "Deck"} updated — changes saved.`,
           },
         ]);
         onDeckUpdated();
@@ -303,7 +310,15 @@ export const ArtifactAiPanel: FC<{
       >
         {messages.length === 0 && (
           <p className="text-muted-foreground text-xs leading-relaxed">
-            {isSlides ? (
+            {isMap ? (
+              <>
+                Ask for changes to <strong>this map</strong> — e.g. &ldquo;add a
+                branch about asteroid&rdquo;, &ldquo;make the Marikh node
+                simpler&rdquo;, &ldquo;add challenges to the weakest
+                nodes&rdquo;. Ask about a node in its panel instead — that never
+                edits the map.
+              </>
+            ) : isSlides ? (
               <>
                 Ask for changes to <strong>this deck</strong> — the agent edits
                 the actual PowerPoint file and re-shares it. e.g. &ldquo;add a
