@@ -2,11 +2,21 @@
 
 import { useState, type FC, type FormEvent } from "react";
 import Link from "next/link";
-import { EyeIcon, EyeOffIcon, Loader2Icon, MailCheckIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  EyeIcon,
+  EyeOffIcon,
+  Loader2Icon,
+  LockKeyholeIcon,
+  MailCheckIcon,
+  MailIcon,
+} from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AuthShell } from "@/components/auth/auth-shell";
+import { TeacherLoginShell } from "@/components/auth/teacher-login-shell";
+import teacherStyles from "@/components/auth/teacher-login.module.css";
 import {
   sendVerification,
   signInWithIdentifier,
@@ -61,22 +71,22 @@ const SPECS: Record<LoginTheme, Spec> = {
     brandClass: "text-violet-900 dark:text-violet-100",
   },
   teacher: {
-    title: "Selamat kembali, cikgu!",
-    subtitle: "Masuk untuk mengurus kelas dan bahan pembelajaran anda.",
+    title: "Log masuk sebagai Guru",
+    subtitle: "Pixelspace AI Classroom",
     identifierLabel: "Emel atau ID guru",
     identifierPlaceholder: "cth. guru@sekolah.edu.my atau cikgu.ali",
     passwordLabel: "Kata laluan",
     passwordPlaceholder: "Kata laluan anda",
-    submit: "Masuk",
+    submit: "Log Masuk",
     submitting: "Sedang masuk…",
-    inputClass: "h-10",
-    buttonClass: "h-10 bg-[#1b8a7f] text-white hover:bg-[#23a093]",
-    labelClass: "text-sm font-medium",
-    errorClass: "text-sm text-red-500",
-    hintClass: "text-muted-foreground text-xs",
-    linkClass: "text-foreground underline underline-offset-2",
-    checkboxClass: "size-4 accent-[#1b8a7f]",
-    checkboxLabelClass: "text-sm",
+    inputClass: teacherStyles.input,
+    buttonClass: teacherStyles.submit,
+    labelClass: teacherStyles.label,
+    errorClass: teacherStyles.error,
+    hintClass: teacherStyles.hint,
+    linkClass: teacherStyles.forgotLink,
+    checkboxClass: teacherStyles.checkbox,
+    checkboxLabelClass: teacherStyles.checkboxLabel,
     brandClass: "",
   },
   admin: {
@@ -104,7 +114,11 @@ const SPECS: Record<LoginTheme, Spec> = {
   },
 };
 
-export const LoginForm: FC<{ theme: LoginTheme }> = ({ theme }) => {
+export const LoginForm: FC<{
+  theme: LoginTheme;
+  delimaAvailable?: boolean;
+}> = ({ theme, delimaAvailable = false }) => {
+  const teacher = theme === "teacher";
   const spec = SPECS[theme];
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -160,33 +174,52 @@ export const LoginForm: FC<{ theme: LoginTheme }> = ({ theme }) => {
   const form = (
     <form
       onSubmit={onSubmit}
-      className="flex flex-col gap-4"
+      className={cn("flex flex-col gap-4", teacher && teacherStyles.form)}
       aria-busy={pending}
     >
-      <div className="flex flex-col gap-1.5">
+      <div
+        className={cn("flex flex-col gap-1.5", teacher && teacherStyles.field)}
+      >
         <label htmlFor={`${theme}-identifier`} className={spec.labelClass}>
           {spec.identifierLabel}
         </label>
-        <Input
-          id={`${theme}-identifier`}
-          value={identifier}
-          onChange={(event) => setIdentifier(event.target.value)}
-          placeholder={spec.identifierPlaceholder}
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck={false}
-          autoFocus
-          required
-          disabled={pending}
-          className={spec.inputClass}
-        />
+        <div className={teacher ? teacherStyles.inputGroup : undefined}>
+          {teacher && (
+            <MailIcon className={teacherStyles.inputIcon} aria-hidden="true" />
+          )}
+          <Input
+            id={`${theme}-identifier`}
+            value={identifier}
+            onChange={(event) => setIdentifier(event.target.value)}
+            placeholder={spec.identifierPlaceholder}
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            autoFocus={!teacher}
+            required
+            disabled={pending}
+            className={spec.inputClass}
+            aria-invalid={(teacher && !!error) || undefined}
+            aria-describedby={
+              teacher && error ? "teacher-login-error" : undefined
+            }
+          />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div
+        className={cn("flex flex-col gap-1.5", teacher && teacherStyles.field)}
+      >
         <label htmlFor={`${theme}-password`} className={spec.labelClass}>
           {spec.passwordLabel}
         </label>
-        <div className="relative">
+        <div className={cn("relative", teacher && teacherStyles.inputGroup)}>
+          {teacher && (
+            <LockKeyholeIcon
+              className={teacherStyles.inputIcon}
+              aria-hidden="true"
+            />
+          )}
           <Input
             id={`${theme}-password`}
             type={showPassword ? "text" : "password"}
@@ -197,6 +230,10 @@ export const LoginForm: FC<{ theme: LoginTheme }> = ({ theme }) => {
             required
             disabled={pending}
             className={cn(spec.inputClass, "pr-10")}
+            aria-invalid={(teacher && !!error) || undefined}
+            aria-describedby={
+              teacher && error ? "teacher-login-error" : undefined
+            }
           />
           <button
             type="button"
@@ -205,7 +242,11 @@ export const LoginForm: FC<{ theme: LoginTheme }> = ({ theme }) => {
               showPassword ? "Sembunyikan kata laluan" : "Tunjukkan kata laluan"
             }
             aria-pressed={showPassword}
-            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+            className={cn(
+              "text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2",
+              teacher && teacherStyles.passwordToggle,
+            )}
+            disabled={pending}
           >
             {showPassword ? (
               <EyeOffIcon className="size-4" aria-hidden="true" />
@@ -216,15 +257,30 @@ export const LoginForm: FC<{ theme: LoginTheme }> = ({ theme }) => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={remember}
-            onChange={(event) => setRemember(event.target.checked)}
-            disabled={pending}
-            className={spec.checkboxClass}
-          />
+      <div
+        className={cn(
+          "flex items-center justify-between",
+          teacher && teacherStyles.options,
+        )}
+      >
+        <label
+          className={cn(
+            "flex items-center gap-2",
+            teacher && teacherStyles.remember,
+          )}
+        >
+          <span
+            className={teacher ? teacherStyles.checkboxControl : "contents"}
+          >
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(event) => setRemember(event.target.checked)}
+              disabled={pending}
+              className={spec.checkboxClass}
+            />
+            {teacher && <CheckIcon aria-hidden="true" />}
+          </span>
           <span className={spec.checkboxLabelClass}>Ingat saya</span>
         </label>
         <Link href="/forgot-password" className={cn("text-sm", spec.linkClass)}>
@@ -233,7 +289,11 @@ export const LoginForm: FC<{ theme: LoginTheme }> = ({ theme }) => {
       </div>
 
       {error && (
-        <div className={spec.errorClass} role="alert">
+        <div
+          className={spec.errorClass}
+          role="alert"
+          id={teacher ? "teacher-login-error" : undefined}
+        >
           <p>{error}</p>
           {unverifiedEmail &&
             (resendState === "sent" ? (
@@ -279,7 +339,10 @@ export const LoginForm: FC<{ theme: LoginTheme }> = ({ theme }) => {
             {spec.submitting}
           </>
         ) : (
-          spec.submit
+          <>
+            {spec.submit}
+            {teacher && <ArrowRightIcon aria-hidden="true" />}
+          </>
         )}
       </Button>
     </form>
@@ -389,29 +452,8 @@ export const LoginForm: FC<{ theme: LoginTheme }> = ({ theme }) => {
   }
 
   return (
-    <AuthShell subtitle={spec.subtitle}>
-      <h2 className="text-center text-lg font-semibold">{spec.title}</h2>
+    <TeacherLoginShell delimaAvailable={delimaAvailable}>
       {form}
-      <div className="flex flex-col items-center gap-1.5 text-center">
-        <p className="text-muted-foreground text-sm">
-          Belum ada akaun?{" "}
-          <Link href="/register/teacher" className={spec.linkClass}>
-            Daftar sebagai guru
-          </Link>
-        </p>
-        <p className="text-muted-foreground text-sm">
-          Pelajar?{" "}
-          <Link href="/login/student" className={spec.linkClass}>
-            Masuk di sini
-          </Link>
-        </p>
-        <Link
-          href="/"
-          className="text-muted-foreground text-xs underline-offset-2 hover:underline"
-        >
-          ← Kembali ke laman utama
-        </Link>
-      </div>
-    </AuthShell>
+    </TeacherLoginShell>
   );
 };

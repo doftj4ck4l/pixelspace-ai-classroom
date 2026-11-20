@@ -32,5 +32,12 @@ export default async function LoginRolePage({
   if (!portal) redirect("/");
   const user = await getSessionUser();
   if (user) redirect(getRoleHome(roleOf(user)));
-  return <LoginForm theme={portal.theme} />;
+  return (
+    <LoginForm
+      theme={portal.theme}
+      delimaAvailable={Boolean(
+        process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+      )}
+    />
+  );
 }
