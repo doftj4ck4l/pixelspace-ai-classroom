@@ -1,12 +1,38 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { username } from "better-auth/plugins";
 import { db } from "@/lib/db";
-import { accounts, sessions, users, verifications } from "@/lib/db/schema";
+import {
+  accounts,
+  authEvents,
+  sessions,
+  users,
+  verifications,
+} from "@/lib/db/schema";
+import { sendEmail } from "@/lib/email";
+import { resetPasswordEmail, verifyEmailTemplate } from "@/lib/email-templates";
+
+async function recordAuthEvent(
+  event: string,
+  userId: string | null,
+  detail?: Record<string, unknown>,
+) {
+  try {
+    await db.insert(authEvents).values({
+      id: `ae_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      event,
+      userId,
+      detail: detail ?? null,
+    });
+  } catch {
+    // audit logging must never break authentication
+  }
+}
 
 /**
- * better-auth, same stack as paic-v2: Drizzle adapter over Postgres,
- * email+password. Google OAuth activates the moment its credentials are set —
- * no code change needed when the Cloud client arrives.
+ * better-auth: Drizzle over Postgres, email+password, username login (ID or
+ * email), hard email verification with a dev-mailbox fallback, and the role /
+ * school profile fields every page and API keys off.
  */
 export const auth = betterAuth({
   appName: "Pixelspace AI Classroom",
@@ -24,6 +50,102 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
+    requireEmailVerification: true,
+    resetPasswordTokenExpiresIn: 60 * 30,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      await sendEmail({
+        to: user.email,
+        ...resetPasswordEmail(user.name, url),
+      });
+    },
+    onPasswordReset: async ({ user }) => {
+      await recordAuthEvent("password_reset", user.id);
+    },
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendEmail({
+        to: user.email,
+        ...verifyEmailTemplate(user.name, url),
+      });
+    },
+  },
+  user: {
+    additionalFields: {
+      username: { type: "string", required: false },
+      role: {
+        type: "string",
+        required: false,
+        defaultValue: "student",
+        input: true,
+      },
+      schoolId: { type: "string", required: false, input: true },
+      displayName: { type: "string", required: false, input: true },
+      yearLabel: { type: "string", required: false, input: true },
+      className: { type: "string", required: false, input: false },
+      status: {
+        type: "string",
+        required: false,
+        defaultValue: "active",
+        input: false,
+      },
+      language: {
+        type: "string",
+        required: false,
+        defaultValue: "bm",
+        input: false,
+      },
+    },
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
+  },
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: {
+      "/request-password-reset": { window: 60, max: 3 },
+      "/send-verification-email": { window: 60, max: 3 },
+      "/sign-in/email": { window: 60, max: 10 },
+      "/sign-in/username": { window: 60, max: 10 },
+      "/sign-up/email": { window: 60, max: 5 },
+    },
+  },
+  plugins: [username()],
+  databaseHooks: {
+    user: {
+      create: {
+        // Clients may only pick between the two public roles — anything else
+        // (or a missing value) becomes "student".
+        before: async (user) => {
+          const role =
+            (user as { role?: unknown }).role === "teacher"
+              ? "teacher"
+              : "student";
+          return { data: { ...user, role } };
+        },
+        after: async (user) => {
+          await recordAuthEvent("register", user.id, {
+            email: user.email,
+            role: user.role,
+          });
+        },
+      },
+    },
+    session: {
+      create: {
+        after: async (session) => {
+          await recordAuthEvent("login", session.userId, {
+            ip: session.ipAddress,
+          });
+        },
+      },
+    },
   },
   ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
     ? {

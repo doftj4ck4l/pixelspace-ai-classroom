@@ -10,12 +10,66 @@ import {
 /* ------------------------------------------------------------------ auth */
 /* Shapes match better-auth's expectations (same as paic-v2's schema). */
 
+/** Schools — the org unit every student/teacher belongs to. */
+export const schools = pgTable("schools", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  type: text("type").notNull().default("secondary"),
+  state: text("state"),
+  district: text("district"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** "My school isn't listed" requests from the registration flow. */
+export const schoolRequests = pgTable(
+  "school_requests",
+  {
+    id: text("id").primaryKey(),
+    schoolName: text("school_name").notNull(),
+    state: text("state"),
+    note: text("note"),
+    requestedBy: text("requested_by"),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("school_requests_status_idx").on(table.status)],
+);
+
+/** Auth audit trail (register/login/reset) — feeds KPM analytics. */
+export const authEvents = pgTable(
+  "auth_events",
+  {
+    id: text("id").primaryKey(),
+    event: text("event").notNull(),
+    userId: text("user_id"),
+    detail: jsonb("detail"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("auth_events_user_idx").on(table.userId),
+    index("auth_events_created_idx").on(table.createdAt),
+  ],
+);
+
 export const users = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  /** better-auth username plugin (login by ID or email). */
+  username: text("username").unique(),
+  displayUsername: text("display_username"),
+  /** student | teacher | kpm | superadmin */
+  role: text("role").notNull().default("student"),
+  schoolId: text("school_id").references(() => schools.id),
+  displayName: text("display_name"),
+  yearLabel: text("year_label"),
+  className: text("class_name"),
+  status: text("status").notNull().default("active"),
+  language: text("language").notNull().default("bm"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

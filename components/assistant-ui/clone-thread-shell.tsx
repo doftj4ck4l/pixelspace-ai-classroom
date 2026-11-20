@@ -46,6 +46,8 @@ import {
   WandSparklesIcon,
   WaypointsIcon,
   type LucideIcon,
+  LayoutDashboardIcon,
+  ShieldCheckIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -80,6 +82,7 @@ export const useSidebarNav = () => useContext(SidebarNavContext);
 
 type CloneThreadShellProps = {
   children: ReactNode;
+  role?: string;
   railClassName?: string | undefined;
   collapsed?: boolean | undefined;
   onCollapsedChange?: ((value: boolean) => void) | undefined;
@@ -136,6 +139,7 @@ const ThemeToggle: FC = () => {
 
 export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   children,
+  role,
   railClassName,
   collapsed,
   onCollapsedChange,
@@ -374,6 +378,33 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
 
             {view === "space" ? (
               <nav className="mt-2 flex flex-col gap-0.5">
+                {role === "student" && (
+                  <Link
+                    href="/student"
+                    className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors"
+                  >
+                    <HomeIcon className="size-4 shrink-0" />
+                    <span className="truncate">Rumah</span>
+                  </Link>
+                )}
+                {role === "kpm" && (
+                  <Link
+                    href="/kpm"
+                    className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors"
+                  >
+                    <LayoutDashboardIcon className="size-4 shrink-0" />
+                    <span className="truncate">KPM Dashboard</span>
+                  </Link>
+                )}
+                {role === "superadmin" && (
+                  <Link
+                    href="/admin"
+                    className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors"
+                  >
+                    <ShieldCheckIcon className="size-4 shrink-0" />
+                    <span className="truncate">Admin</span>
+                  </Link>
+                )}
                 {NAV_ITEMS.map((item) => (
                   <Link
                     key={item.id}

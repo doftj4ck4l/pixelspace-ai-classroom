@@ -185,7 +185,13 @@ const threadListAdapter: RemoteThreadListAdapter = {
  * source of truth — /chat/<threadId> drives which thread the runtime shows,
  * and thread switches write the URL back.
  */
-export const AppShell = ({ children }: { children: ReactNode }) => {
+export const AppShell = ({
+  children,
+  role,
+}: {
+  children: ReactNode;
+  role?: string;
+}) => {
   const pathname = usePathname();
   const router = useRouter();
   const pathnameRef = useRef(pathname);
@@ -229,7 +235,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
     <AssistantRuntimeProvider runtime={runtime}>
       <div className="h-dvh w-full overflow-hidden">
         <ThreadUrlSync />
-        <CloneThreadShell>{children}</CloneThreadShell>
+        <CloneThreadShell role={role}>{children}</CloneThreadShell>
       </div>
     </AssistantRuntimeProvider>
   );
