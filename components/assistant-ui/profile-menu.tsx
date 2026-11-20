@@ -5,6 +5,7 @@ import {
   Languages,
   LogOut,
   Settings,
+  ShieldCheck,
   User,
   type LucideIcon,
 } from "lucide-react";
@@ -48,10 +49,20 @@ const MENU_LINKS: MenuLink[] = [
   { id: "help", label: "Help & support", Icon: CircleHelp, href: "/help" },
 ];
 
+const ADMIN_LINK: MenuLink = {
+  id: "admin",
+  label: "Admin",
+  Icon: ShieldCheck,
+  href: "/admin",
+};
+
 export const ProfileMenu: FC = () => {
   const router = useRouter();
   const { data: session } = useSession();
   const [language, setLanguage] = useState<LanguageId>("en");
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const links =
+    role === "superadmin" ? [...MENU_LINKS, ADMIN_LINK] : MENU_LINKS;
 
   useEffect(() => {
     const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -89,7 +100,7 @@ export const ProfileMenu: FC = () => {
 
         <DropdownMenuSeparator />
 
-        {MENU_LINKS.map(({ id, label, Icon, href }) => (
+        {links.map(({ id, label, Icon, href }) => (
           <DropdownMenuItem
             key={id}
             render={<a href={href} />}
