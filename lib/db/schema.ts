@@ -240,6 +240,47 @@ export const sources = pgTable(
   (table) => [index("sources_user_idx").on(table.userId)],
 );
 
+export type FeedbackAttachment = {
+  /** Original file name, as the submitter saw it. */
+  name: string;
+  mime: string;
+  size: number;
+  /** Stored file name on disk (see lib/feedback/store.ts). */
+  file: string;
+};
+
+/**
+ * Feedback teachers and KPM submit to admins via Help & support. Identity is
+ * snapshotted at submit time so the inbox shows who and which school even if
+ * the account later changes.
+ */
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    schoolId: text("school_id").references(() => schools.id, {
+      onDelete: "set null",
+    }),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    role: text("role").notNull(),
+    schoolName: text("school_name"),
+    subject: text("subject").notNull(),
+    message: text("message").notNull(),
+    attachments: jsonb("attachments")
+      .$type<FeedbackAttachment[]>()
+      .notNull()
+      .default([]),
+    /** baru | dibaca | selesai */
+    status: text("status").notNull().default("baru"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("feedback_user_idx").on(table.userId)],
+);
+
 /** Per-account mastery for a deck: which card indices are "dikuasai". */
 export const deckProgress = pgTable(
   "deck_progress",

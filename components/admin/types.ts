@@ -34,3 +34,25 @@ export type SchoolRequestRow = {
   status: string;
   createdAt: string;
 };
+
+export type FeedbackAttachmentRow = {
+  name: string;
+  mime: string;
+  size: number;
+  url: string;
+};
+
+export type FeedbackRow = {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  schoolId: string | null;
+  schoolName: string | null;
+  subject: string;
+  message: string;
+  status: string;
+  createdAt: string;
+  attachments: FeedbackAttachmentRow[];
+};

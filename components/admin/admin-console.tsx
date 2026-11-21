@@ -6,32 +6,40 @@ import { jsonFetch } from "./api";
 import { SchoolsTab } from "./schools-tab";
 import { UsersTab } from "./users-tab";
 import { RequestsTab } from "./requests-tab";
+import { FeedbackTab } from "./feedback-tab";
+import type { FeedbackRow } from "./types";
 
-type Tab = "schools" | "users" | "requests";
+type Tab = "schools" | "users" | "requests" | "feedback";
 
 export const AdminConsole = () => {
   const [tab, setTab] = useState<Tab>("schools");
   const [pendingCount, setPendingCount] = useState(0);
+  const [newFeedbackCount, setNewFeedbackCount] = useState(0);
 
-  const refreshPending = useCallback(async () => {
-    try {
-      const data = await jsonFetch<{ pendingCount: number }>(
-        "/api/admin/school-requests",
-      );
-      setPendingCount(data.pendingCount);
-    } catch {
-      setPendingCount(0);
-    }
+  const refreshBadges = useCallback(async () => {
+    const [requests, feedback] = await Promise.allSettled([
+      jsonFetch<{ pendingCount: number }>("/api/admin/school-requests"),
+      jsonFetch<{ feedback: FeedbackRow[] }>("/api/feedback"),
+    ]);
+    setPendingCount(
+      requests.status === "fulfilled" ? requests.value.pendingCount : 0,
+    );
+    setNewFeedbackCount(
+      feedback.status === "fulfilled"
+        ? feedback.value.feedback.filter((row) => row.status === "baru").length
+        : 0,
+    );
   }, []);
 
   useEffect(() => {
-    void refreshPending();
-  }, [refreshPending]);
+    void refreshBadges();
+  }, [refreshBadges]);
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
     { id: "schools", label: "Sekolah" },
     { id: "users", label: "Pengguna" },
     { id: "requests", label: "Permintaan", badge: pendingCount },
+    { id: "feedback", label: "Maklum Balas", badge: newFeedbackCount },
   ];
 
   return (
@@ -42,7 +50,8 @@ export const AdminConsole = () => {
             Konsol Pentadbir
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Urus sekolah, akaun pengguna dan permintaan pendaftaran sekolah.
+            Urus sekolah, akaun pengguna, permintaan pendaftaran dan maklum
+            balas daripada guru serta KPM.
           </p>
         </header>
 
@@ -77,7 +86,10 @@ export const AdminConsole = () => {
           {tab === "schools" ? <SchoolsTab /> : null}
           {tab === "users" ? <UsersTab /> : null}
           {tab === "requests" ? (
-            <RequestsTab onChanged={refreshPending} />
+            <RequestsTab onChanged={refreshBadges} />
+          ) : null}
+          {tab === "feedback" ? (
+            <FeedbackTab onChanged={refreshBadges} />
           ) : null}
         </div>
       </div>
