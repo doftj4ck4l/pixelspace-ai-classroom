@@ -38,6 +38,7 @@ import {
   ShieldCheckIcon,
   UsersIcon,
   ClipboardListIcon,
+  BotIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -442,6 +443,20 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   >
                     <UsersIcon className="size-4 shrink-0" />
                     <span className="truncate">Spaces</span>
+                  </Link>
+                )}
+                {role === "student" && (
+                  <Link
+                    href="/buddy"
+                    className={cn(
+                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                      pathname.startsWith("/buddy")
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <BotIcon className="size-4 shrink-0" />
+                    <span className="truncate">Buddy</span>
                   </Link>
                 )}
                 {role === "teacher" && (
