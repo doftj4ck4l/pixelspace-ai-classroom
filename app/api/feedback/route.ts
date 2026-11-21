@@ -127,7 +127,10 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-    const stored = saveFeedbackFile(ext, Buffer.from(await file.arrayBuffer()));
+    const stored = await saveFeedbackFile(
+      ext,
+      Buffer.from(await file.arrayBuffer()),
+    );
     attachments.push({
       name: file.name,
       mime: feedbackMimeFor(ext),
@@ -157,7 +160,8 @@ export async function POST(req: Request) {
       status: "baru",
     });
   } catch {
-    for (const attachment of attachments) removeFeedbackFile(attachment.file);
+    for (const attachment of attachments)
+      await removeFeedbackFile(attachment.file);
     return NextResponse.json(
       { error: "Gagal menghantar maklum balas. Cuba lagi." },
       { status: 500 },

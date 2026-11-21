@@ -1,9 +1,6 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import path from "node:path";
+import { storage } from "@/lib/storage";
 
-/** Disk storage for feedback attachments — outside the repo so deploys never touch it. */
-const DIR = path.join(homedir(), ".cache", "paic2-feedback");
+/** Storage for feedback attachments — bytes live outside the repo. */
 
 export const MAX_FEEDBACK_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_FEEDBACK_FILES = 5;
@@ -34,23 +31,24 @@ export const feedbackMimeFor = (ext: string): string =>
 
 const FILE_RE = /^fb_[a-z0-9_]+(\.[a-z0-9]+)?$/;
 
-export const saveFeedbackFile = (ext: string, bytes: Buffer): string => {
-  mkdirSync(DIR, { recursive: true });
+export const saveFeedbackFile = async (
+  ext: string,
+  bytes: Buffer,
+): Promise<string> => {
   const file = `fb_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}.${ext.toLowerCase()}`;
-  writeFileSync(path.join(DIR, file), bytes);
+  await storage.put(`feedback/${file}`, bytes, feedbackMimeFor(ext));
   return file;
 };
 
-export const readFeedbackFile = (file: string): Buffer | null => {
+export const readFeedbackFile = async (
+  file: string,
+): Promise<Buffer | null> => {
   if (!FILE_RE.test(file)) return null;
-  try {
-    return readFileSync(path.join(DIR, file));
-  } catch {
-    return null;
-  }
+  const stored = await storage.get(`feedback/${file}`);
+  return stored?.bytes ?? null;
 };
 
-export const removeFeedbackFile = (file: string) => {
+export const removeFeedbackFile = async (file: string): Promise<void> => {
   if (!FILE_RE.test(file)) return;
-  rmSync(path.join(DIR, file), { force: true });
+  await storage.delete(`feedback/${file}`);
 };

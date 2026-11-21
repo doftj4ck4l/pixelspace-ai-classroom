@@ -49,13 +49,16 @@ export async function POST(req: Request) {
           { status: 400 },
         );
       }
-      const previous = readGeneratedMeta(artifact.path);
+      const previous = await readGeneratedMeta(artifact.path);
       const base =
         previous?.prompt ??
         `Create a clean, modern educational infographic titled "${artifact.title}".`;
       const prompt = `${base} Apply this change and keep everything else the same: ${instruction}.`;
       const { bytes } = await generateImage(prompt);
-      const id = saveGeneratedImage(bytes, { prompt, kind: "infographics" });
+      const id = await saveGeneratedImage(bytes, {
+        prompt,
+        kind: "infographics",
+      });
       await artifactRegistry.updateFile(user.id, body.artifactId, {
         url: `/api/generated/${id}`,
         path: `${id}.png`,
@@ -73,7 +76,10 @@ export async function POST(req: Request) {
         : LANGUAGE_HINT.bm;
     const prompt = `${styleFor(topic)} ${language}`;
     const { bytes } = await generateImage(prompt);
-    const id = saveGeneratedImage(bytes, { prompt, kind: "infographics" });
+    const id = await saveGeneratedImage(bytes, {
+      prompt,
+      kind: "infographics",
+    });
     const title = topic.length > 60 ? `${topic.slice(0, 60)}…` : topic;
     const artifact = await artifactRegistry.add(user.id, {
       threadId: "",

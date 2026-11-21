@@ -1,9 +1,6 @@
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import path from "node:path";
+import { storage } from "@/lib/storage";
 
-/** Disk storage for teacher uploads — outside the repo so deploys never touch it. */
-const DIR = path.join(homedir(), ".cache", "paic2-sources");
+/** Disk (or S3) storage for teacher uploads. Bytes live outside the repo. */
 
 export const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 
@@ -47,30 +44,51 @@ export const kindForExt = (ext: string): SourceKind => {
   return "other";
 };
 
+export const SOURCE_MIME_BY_EXT: Record<string, string> = {
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  csv: "text/csv",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  svg: "image/svg+xml",
+  txt: "text/plain",
+  md: "text/markdown",
+};
+
 const newId = () =>
   `src_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
-export const saveSourceFile = (
+export const saveSourceFile = async (
   ext: string,
   bytes: Buffer,
-): { id: string; path: string } => {
-  mkdirSync(DIR, { recursive: true });
+): Promise<{ id: string; path: string }> => {
   const id = newId();
   const file = `${id}.${ext.toLowerCase()}`;
-  writeFileSync(path.join(DIR, file), bytes);
+  await storage.put(
+    `sources/${file}`,
+    bytes,
+    SOURCE_MIME_BY_EXT[ext.toLowerCase()] ?? "application/octet-stream",
+  );
   return { id, path: file };
 };
 
-export const readSourceFile = (file: string): Buffer | null => {
-  if (!/^src_[a-z0-9_]+(\.[a-z0-9]+)?$/.test(file)) return null;
-  try {
-    return readFileSync(path.join(DIR, file));
-  } catch {
-    return null;
-  }
+const FILE_RE = /^src_[a-z0-9_]+(\.[a-z0-9]+)?$/;
+
+export const readSourceFile = async (file: string): Promise<Buffer | null> => {
+  if (!FILE_RE.test(file)) return null;
+  const stored = await storage.get(`sources/${file}`);
+  return stored?.bytes ?? null;
 };
 
-export const removeSourceFile = (file: string) => {
-  if (!/^src_[a-z0-9_]+(\.[a-z0-9]+)?$/.test(file)) return;
-  rmSync(path.join(DIR, file), { force: true });
+export const removeSourceFile = async (file: string): Promise<void> => {
+  if (!FILE_RE.test(file)) return;
+  await storage.delete(`sources/${file}`);
 };

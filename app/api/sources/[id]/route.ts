@@ -20,7 +20,7 @@ export async function DELETE(
     .where(and(eq(sources.id, id), eq(sources.userId, user.id)));
   if (!row) return new Response("Not found", { status: 404 });
 
-  removeSourceFile(row.path);
+  await removeSourceFile(row.path);
   await db
     .delete(sources)
     .where(and(eq(sources.id, id), eq(sources.userId, user.id)));

@@ -50,7 +50,7 @@ export async function DELETE(
 
   await db.delete(feedback).where(eq(feedback.id, id));
   for (const attachment of row.attachments) {
-    removeFeedbackFile(attachment.file);
+    await removeFeedbackFile(attachment.file);
   }
   return new Response(null, { status: 204 });
 }

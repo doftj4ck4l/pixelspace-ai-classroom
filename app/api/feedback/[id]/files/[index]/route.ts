@@ -24,7 +24,7 @@ export async function GET(
   const attachment = row.attachments[Number(index)];
   if (!attachment) return new Response("Not found", { status: 404 });
 
-  const bytes = readFeedbackFile(attachment.file);
+  const bytes = await readFeedbackFile(attachment.file);
   if (!bytes) return new Response("Not found", { status: 404 });
 
   return new NextResponse(new Uint8Array(bytes), {

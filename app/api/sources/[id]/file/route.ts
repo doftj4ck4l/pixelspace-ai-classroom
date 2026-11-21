@@ -20,7 +20,7 @@ export async function GET(
     .where(and(eq(sources.id, id), eq(sources.userId, user.id)));
   if (!row) return new Response("Not found", { status: 404 });
 
-  const bytes = readSourceFile(row.path);
+  const bytes = await readSourceFile(row.path);
   if (!bytes) return new Response("Not found", { status: 404 });
 
   return new NextResponse(new Uint8Array(bytes), {

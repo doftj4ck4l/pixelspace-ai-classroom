@@ -81,7 +81,7 @@ export async function POST(req: Request) {
       );
     }
     const bytes = Buffer.from(await file.arrayBuffer());
-    const saved = saveSourceFile(ext, bytes);
+    const saved = await saveSourceFile(ext, bytes);
     await db.insert(sources).values({
       id: saved.id,
       userId: user.id,

@@ -1,0 +1,26 @@
+# Dedicated RustFS (S3-compatible object storage) for the app's own files:
+# teacher sources, feedback attachments and generated infographics.
+#
+# The harness runs its own unpublished rustfs on its compose network; this one
+# publishes 127.0.0.1:9100 because the app runs on the host, not in a compose
+# network. Only loopback — the app is the only client, and it re-serves every
+# object through its own authenticated routes.
+#
+#   S3_ACCESS_KEY=... S3_SECRET_KEY=... docker compose -f docker-compose.rustfs.yml up -d
+name: paic2-storage
+
+services:
+  rustfs:
+    image: "rustfs/rustfs@sha256:41fe89380f4120a337790c02af192c3fe7bb55c3edc2e6e9357b487b47c6ab21"
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ACCESS_KEY: "${S3_ACCESS_KEY:?set S3_ACCESS_KEY}"
+      RUSTFS_SECRET_KEY: "${S3_SECRET_KEY:?set S3_SECRET_KEY}"
+    ports:
+      - "127.0.0.1:9100:9000"
+    volumes:
+      - rustfs-data:/data
+    restart: unless-stopped
+
+volumes:
+  rustfs-data:
