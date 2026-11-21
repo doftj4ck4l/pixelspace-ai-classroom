@@ -3,9 +3,13 @@
 import { useEffect, useMemo, useState, type FC } from "react";
 import {
   AddIcon,
+  CopyIcon,
   EditIcon,
   GroupIcon,
+  KeyIcon,
   LayersIcon,
+  LoginIcon,
+  LogoutIcon,
   MoreHorizontalIcon,
   PlusIcon,
   SearchIcon,
@@ -42,6 +46,8 @@ type SpaceRow = {
   accent: string;
   teacher: string;
   createdAt: string;
+  code?: string;
+  members?: number;
 };
 
 const LEVELS = [
@@ -88,6 +94,11 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<SpaceRow | null>(null);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [joining, setJoining] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const load = () => {
     fetch("/api/spaces", { cache: "no-store" })
@@ -158,6 +169,47 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
     await fetch(`/api/spaces/${row.id}`, { method: "DELETE" }).catch(() => {});
   };
 
+  const join = async () => {
+    if (!joinCode.trim() || joining) return;
+    setJoining(true);
+    setJoinError(null);
+    try {
+      const res = await fetch("/api/spaces/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: joinCode }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        setJoinError(data?.error ?? "Gagal menyertai subjek.");
+        return;
+      }
+      setJoinOpen(false);
+      setJoinCode("");
+      load();
+    } catch {
+      setJoinError("Gagal menyertai subjek.");
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const leave = async (row: SpaceRow) => {
+    setRows((prev) => (prev ?? []).filter((item) => item.id !== row.id));
+    await fetch(`/api/spaces/${row.id}/leave`, { method: "POST" }).catch(
+      () => {},
+    );
+  };
+
+  const copyCode = (row: SpaceRow) => {
+    if (!row.code) return;
+    void navigator.clipboard.writeText(row.code).catch(() => {});
+    setCopied(row.id);
+    window.setTimeout(() => setCopied(null), 1500);
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (rows ?? []).filter((row) => {
@@ -185,8 +237,8 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
               <h1 className="text-2xl font-semibold sm:text-3xl">Spaces</h1>
               <p className="text-muted-foreground mt-1 text-sm">
                 {isTeacher
-                  ? "Tambah subjek yang anda ajar — pelajar di sekolah anda akan melihatnya di sini."
-                  : "Subjek yang dikongsi oleh guru sekolah anda."}
+                  ? "Tambah subjek yang anda ajar dan kongsi kod kepada pelajar anda."
+                  : "Subjek yang anda sertai dengan kod daripada guru anda."}
               </p>
             </div>
           </div>
@@ -202,13 +254,24 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
               />
             </div>
-            {isTeacher && (
+            {isTeacher ? (
               <Button
                 onClick={openCreate}
                 className="h-9 gap-2 rounded-full px-4 text-sm"
               >
                 <AddIcon className="size-4" />
                 Tambah subjek
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  setJoinError(null);
+                  setJoinOpen(true);
+                }}
+                className="h-9 gap-2 rounded-full px-4 text-sm"
+              >
+                <LoginIcon className="size-4" />
+                Sertai subjek
               </Button>
             )}
           </div>
@@ -255,7 +318,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
             <p className="text-muted-foreground max-w-md text-sm">
               {isTeacher
                 ? "Tambah subjek yang anda ajar di sini — contohnya Matematik Tambahan Tingkatan 4 atau Matematik Moden Tingkatan 5."
-                : "Guru sekolah anda belum menambah subjek lagi. Semak semula nanti."}
+                : "Masukkan kod subjek daripada guru anda untuk menyertai."}
             </p>
           </div>
         ) : (
@@ -277,7 +340,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                       <LayersIcon className="size-3.5" />
                       {row.level}
                     </span>
-                    {isTeacher && (
+                    {isTeacher ? (
                       <div
                         onClick={(event) => event.stopPropagation()}
                         className="ml-auto flex items-center justify-center rounded-full bg-white/70 opacity-0 backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 dark:bg-black/30 [&_button]:size-6"
@@ -301,6 +364,29 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                             >
                               <Trash2Icon className="size-4" />
                               Padam
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={(event) => event.stopPropagation()}
+                        className="ml-auto flex items-center justify-center rounded-full bg-white/70 opacity-0 backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 dark:bg-black/30 [&_button]:size-6"
+                      >
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            aria-label="Pilihan subjek"
+                            className="text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
+                          >
+                            <MoreHorizontalIcon className="size-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => void leave(row)}
+                              className="text-destructive"
+                            >
+                              <LogoutIcon className="size-4" />
+                              Keluar dari subjek
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -331,12 +417,36 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                       <span aria-hidden="true">·</span>
                       <span className="shrink-0">{row.level}</span>
                     </div>
+                    {isTeacher && row.code ? (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          copyCode(row);
+                        }}
+                        className="text-muted-foreground hover:bg-muted/60 hover:text-foreground mt-2 flex h-7 w-full items-center justify-between gap-2 rounded-lg px-2 text-[11px] font-medium transition-colors"
+                        title="Salin kod"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <KeyIcon className="size-3.5" />
+                          Kod: {row.code}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          {row.members ?? 0} pelajar
+                          {copied === row.id ? (
+                            <span className="text-emerald-600">Disalin!</span>
+                          ) : (
+                            <CopyIcon className="size-3.5" />
+                          )}
+                        </span>
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               );
             })}
 
-            {isTeacher && (
+            {isTeacher ? (
               <button
                 type="button"
                 onClick={openCreate}
@@ -350,10 +460,64 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                   Contoh: Matematik Tambahan Tingkatan 4
                 </span>
               </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setJoinError(null);
+                  setJoinOpen(true);
+                }}
+                className="border-border/60 hover:bg-muted/40 flex min-h-[248px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-6 text-center transition-colors"
+              >
+                <span className="bg-muted flex size-12 items-center justify-center rounded-xl">
+                  <LoginIcon className="size-5" />
+                </span>
+                <span className="text-sm font-semibold">Sertai dengan kod</span>
+                <span className="text-muted-foreground max-w-44 text-xs">
+                  Masukkan kod subjek yang diberikan guru anda
+                </span>
+              </button>
             )}
           </div>
         )}
       </div>
+
+      <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Sertai subjek</DialogTitle>
+            <DialogDescription>
+              Masukkan kod 6 aksara daripada guru anda.
+            </DialogDescription>
+          </DialogHeader>
+          <label className="grid gap-1.5 text-sm">
+            <span className="font-medium">Kod subjek</span>
+            <input
+              value={joinCode}
+              onChange={(event) =>
+                setJoinCode(event.target.value.toUpperCase())
+              }
+              placeholder="cth. MT4X7K"
+              maxLength={8}
+              className="border-border/60 bg-background focus-visible:ring-ring/40 h-11 rounded-xl border px-3 text-center font-mono text-base tracking-[0.3em] uppercase outline-none focus-visible:ring-2"
+            />
+          </label>
+          {joinError && <p className="text-destructive text-sm">{joinError}</p>}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setJoinOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              onClick={() => void join()}
+              disabled={joining || joinCode.trim().length < 4}
+              className="gap-2"
+            >
+              <LoginIcon className="size-4" />
+              Sertai
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">

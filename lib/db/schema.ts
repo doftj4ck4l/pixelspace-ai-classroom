@@ -6,6 +6,7 @@ import {
   text,
   timestamp,
   integer,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 /* ------------------------------------------------------------------ auth */
@@ -185,11 +186,33 @@ export const spaces = pgTable(
     level: text("level").notNull().default("Umum"),
     description: text("description"),
     accent: text("accent").notNull().default("teal"),
+    /** Short join code students use to enter the subject. */
+    code: text("code").notNull().default(""),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [
     index("spaces_user_idx").on(table.userId),
     index("spaces_school_idx").on(table.schoolId),
+    uniqueIndex("spaces_code_idx").on(table.code),
+  ],
+);
+
+/** Students who joined a subject space via its code. */
+export const spaceMembers = pgTable(
+  "space_members",
+  {
+    id: text("id").primaryKey(),
+    spaceId: text("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("space_members_unique_idx").on(table.spaceId, table.userId),
+    index("space_members_user_idx").on(table.userId),
   ],
 );
 
