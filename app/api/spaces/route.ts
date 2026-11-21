@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { spaceMembers, spaces, users } from "@/lib/db/schema";
+import { schools, spaceMembers, spaces, users } from "@/lib/db/schema";
 import { requireRoleApi } from "@/lib/roles";
 
 const ACCENTS = ["teal", "blue", "amber", "violet", "rose", "emerald"];
@@ -42,8 +42,16 @@ export async function GET() {
     const countBySpace = new Map(
       counts.map((row) => [row.spaceId, Number(row.count) || 0]),
     );
+    const schoolId = (user as { schoolId?: string | null }).schoolId ?? null;
+    const [school] = schoolId
+      ? await db
+          .select({ name: schools.name, type: schools.type })
+          .from(schools)
+          .where(eq(schools.id, schoolId))
+      : [];
     return NextResponse.json(
       {
+        school: school ?? null,
         spaces: rows.map((space) => ({
           id: space.id,
           name: space.name,

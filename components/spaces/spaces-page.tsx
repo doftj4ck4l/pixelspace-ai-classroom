@@ -50,7 +50,7 @@ type SpaceRow = {
   members?: number;
 };
 
-const LEVELS = [
+const ALL_LEVELS = [
   "Tahun 1",
   "Tahun 2",
   "Tahun 3",
@@ -65,6 +65,14 @@ const LEVELS = [
   "Umum",
 ];
 
+/** School type drives which levels a teacher can pick. */
+const levelsForSchool = (type?: string) =>
+  type === "primary"
+    ? ALL_LEVELS.filter((level) => level.startsWith("Tahun"))
+    : type === "secondary"
+      ? ALL_LEVELS.filter((level) => level.startsWith("Tingkatan"))
+      : ALL_LEVELS;
+
 const ACCENT_DOT: Record<string, string> = {
   teal: "bg-teal-500",
   blue: "bg-blue-500",
@@ -77,6 +85,9 @@ const ACCENT_DOT: Record<string, string> = {
 export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   const isTeacher = role === "teacher";
   const [rows, setRows] = useState<SpaceRow[] | null>(null);
+  const [school, setSchool] = useState<{ name: string; type: string } | null>(
+    null,
+  );
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SpaceRow | null>(null);
@@ -96,8 +107,16 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   const load = () => {
     fetch("/api/spaces", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { spaces?: SpaceRow[] } | null) =>
-        setRows(data?.spaces ?? []),
+      .then(
+        (
+          data: {
+            spaces?: SpaceRow[];
+            school?: { name: string; type: string } | null;
+          } | null,
+        ) => {
+          setRows(data?.spaces ?? []);
+          if (data?.school) setSchool(data.school);
+        },
       )
       .catch(() => setRows([]));
   };
@@ -107,7 +126,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   const openCreate = () => {
     setEditing(null);
     setName("");
-    setLevel("Tingkatan 4");
+    setLevel(levelsForSchool(school?.type)[0] ?? "Tingkatan 4");
     setDescription("");
     setAccent("teal");
     setError(null);
@@ -515,12 +534,27 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                 onChange={(event) => setLevel(event.target.value)}
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 rounded-xl border px-3 text-sm outline-none focus-visible:ring-2"
               >
-                {LEVELS.map((value) => (
+                {Array.from(
+                  new Set([
+                    ...levelsForSchool(school?.type),
+                    ...(level ? [level] : []),
+                  ]),
+                ).map((value) => (
                   <option key={value} value={value}>
                     {value}
                   </option>
                 ))}
               </select>
+              {school && (
+                <span className="text-muted-foreground text-xs">
+                  {school.name} ·{" "}
+                  {school.type === "primary"
+                    ? "Sekolah Rendah"
+                    : school.type === "secondary"
+                      ? "Sekolah Menengah"
+                      : "Tahap bebas"}
+                </span>
+              )}
             </label>
             <label className="grid gap-1.5 text-sm">
               <span className="font-medium">
