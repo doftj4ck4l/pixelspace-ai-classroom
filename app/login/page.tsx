@@ -15,12 +15,5 @@ export const metadata: Metadata = {
 export default async function LoginPage() {
   const user = await getSessionUser();
   if (user) redirect(getRoleHome(roleOf(user)));
-  return (
-    <LoginForm
-      theme="teacher"
-      delimaAvailable={Boolean(
-        process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
-      )}
-    />
-  );
+  return <LoginForm theme="teacher" />;
 }

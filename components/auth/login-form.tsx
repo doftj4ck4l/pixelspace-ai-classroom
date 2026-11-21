@@ -63,8 +63,7 @@ const SPECS: Record<LoginTheme, Spec> = {
 
 export const LoginForm: FC<{
   theme: LoginTheme;
-  delimaAvailable?: boolean;
-}> = ({ theme, delimaAvailable = false }) => {
+}> = ({ theme }) => {
   const spec = SPECS[theme];
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -285,9 +284,5 @@ export const LoginForm: FC<{
     </form>
   );
 
-  return (
-    <LoginShell theme={theme} delimaAvailable={delimaAvailable}>
-      {form}
-    </LoginShell>
-  );
+  return <LoginShell theme={theme}>{form}</LoginShell>;
 };

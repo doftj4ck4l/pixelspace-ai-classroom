@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -10,19 +10,10 @@ import {
   BookOpenIcon,
   GraduationCapIcon,
   InfoIcon,
-  Loader2Icon,
   ShieldCheckIcon,
   SparklesIcon,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { authClient } from "@/lib/auth-client";
 import type { LoginTheme } from "./login-form";
 import s from "./teacher-login.module.css";
 import r from "./login-roles.module.css";
@@ -86,11 +77,9 @@ const ART = {
 export function LoginShell({
   children,
   theme,
-  delimaAvailable = false,
 }: {
   children: ReactNode;
   theme: LoginTheme;
-  delimaAvailable?: boolean;
 }) {
   const student = theme === "student";
   const admin = theme === "admin";
@@ -104,31 +93,6 @@ export function LoginShell({
     : admin
       ? "Log masuk dengan akaun rasmi pentadbir."
       : "Gunakan emel atau ID anda untuk teruskan.";
-  const [delimaOpen, setDelimaOpen] = useState(false);
-  const [socialPending, setSocialPending] = useState(false);
-  const [socialError, setSocialError] = useState(false);
-  const signInDelima = async () => {
-    if (!delimaAvailable) {
-      setDelimaOpen(true);
-      return;
-    }
-    setSocialPending(true);
-    setSocialError(false);
-    try {
-      const result = await authClient.signIn.social({
-        provider: "google",
-        callbackURL: "/",
-      });
-      if (result.error) {
-        setSocialError(true);
-        setSocialPending(false);
-      }
-    } catch {
-      setSocialError(true);
-      setSocialPending(false);
-    }
-  };
-
   return (
     <main
       className={cn(s.page, student && r.studentPage, admin && r.adminPage)}
@@ -308,37 +272,6 @@ export function LoginShell({
             </>
           ) : (
             <>
-              <div className={cn(s.divider, r.divider)}>
-                <span />
-                atau
-                <span />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className={cn(s.delimaButton, r.delimaButton)}
-                onClick={signInDelima}
-                disabled={socialPending}
-              >
-                {socialPending ? (
-                  <Loader2Icon className="animate-spin" aria-hidden="true" />
-                ) : student ? (
-                  <GraduationCapIcon aria-hidden="true" />
-                ) : (
-                  <BookOpenIcon aria-hidden="true" />
-                )}
-                {socialPending
-                  ? "Menyambung…"
-                  : student
-                    ? "Masuk dengan ID DELIMa"
-                    : "Log masuk dengan DELIMa"}
-              </Button>
-              {socialError && (
-                <p role="alert" className={s.error}>
-                  Log masuk DELIMa belum berjaya. Sila cuba lagi atau gunakan{" "}
-                  {student ? "ID pelajar atau emel" : "emel/ID guru"} anda.
-                </p>
-              )}
               <p className={cn(s.register, r.register)}>
                 {student ? "Baru di sini?" : "Belum ada akaun?"}{" "}
                 <Link href={student ? `/register/${theme}` : "/"}>
@@ -359,27 +292,6 @@ export function LoginShell({
           )}
         </section>
       </div>
-
-      <Dialog open={delimaOpen} onOpenChange={setDelimaOpen}>
-        <DialogContent className={s.delimaDialog}>
-          <DialogTitle>Log masuk DELIMa</DialogTitle>
-          <DialogDescription>
-            Log masuk DELIMa belum diaktifkan untuk Pixelspace AI Classroom.
-            Buat masa ini, sila log masuk menggunakan{" "}
-            {student ? "ID pelajar atau emel" : "emel atau ID guru"} dan kata
-            laluan anda.
-          </DialogDescription>
-          <Button
-            type="button"
-            className={s.dialogButton}
-            onClick={() => setDelimaOpen(false)}
-          >
-            {student
-              ? "Gunakan ID pelajar atau emel"
-              : "Gunakan emel atau ID guru"}
-          </Button>
-        </DialogContent>
-      </Dialog>
     </main>
   );
 }
