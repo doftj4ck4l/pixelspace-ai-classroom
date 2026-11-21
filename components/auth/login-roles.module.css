@@ -9,12 +9,6 @@
     radial-gradient(ellipse at 80% 0, #d9f9fa80, transparent 55%), #f3f8ff;
   color: #0b1629;
 }
-.studentPage .layout,
-.adminPage .layout {
-  width: 85%;
-  max-width: 1360px;
-  gap: 70px;
-}
 .studentPage .introduction {
   padding-top: 28px;
 }
@@ -299,11 +293,6 @@
 }
 
 @media (min-width: 1000px) and (max-width: 1399px) {
-  .studentPage .layout,
-  .adminPage .layout {
-    width: 88%;
-    gap: 42px;
-  }
   .studentPage .introduction,
   .adminPage .introduction {
     padding-top: 20px;
@@ -528,11 +517,6 @@
 }
 
 @media (max-width: 999px) {
-  .studentPage .layout,
-  .adminPage .layout {
-    width: calc(100% - 40px);
-    gap: 18px;
-  }
   .studentPage .introduction,
   .adminPage .introduction {
     padding-top: 0;
@@ -632,10 +616,6 @@
 }
 
 @media (max-width: 599px) {
-  .studentPage .layout,
-  .adminPage .layout {
-    width: calc(100% - 32px);
-  }
   .studentPage .brandMark,
   .adminPage .brandMark {
     width: 31px;
