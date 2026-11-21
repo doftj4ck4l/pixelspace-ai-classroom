@@ -172,6 +172,27 @@ export const artifacts = pgTable(
   (table) => [index("artifacts_user_id_idx").on(table.userId)],
 );
 
+/** Subject spaces teachers add (e.g. Matematik Tambahan T4) for their school. */
+export const spaces = pgTable(
+  "spaces",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    schoolId: text("school_id").references(() => schools.id),
+    name: text("name").notNull(),
+    level: text("level").notNull().default("Umum"),
+    description: text("description"),
+    accent: text("accent").notNull().default("teal"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("spaces_user_idx").on(table.userId),
+    index("spaces_school_idx").on(table.schoolId),
+  ],
+);
+
 /** Teacher teaching materials (uploaded PDFs, docs, slides, sheets, images). */
 export const sources = pgTable(
   "sources",
