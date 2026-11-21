@@ -74,16 +74,9 @@ const ACCENT_DOT: Record<string, string> = {
   emerald: "bg-emerald-500",
 };
 
-const TABS = [
-  { id: "all", label: "Semua", Icon: LayersIcon },
-  { id: "rendah", label: "Rendah", Icon: GroupIcon },
-  { id: "menengah", label: "Menengah", Icon: GroupIcon },
-] as const;
-
 export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   const isTeacher = role === "teacher";
   const [rows, setRows] = useState<SpaceRow[] | null>(null);
-  const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("all");
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SpaceRow | null>(null);
@@ -213,9 +206,6 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (rows ?? []).filter((row) => {
-      if (tab === "rendah" && !row.level.startsWith("Tahun")) return false;
-      if (tab === "menengah" && !row.level.startsWith("Tingkatan"))
-        return false;
       if (
         q &&
         !`${row.name} ${row.level} ${row.description}`.toLowerCase().includes(q)
@@ -223,7 +213,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
         return false;
       return true;
     });
-  }, [rows, tab, query]);
+  }, [rows, query]);
 
   return (
     <div className="bg-background flex h-full flex-col overflow-y-auto">
@@ -274,27 +264,6 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                 Sertai subjek
               </Button>
             )}
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="scrollbar-subtle -mx-1 flex max-w-full items-center gap-1.5 overflow-x-auto px-1 pb-1">
-            {TABS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={cn(
-                  "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors sm:px-4",
-                  tab === item.id
-                    ? "bg-muted text-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                )}
-              >
-                <item.Icon className="size-3.5 shrink-0" />
-                <span className="whitespace-nowrap">{item.label}</span>
-              </button>
-            ))}
           </div>
         </div>
 
