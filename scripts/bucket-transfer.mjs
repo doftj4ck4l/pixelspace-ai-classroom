@@ -11,7 +11,13 @@
  * import uploads the tree back. Idempotent — re-running overwrites.
  */
 
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import {
   S3Client,
@@ -28,8 +34,17 @@ const BUCKET = process.env.S3_BUCKET;
 const ACCESS_KEY = process.env.S3_ACCESS_KEY;
 const SECRET_KEY = process.env.S3_SECRET_KEY;
 
-if (!["export", "import"].includes(MODE) || !DIR || !ENDPOINT || !BUCKET || !ACCESS_KEY || !SECRET_KEY) {
-  console.error("set MODE=export|import, EXPORT_DIR, S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY");
+if (
+  !["export", "import"].includes(MODE) ||
+  !DIR ||
+  !ENDPOINT ||
+  !BUCKET ||
+  !ACCESS_KEY ||
+  !SECRET_KEY
+) {
+  console.error(
+    "set MODE=export|import, EXPORT_DIR, S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, S3_SECRET_KEY",
+  );
   process.exit(1);
 }
 
@@ -70,7 +85,9 @@ if (MODE === "export") {
       }),
     );
     for (const item of page.Contents ?? []) {
-      const res = await client.send(new GetObjectCommand({ Bucket: BUCKET, Key: item.Key }));
+      const res = await client.send(
+        new GetObjectCommand({ Bucket: BUCKET, Key: item.Key }),
+      );
       const bytes = Buffer.from(await res.Body.transformToByteArray());
       const target = path.join(DIR, item.Key);
       mkdirSync(path.dirname(target), { recursive: true });
@@ -86,7 +103,11 @@ if (MODE === "export") {
   for (const file of files) {
     const key = path.relative(DIR, file).split(path.sep).join("/");
     await client.send(
-      new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: readFileSync(file) }),
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+        Body: readFileSync(file),
+      }),
     );
     count += 1;
   }

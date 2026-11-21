@@ -99,12 +99,12 @@ export function LoginShell({
     ? "Hai, pelajar! 👋"
     : admin
       ? "Pentadbir & KPM"
-      : "Log masuk sebagai Guru";
+      : "Log masuk";
   const subtitle = student
     ? "Sedia untuk belajar? Masuk dengan ID pelajar atau emel."
     : admin
       ? "Log masuk dengan akaun rasmi pentadbir."
-      : "Pixelspace AI Classroom";
+      : "Gunakan emel atau ID anda untuk teruskan.";
   const [delimaOpen, setDelimaOpen] = useState(false);
   const [socialPending, setSocialPending] = useState(false);
   const [socialError, setSocialError] = useState(false);
@@ -300,7 +300,7 @@ export function LoginShell({
                   Laman utama
                 </Link>
                 <span aria-hidden="true" />
-                <Link href="/login/teacher">
+                <Link href="/login">
                   Portal guru
                   <ArrowRightIcon aria-hidden="true" />
                 </Link>
@@ -348,7 +348,7 @@ export function LoginShell({
               {student && (
                 <p className={r.portalLink}>
                   Guru atau pentadbir?{" "}
-                  <Link href="/login/teacher">Masuk di portal anda</Link>
+                  <Link href="/login">Masuk di portal anda</Link>
                 </p>
               )}
               <Link href="/" className={cn(s.homeLink, r.homeLink)}>

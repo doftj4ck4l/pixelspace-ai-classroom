@@ -505,22 +505,41 @@ export function Landing() {
                     : "Panduan penggunaan"}
           </DialogTitle>
           <DialogDescription className={s.dialogDescription}>
-            {panel === "login" || panel === "register"
-              ? "Pilih peranan anda untuk meneruskan."
-              : panel === "contact"
-                ? "Beritahu kami bagaimana Pixelspace boleh membantu sekolah anda."
-                : panel === "privacy"
-                  ? "Ada soalan tentang data anda atau keperluan sekolah? Dapatkan penjelasan daripada pasukan kami."
-                  : "Gunakan Pixelspace untuk menyokong pembelajaran dan pengajaran anda."}
+            {panel === "login"
+              ? "Masuk dengan emel atau ID anda."
+              : panel === "register"
+                ? "Pilih peranan anda untuk meneruskan."
+                : panel === "contact"
+                  ? "Beritahu kami bagaimana Pixelspace boleh membantu sekolah anda."
+                  : panel === "privacy"
+                    ? "Ada soalan tentang data anda atau keperluan sekolah? Dapatkan penjelasan daripada pasukan kami."
+                    : "Gunakan Pixelspace untuk menyokong pembelajaran dan pengajaran anda."}
           </DialogDescription>
-          {(panel === "login" || panel === "register") && (
+          {panel === "login" && (
+            <div className={s.rolePicker}>
+              <Button
+                variant="outline"
+                className={s.roleChoice}
+                render={<Link href="/login" />}
+              >
+                <BookOpenIcon />
+                <span>Log masuk</span>
+                <ArrowRightIcon />
+              </Button>
+              <button
+                type="button"
+                className={s.switchPanel}
+                onClick={() => setPanel("register")}
+              >
+                Belum ada akaun? Daftar sekarang
+              </button>
+            </div>
+          )}
+          {panel === "register" && (
             <div className={s.rolePicker}>
               {[
                 { role: "student", label: "Murid", icon: GraduationCapIcon },
                 { role: "teacher", label: "Guru", icon: BookOpenIcon },
-                ...(panel === "login"
-                  ? [{ role: "admin", label: "Pentadbir", icon: SchoolIcon }]
-                  : []),
               ].map(({ role, label, icon: Icon }) => (
                 <Button
                   key={role}
@@ -536,13 +555,9 @@ export function Landing() {
               <button
                 type="button"
                 className={s.switchPanel}
-                onClick={() =>
-                  setPanel(panel === "login" ? "register" : "login")
-                }
+                onClick={() => setPanel("login")}
               >
-                {panel === "login"
-                  ? "Belum ada akaun? Daftar sekarang"
-                  : "Sudah ada akaun? Log masuk"}
+                Sudah ada akaun? Log masuk
               </button>
             </div>
           )}

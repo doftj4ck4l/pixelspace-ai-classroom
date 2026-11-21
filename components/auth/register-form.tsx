@@ -280,7 +280,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
           </Button>
         )}
         <Link
-          href={`/login/${role}`}
+          href="/login"
           className={cn("text-sm font-semibold", styles.stepText)}
         >
           Sudah sahkan emel? Log masuk
@@ -686,7 +686,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
     <div className="flex flex-col items-center gap-1.5 text-center text-sm">
       <p className={styles.stepText}>
         Sudah ada akaun?{" "}
-        <Link href={`/login/${role}`} className="font-semibold underline">
+        <Link href="/login" className="font-semibold underline">
           Log masuk
         </Link>
       </p>

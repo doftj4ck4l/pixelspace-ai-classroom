@@ -44,11 +44,11 @@ const SPECS: Record<LoginTheme, Spec> = {
     submitting: "Sedang masuk…",
   },
   teacher: {
-    identifierLabel: "Emel atau ID guru",
-    identifierPlaceholder: "cth. guru@sekolah.edu.my atau cikgu.ali",
+    identifierLabel: "Emel atau ID",
+    identifierPlaceholder: "cth. nama@sekolah.edu.my atau nama.pengguna",
     passwordLabel: "Kata laluan",
     passwordPlaceholder: "Kata laluan anda",
-    submit: "Log Masuk",
+    submit: "Log masuk",
     submitting: "Sedang masuk…",
   },
   admin: {
