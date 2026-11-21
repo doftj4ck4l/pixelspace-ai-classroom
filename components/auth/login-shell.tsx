@@ -13,7 +13,6 @@ import {
   Loader2Icon,
   ShieldCheckIcon,
   SparklesIcon,
-  UsersIcon,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -183,34 +182,35 @@ export function LoginShell({
           ) : (
             <>
               <h1 id="teacher-intro-title">
-                Ruang pembelajaran
+                Satu ruang pembelajaran
                 <br />
                 berkuasa AI untuk
                 <br />
-                <span>guru Malaysia.</span>
+                <span>seluruh sekolah.</span>
               </h1>
               <p className={cn(s.introText, r.introText)}>
-                Rancang pengajaran, hasilkan bahan, jalankan penilaian dan
-                pantau perkembangan murid — semuanya dalam satu platform.
+                Murid belajar dengan kad imbas, kuiz dan nota pintar; guru
+                merancang pengajaran dan penilaian; pentadbir memantau
+                perkembangan — semuanya dalam satu platform.
               </p>
               <ul className={s.benefits}>
                 <li>
                   <span>
                     <SparklesIcon aria-hidden="true" />
                   </span>
-                  RPH &amp; bahan pengajaran AI
+                  Kad imbas, kuiz &amp; nota pintar
+                </li>
+                <li>
+                  <span>
+                    <BookOpenIcon aria-hidden="true" />
+                  </span>
+                  Bahan pengajaran &amp; penilaian AI
                 </li>
                 <li>
                   <span>
                     <BarChart3Icon aria-hidden="true" />
                   </span>
-                  Penilaian &amp; analitik murid
-                </li>
-                <li>
-                  <span>
-                    <UsersIcon aria-hidden="true" />
-                  </span>
-                  Pengurusan kelas yang mudah
+                  Analitik &amp; pengurusan sekolah
                 </li>
               </ul>
             </>

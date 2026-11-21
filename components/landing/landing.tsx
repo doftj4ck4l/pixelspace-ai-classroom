@@ -97,7 +97,7 @@ const FAQ = [
   },
 ];
 
-type Panel = "login" | "register" | "contact" | "privacy" | "terms" | null;
+type Panel = "register" | "contact" | "privacy" | "terms" | null;
 
 function Brand({ footer = false }: { footer?: boolean }) {
   return (
@@ -223,7 +223,7 @@ export function Landing() {
             <Button
               variant="outline"
               className={s.loginButton}
-              onClick={() => setPanel("login")}
+              render={<Link href="/login" />}
             >
               Log Masuk
             </Button>
@@ -249,7 +249,7 @@ export function Landing() {
                     {label}
                   </DropdownMenuItem>
                 ))}
-                <DropdownMenuItem onClick={() => setPanel("login")}>
+                <DropdownMenuItem render={<Link href="/login" />}>
                   Log Masuk
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -494,47 +494,23 @@ export function Landing() {
       >
         <DialogContent className={s.dialog}>
           <DialogTitle className={s.dialogTitle}>
-            {panel === "login"
-              ? "Selamat kembali."
-              : panel === "register"
-                ? "Mulakan bersama Pixelspace."
-                : panel === "contact"
-                  ? "Hubungi pasukan kami."
-                  : panel === "privacy"
-                    ? "Maklumat privasi"
-                    : "Panduan penggunaan"}
+            {panel === "register"
+              ? "Mulakan bersama Pixelspace."
+              : panel === "contact"
+                ? "Hubungi pasukan kami."
+                : panel === "privacy"
+                  ? "Maklumat privasi"
+                  : "Panduan penggunaan"}
           </DialogTitle>
           <DialogDescription className={s.dialogDescription}>
-            {panel === "login"
-              ? "Masuk dengan emel atau ID anda."
-              : panel === "register"
-                ? "Pilih peranan anda untuk meneruskan."
-                : panel === "contact"
-                  ? "Beritahu kami bagaimana Pixelspace boleh membantu sekolah anda."
-                  : panel === "privacy"
-                    ? "Ada soalan tentang data anda atau keperluan sekolah? Dapatkan penjelasan daripada pasukan kami."
-                    : "Gunakan Pixelspace untuk menyokong pembelajaran dan pengajaran anda."}
+            {panel === "register"
+              ? "Pilih peranan anda untuk meneruskan."
+              : panel === "contact"
+                ? "Beritahu kami bagaimana Pixelspace boleh membantu sekolah anda."
+                : panel === "privacy"
+                  ? "Ada soalan tentang data anda atau keperluan sekolah? Dapatkan penjelasan daripada pasukan kami."
+                  : "Gunakan Pixelspace untuk menyokong pembelajaran dan pengajaran anda."}
           </DialogDescription>
-          {panel === "login" && (
-            <div className={s.rolePicker}>
-              <Button
-                variant="outline"
-                className={s.roleChoice}
-                render={<Link href="/login" />}
-              >
-                <BookOpenIcon />
-                <span>Log masuk</span>
-                <ArrowRightIcon />
-              </Button>
-              <button
-                type="button"
-                className={s.switchPanel}
-                onClick={() => setPanel("register")}
-              >
-                Belum ada akaun? Daftar sekarang
-              </button>
-            </div>
-          )}
           {panel === "register" && (
             <div className={s.rolePicker}>
               {[
@@ -552,13 +528,9 @@ export function Landing() {
                   <ArrowRightIcon />
                 </Button>
               ))}
-              <button
-                type="button"
-                className={s.switchPanel}
-                onClick={() => setPanel("login")}
-              >
+              <Link href="/login" className={s.switchPanel}>
                 Sudah ada akaun? Log masuk
-              </button>
+              </Link>
             </div>
           )}
           {panel === "contact" && <SchoolContact />}
