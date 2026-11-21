@@ -47,6 +47,7 @@ import {
   WaypointsIcon,
   type LucideIcon,
   LayoutDashboardIcon,
+  ShieldCheckIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -286,6 +287,24 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           >
             <ClockIcon className="size-4" />
           </TooltipIconButton>
+          {role === "superadmin" && (
+            <TooltipIconButton
+              variant="ghost"
+              size="icon"
+              tooltip="Admin"
+              side="right"
+              onClick={() => {
+                setSidebarCollapsed(false);
+                router.push("/admin");
+              }}
+              className={cn(
+                "size-8",
+                pathname.startsWith("/admin") && "bg-muted text-foreground",
+              )}
+            >
+              <ShieldCheckIcon className="size-4" />
+            </TooltipIconButton>
+          )}
           {showSearch && (
             <TooltipIconButton
               variant="ghost"
