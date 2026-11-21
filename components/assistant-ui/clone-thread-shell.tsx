@@ -36,6 +36,7 @@ import {
   SunIcon,
   LayoutDashboardIcon,
   ShieldCheckIcon,
+  UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -241,7 +242,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           <TooltipIconButton
             variant="ghost"
             size="icon"
-            tooltip="Spaces"
+            tooltip="Hub"
             side="right"
             onClick={() => {
               setSidebarCollapsed(false);
@@ -426,8 +427,22 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   )}
                 >
                   <LayoutGridIcon className="size-4 shrink-0" />
-                  <span className="truncate">Spaces</span>
+                  <span className="truncate">Hub</span>
                 </Link>
+                {(role === "teacher" || role === "student") && (
+                  <Link
+                    href="/community"
+                    className={cn(
+                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                      pathname.startsWith("/community")
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <UsersIcon className="size-4 shrink-0" />
+                    <span className="truncate">Spaces</span>
+                  </Link>
+                )}
                 <Link
                   href="/scheduled"
                   className={cn(
