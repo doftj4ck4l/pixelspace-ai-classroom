@@ -27,12 +27,9 @@ import { useAui, useAuiState } from "@assistant-ui/react";
 import {
   AdminPanelSettings as AdminIcon,
   AdminPanelSettingsFill as AdminFillIcon,
-  Apps as HubIcon,
-  AppsFill as HubFillIcon,
   Checklist as DutiesIcon,
   ChecklistFill as DutiesFillIcon,
   DarkMode as MoonIcon,
-  EditSquare as NewChatIcon,
   Group as SpacesIcon,
   GroupFill as SpacesFillIcon,
   Home as HomeIcon,
@@ -47,9 +44,14 @@ import {
   Schedule as ScheduleIcon,
   ScheduleFill as ScheduleFillIcon,
   Search as SearchIcon,
-  SmartToy as BuddyIcon,
-  SmartToyFill as BuddyFillIcon,
-} from "@material-symbols-svg/react/rounded";
+} from "@material-symbols-svg/react/rounded/w300";
+import {
+  HubMark as HubIcon,
+  HubMarkFill as HubFillIcon,
+  NewChatMark as NewChatIcon,
+  PixiMark as BuddyIcon,
+  PixiMarkFill as BuddyFillIcon,
+} from "@/components/brand-icons";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -250,9 +252,9 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             className="size-8"
           >
             {view === "home" ? (
-              <HomeFillIcon className="size-4" />
+              <HomeFillIcon className="size-5" />
             ) : (
-              <HomeIcon className="size-4" />
+              <HomeIcon className="size-5" />
             )}
           </TooltipIconButton>
           <TooltipIconButton
@@ -270,9 +272,9 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             )}
           >
             {view === "space" ? (
-              <HubFillIcon className="size-4" />
+              <HubFillIcon className="size-5" />
             ) : (
-              <HubIcon className="size-4" />
+              <HubIcon className="size-5" />
             )}
           </TooltipIconButton>
           <TooltipIconButton
@@ -290,9 +292,9 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             )}
           >
             {view === "scheduled" ? (
-              <ScheduleFillIcon className="size-4" />
+              <ScheduleFillIcon className="size-5" />
             ) : (
-              <ScheduleIcon className="size-4" />
+              <ScheduleIcon className="size-5" />
             )}
           </TooltipIconButton>
           {role === "superadmin" && (
@@ -311,9 +313,9 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               )}
             >
               {pathname.startsWith("/admin") ? (
-                <AdminFillIcon className="size-4" />
+                <AdminFillIcon className="size-5" />
               ) : (
-                <AdminIcon className="size-4" />
+                <AdminIcon className="size-5" />
               )}
             </TooltipIconButton>
           )}
@@ -329,7 +331,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               }}
               className="size-8"
             >
-              <SearchIcon className="size-4" />
+              <SearchIcon className="size-5" />
             </TooltipIconButton>
           )}
           <div className="mt-auto flex flex-col items-center gap-1">
