@@ -15,10 +15,5 @@ export const roleOfUser = (user: unknown): AuthRole => {
     : "student";
 };
 
-export const roleHome = (role: unknown): string => {
-  const value = roleOfUser({ role });
-  if (value === "student") return "/student";
-  if (value === "kpm") return "/kpm";
-  if (value === "superadmin") return "/admin";
-  return "/chat";
-};
+/** Post-login landing for every role: the chat (role pages stay in the sidebar). */
+export const roleHome = (_role: unknown): string => "/chat";

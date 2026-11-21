@@ -12,15 +12,11 @@ export const roleOf = (user: unknown): Role => {
   return isRole(role) ? role : "student";
 };
 
-/** Where each role lands after login / on `/`. */
-export const getRoleHome = (role: Role): string =>
-  role === "student"
-    ? "/student"
-    : role === "kpm"
-      ? "/kpm"
-      : role === "superadmin"
-        ? "/admin"
-        : "/chat";
+/**
+ * Where every role lands after login / on `/`: the chat is the app's front
+ * door. Role pages (/student, /kpm, /admin) stay reachable from the sidebar.
+ */
+export const getRoleHome = (_role: Role): string => "/chat";
 
 /** For API routes: the user with one of the allowed roles, or a Response. */
 export const requireRoleApi = async (...roles: Role[]) => {
