@@ -449,10 +449,7 @@ export async function deleteWorkspaceOutput(
     removed = true;
   } catch {
     // Sandbox files are root-owned; delete with the permissions that wrote it.
-    removed = await runAsRoot(
-      root,
-      `rm -rf ${shellQuote(`${root}/${rel}`)}`,
-    );
+    removed = await runAsRoot(root, `rm -rf ${shellQuote(`${root}/${rel}`)}`);
   }
   try {
     const manifest = await readManifest(root);
