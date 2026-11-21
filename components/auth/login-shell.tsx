@@ -70,8 +70,8 @@ function PixelspaceLogo() {
 
 const ART = {
   teacher: {
-    src: "/auth/teacher-classroom.png",
-    alt: "Guru Malaysia menggunakan tablet bersama robot AI, buku dan komputer riba",
+    src: "/auth/school-community.png",
+    alt: "Murid, guru, pegawai KPM dan pentadbir bekerjasama menggunakan Pixelspace AI Classroom",
   },
   student: {
     src: "/auth/student-learning.png",
@@ -181,7 +181,7 @@ export function LoginShell({
             </>
           ) : (
             <>
-              <h1 id="teacher-intro-title">
+              <h1 id="teacher-intro-title" className={s.unifiedHeadline}>
                 Satu ruang pembelajaran
                 <br />
                 berkuasa AI untuk
