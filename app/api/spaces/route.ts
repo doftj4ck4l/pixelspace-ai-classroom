@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { spaceMembers, spaces, users } from "@/lib/db/schema";
 import { requireRoleApi } from "@/lib/roles";
@@ -20,26 +20,38 @@ export async function GET() {
 
   if (user.role === "teacher") {
     const rows = await db
-      .select({
-        space: spaces,
-        members: sql<number>`(
-          select count(*) from ${spaceMembers}
-          where ${spaceMembers.spaceId} = ${spaces.id}
-        )`,
-      })
+      .select()
       .from(spaces)
       .where(eq(spaces.userId, user.id))
       .orderBy(desc(spaces.createdAt));
+    const counts = rows.length
+      ? await db
+          .select({
+            spaceId: spaceMembers.spaceId,
+            count: sql<number>`count(*)`,
+          })
+          .from(spaceMembers)
+          .where(
+            inArray(
+              spaceMembers.spaceId,
+              rows.map((row) => row.id),
+            ),
+          )
+          .groupBy(spaceMembers.spaceId)
+      : [];
+    const countBySpace = new Map(
+      counts.map((row) => [row.spaceId, Number(row.count) || 0]),
+    );
     return NextResponse.json(
       {
-        spaces: rows.map(({ space, members }) => ({
+        spaces: rows.map((space) => ({
           id: space.id,
           name: space.name,
           level: space.level,
           description: space.description ?? "",
           accent: space.accent,
           code: space.code,
-          members: Number(members) || 0,
+          members: countBySpace.get(space.id) ?? 0,
           teacher: user.name ?? "Guru",
           createdAt: space.createdAt.toISOString(),
         })),
