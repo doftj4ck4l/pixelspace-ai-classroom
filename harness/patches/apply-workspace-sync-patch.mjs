@@ -162,6 +162,15 @@ async function pruneColdWorkspaces(): Promise<number> {
       if ((activeLeases.get(row.workspaceId) ?? 0) > 0) return;
       const current = await sandboxRepository.get(row.workspaceId);
       if (current && Date.now() - current.lastUsedAt < windowMs) return;
+      // A warm container holds a mount of the directory we are about to
+      // delete — drop it first, or the container breaks on the next exec.
+      if (current?.containerId) {
+        await removeContainer(current.containerId).catch(() => undefined);
+        await sandboxRepository.clearContainer(row.workspaceId);
+      }
+      await removeContainer(containerNameFor(row.workspaceId)).catch(
+        () => undefined,
+      );
       if (await pruneWorkspace(row.workspaceId)) pruned += 1;
     });
   }
