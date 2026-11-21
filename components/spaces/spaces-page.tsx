@@ -36,6 +36,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { FilterSelect } from "@/components/ui/filter-select";
 import { cn } from "@/lib/utils";
 
 type SpaceRow = {
@@ -529,22 +530,18 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
             </label>
             <label className="grid gap-1.5 text-sm">
               <span className="font-medium">Tahap</span>
-              <select
+              <FilterSelect
                 value={level}
-                onChange={(event) => setLevel(event.target.value)}
-                className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 rounded-xl border px-3 text-sm outline-none focus-visible:ring-2"
-              >
-                {Array.from(
+                onValueChange={setLevel}
+                ariaLabel="Tahap"
+                options={Array.from(
                   new Set([
                     ...levelsForSchool(school?.type),
                     ...(level ? [level] : []),
                   ]),
-                ).map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
+                ).map((value) => ({ value, label: value }))}
+                className="border-border/60 focus-visible:ring-ring/40 h-10 w-full rounded-xl px-3"
+              />
               {school && (
                 <span className="text-muted-foreground text-xs">
                   {school.name} ·{" "}
