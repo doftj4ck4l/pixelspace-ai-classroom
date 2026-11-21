@@ -109,20 +109,29 @@ const must = (s, anchor, label) => {
       `${mkdirAnchor}\n\n  // A fresh (or pruned) workspace gets its output files back from the\n  // bucket before anything runs against it.\n  await restoreWorkspaceIfEmpty(workspaceId);`,
     );
 
-    const releaseAnchor = `  /** Mark the sandbox idle. The container stays warm until reaped. */
-  async release(workspaceId: string): Promise<void> {
-    await sandboxRepository.touch(workspaceId);
-  },`;
-    must(s, releaseAnchor, "sandbox.service.ts release");
+    const releaseAnchor = `      release: async () => {
+        if (released) return;
+        released = true;
+        const remaining = (activeLeases.get(workspaceId) ?? 1) - 1;
+        if (remaining > 0) activeLeases.set(workspaceId, remaining);
+        else activeLeases.delete(workspaceId);
+        await sandboxRepository.touch(workspaceId);
+      },`;
+    must(s, releaseAnchor, "sandbox.service.ts lease release");
     s = s.replace(
       releaseAnchor,
-      `  /** Mark the sandbox idle. The container stays warm until reaped. */
-  async release(workspaceId: string): Promise<void> {
-    await sandboxRepository.touch(workspaceId);
-    // Output files (documents, slides, sheets, images) are copied to object
-    // storage at the end of every run; scratch files are left behind.
-    await uploadWorkspaceOutputs(workspaceId);
-  },`,
+      `      release: async () => {
+        if (released) return;
+        released = true;
+        const remaining = (activeLeases.get(workspaceId) ?? 1) - 1;
+        if (remaining > 0) activeLeases.set(workspaceId, remaining);
+        else activeLeases.delete(workspaceId);
+        await sandboxRepository.touch(workspaceId);
+        // Output files (documents, slides, sheets, images) are copied to
+        // object storage whenever a lease is released — the end of a run is
+        // the moment that matters, and a read-only lease is a cheap no-op.
+        await uploadWorkspaceOutputs(workspaceId);
+      },`,
     );
 
     const destroyAnchor = `  async destroy(workspaceId: string): Promise<void> {
