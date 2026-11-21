@@ -37,6 +37,7 @@ import {
   LayoutDashboardIcon,
   ShieldCheckIcon,
   UsersIcon,
+  ClipboardListIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -441,6 +442,20 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   >
                     <UsersIcon className="size-4 shrink-0" />
                     <span className="truncate">Spaces</span>
+                  </Link>
+                )}
+                {role === "teacher" && (
+                  <Link
+                    href="/duties"
+                    className={cn(
+                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                      pathname.startsWith("/duties")
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <ClipboardListIcon className="size-4 shrink-0" />
+                    <span className="truncate">Duties</span>
                   </Link>
                 )}
                 <Link
