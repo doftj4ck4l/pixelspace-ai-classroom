@@ -37,6 +37,8 @@ import {
   GroupFill as SpacesFillIcon,
   Home as HomeIcon,
   HomeFill as HomeFillIcon,
+  LibraryBooks as LibraryBooksIcon,
+  LibraryBooksFill as LibraryBooksFillIcon,
   LeftPanelClose as PanelLeftIcon,
   LightMode as SunIcon,
   Menu as MenuIcon,
@@ -523,6 +525,24 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                       <DutiesIcon className="size-4 shrink-0" />
                     )}
                     <span className="truncate">Duties</span>
+                  </Link>
+                )}
+                {role === "teacher" && (
+                  <Link
+                    href="/sources"
+                    className={cn(
+                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                      pathname.startsWith("/sources")
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    {pathname.startsWith("/sources") ? (
+                      <LibraryBooksFillIcon className="size-4 shrink-0" />
+                    ) : (
+                      <LibraryBooksIcon className="size-4 shrink-0" />
+                    )}
+                    <span className="truncate">Sources</span>
                   </Link>
                 )}
                 <Link
