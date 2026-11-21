@@ -210,9 +210,7 @@
 }
 .card {
   position: relative;
-  /* identical box across every role: same width (layout column) and height */
-  align-self: stretch;
-  height: 100%;
+  /* same width for every role; height hugs the content, centred in the column */
   border: 1px solid #ffffffcc;
   border-radius: 44px;
   padding: 40px 63px 36px;
@@ -871,10 +869,6 @@
     width: calc(100% - 40px);
     max-width: 620px;
     gap: 18px;
-  }
-  .card {
-    align-self: center;
-    height: auto;
   }
   .introduction {
     display: block;
