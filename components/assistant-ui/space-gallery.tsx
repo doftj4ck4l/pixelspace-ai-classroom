@@ -475,6 +475,13 @@ const FILE_TILE_COVER: Record<string, string> = {
  * The unified gallery tile: decks and quizzes get their accent cover + emoji +
  * mastery bar; every other artifact gets a type-tinted cover with its glyph.
  */
+const SPEC_LABEL: Record<string, string> = {
+  flashcards: "Kad Imbas",
+  quizzes: "Kuiz",
+  mindmaps: "Peta Pembelajaran",
+  notes: "Nota",
+};
+
 const GalleryCard: FC<{
   doc: Doc;
   known: number;
@@ -487,95 +494,101 @@ const GalleryCard: FC<{
   const isSpec = !!doc.spec;
   const typeStyle = TYPE_STYLES[doc.type];
   const pct = total > 0 ? Math.round((known / total) * 100) : 0;
+  const ChipIcon = isSpec
+    ? doc.type === "quizzes"
+      ? CircleHelpIcon
+      : doc.type === "mindmaps"
+        ? WaypointsIcon
+        : doc.type === "notes"
+          ? StickyNoteIcon
+          : LayersIcon
+    : typeStyle.Icon;
+  const chipLabel = isSpec
+    ? (SPEC_LABEL[doc.type] ?? "Kad Imbas")
+    : (MODULE_TITLES[doc.type as keyof typeof MODULE_TITLES] ?? doc.type);
+  const unit =
+    doc.type === "quizzes"
+      ? "soalan"
+      : doc.type === "mindmaps"
+        ? "konsep"
+        : "kad";
 
   return (
     <div
       onClick={onOpen}
-      className="group border-border/60 bg-card relative cursor-pointer overflow-hidden rounded-2xl border transition-shadow hover:shadow-md"
+      className={cn(
+        "group relative cursor-pointer overflow-hidden rounded-3xl border border-white/60 p-2.5 transition-shadow hover:shadow-lg dark:border-white/10",
+        isSpec
+          ? theme.cover
+          : (FILE_TILE_COVER[doc.type] ?? FILE_TILE_COVER.doc),
+      )}
     >
-      <div
-        className={cn(
-          "relative flex aspect-[16/9] items-center justify-center overflow-hidden",
-          isSpec
-            ? theme.cover
-            : (FILE_TILE_COVER[doc.type] ?? FILE_TILE_COVER.doc),
-        )}
-      >
-        <div
-          aria-hidden="true"
-          className="absolute -top-8 -left-8 size-28 rounded-full bg-white/40 blur-2xl dark:bg-white/10"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -right-10 -bottom-10 size-32 rounded-full bg-white/30 blur-3xl dark:bg-white/5"
-        />
-        {isSpec ? (
-          <span className="relative text-5xl drop-shadow-sm select-none">
-            {coverEmoji(doc.title, spec?.subject)}
+      {/* top row: type chip, badges, menu */}
+      <div className="relative z-10 flex items-center gap-1.5">
+        <span className="text-foreground flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-medium backdrop-blur dark:bg-black/30">
+          <ChipIcon className={cn("size-3.5", !isSpec && typeStyle.color)} />
+          {chipLabel}
+        </span>
+        {doc.pinned && (
+          <span className="flex size-6 items-center justify-center rounded-full bg-white/70 backdrop-blur dark:bg-black/30">
+            <PinIcon className="size-3" />
           </span>
-        ) : (
-          <typeStyle.Icon
-            className={cn("relative size-14 opacity-80", typeStyle.color)}
-            strokeWidth={1.5}
-          />
         )}
-        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-          {doc.pinned && (
-            <span className="bg-background/85 flex size-7 items-center justify-center rounded-full shadow-sm">
-              <PinIcon className="size-3.5" />
-            </span>
-          )}
-          {doc.favorite && (
-            <span className="bg-background/85 flex size-7 items-center justify-center rounded-full shadow-sm">
-              <StarIcon className="size-3.5 fill-current text-amber-400" />
-            </span>
-          )}
-        </div>
+        {doc.favorite && (
+          <span className="flex size-6 items-center justify-center rounded-full bg-white/70 backdrop-blur dark:bg-black/30">
+            <StarIcon className="size-3 fill-current text-amber-400" />
+          </span>
+        )}
         <div
           onClick={(event) => event.stopPropagation()}
-          className="absolute top-2.5 right-2.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+          className="ml-auto flex items-center justify-center rounded-full bg-white/70 opacity-0 backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 dark:bg-black/30 [&_button]:size-6"
         >
           {menu}
         </div>
       </div>
 
-      <div className="p-4">
-        <p className="truncate text-base font-semibold" title={doc.title}>
+      {/* illustration */}
+      <div className="relative flex h-28 items-center justify-center sm:h-32">
+        <div
+          aria-hidden="true"
+          className="absolute -top-6 -left-6 size-24 rounded-full bg-white/40 blur-2xl dark:bg-white/10"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute -right-8 -bottom-8 size-28 rounded-full bg-white/30 blur-3xl dark:bg-white/5"
+        />
+        {isSpec ? (
+          <span className="relative text-6xl drop-shadow-sm select-none">
+            {coverEmoji(doc.title, spec?.subject)}
+          </span>
+        ) : (
+          <typeStyle.Icon
+            className={cn("relative size-16 opacity-90", typeStyle.color)}
+            strokeWidth={1.25}
+          />
+        )}
+      </div>
+
+      {/* frosted info strip */}
+      <div className="relative z-10 rounded-2xl bg-white/75 p-3 backdrop-blur-md dark:bg-black/35">
+        <p className="truncate text-sm font-semibold" title={doc.title}>
           {doc.title}
         </p>
-        <div className="text-muted-foreground mt-3 flex items-center gap-1.5 text-xs">
+        <div className="text-muted-foreground mt-1.5 flex items-center gap-1.5 text-xs">
           {isSpec ? (
             <>
-              {doc.type === "quizzes" ? (
-                <CircleHelpIcon className="size-3.5" />
-              ) : doc.type === "mindmaps" ? (
-                <WaypointsIcon className="size-3.5" />
-              ) : (
-                <LayersIcon className="size-3.5" />
-              )}
-              {total}{" "}
-              {doc.type === "quizzes"
-                ? "soalan"
-                : doc.type === "mindmaps"
-                  ? "konsep"
-                  : "kad"}
+              <ChipIcon className="size-3.5" />
+              {total} {unit}
             </>
-          ) : (
-            <>
-              <typeStyle.Icon className={cn("size-3.5", typeStyle.color)} />
-              {MODULE_TITLES[doc.type as keyof typeof MODULE_TITLES] ??
-                doc.type}
-              {doc.source === "chat" && (
-                <span className="bg-muted ml-1 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
-                  From chat
-                </span>
-              )}
-            </>
-          )}
+          ) : doc.source === "chat" ? (
+            <span className="rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-medium dark:bg-white/10">
+              From chat
+            </span>
+          ) : null}
         </div>
         {isSpec && (
-          <div className="mt-2.5 flex items-center gap-2">
-            <div className="bg-muted/70 h-1.5 flex-1 overflow-hidden rounded-full">
+          <div className="mt-2 flex items-center gap-2">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/10 dark:bg-white/15">
               <div
                 className={cn("h-full transition-all", theme.bar)}
                 style={{ width: `${pct}%` }}
