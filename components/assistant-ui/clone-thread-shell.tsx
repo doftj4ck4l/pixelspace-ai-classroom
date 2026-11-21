@@ -441,14 +441,6 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   <span className="truncate">Scheduled</span>
                 </Link>
               </nav>
-
-              {view === "scheduled" ? (
-                <div className="mt-4 flex flex-col">
-                  <span className="text-muted-foreground/70 px-3 py-1 text-sm">
-                    No scheduled tasks
-                  </span>
-                </div>
-              ) : null}
             </div>
 
             <div className="scrollbar-subtle -mx-1 mt-1 min-h-0 flex-1 overflow-y-auto px-1">
