@@ -84,6 +84,48 @@ function safeRelative(value: string): string | null {
   return segments.join("/");
 }
 
+/** Single-quote a value for `sh -c`, escaping embedded quotes. */
+const shellQuote = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`;
+
+/**
+ * Remove paths inside a workspace as root.
+ *
+ * Sandbox containers run as root, so the API process (uid 1000) cannot always
+ * delete what they wrote — EACCES on prune and on user deletes. A throwaway
+ * container mounts the workspace and does the removal with the permissions
+ * that created the files.
+ */
+async function removeAsRoot(root: string, paths: string[]): Promise<boolean> {
+  if (!paths.length) return false;
+  const script = paths
+    .map((rel) => `rm -rf ${shellQuote(`${root}/${rel}`)}`)
+    .join("; ");
+  try {
+    const proc = Bun.spawn(
+      [
+        "docker",
+        "run",
+        "--rm",
+        "-v",
+        `${root}:${root}`,
+        env.sandboxImage,
+        "sh",
+        "-c",
+        `${script} 2>/dev/null; true`,
+      ],
+      { stdout: "ignore", stderr: "ignore" },
+    );
+    const code = await proc.exited;
+    return code === 0;
+  } catch (error) {
+    logger.warn("workspace.remove_root_failed", {
+      root,
+      error: (error as Error).message,
+    });
+    return false;
+  }
+}
+
 let client: Bun.S3Client | undefined;
 
 function s3(): Bun.S3Client {
@@ -404,18 +446,23 @@ export async function deleteWorkspaceOutput(
   const rel = safeRelative(relativePath);
   if (!rel) return false;
   let removed = false;
+  const root = workspaceRoot(workspaceId);
   try {
-    const target = path.join(workspaceRoot(workspaceId), ...rel.split("/"));
+    const target = path.join(root, ...rel.split("/"));
     await fs.rm(target, { force: true });
-    const root = workspaceRoot(workspaceId);
+    removed = true;
+  } catch {
+    // Sandbox files are root-owned; delete with the permissions that wrote it.
+    removed = await removeAsRoot(root, [rel]);
+  }
+  try {
     const manifest = await readManifest(root);
     if (manifest[rel]) {
       delete manifest[rel];
       await fs.writeFile(path.join(root, MANIFEST), JSON.stringify(manifest));
     }
-    removed = true;
   } catch {
-    // local copy may already be gone — the object still gets deleted below
+    // manifest is an optimization, not truth
   }
   if (syncConfigured()) {
     try {
@@ -442,15 +489,25 @@ export async function pruneWorkspace(workspaceId: string): Promise<boolean> {
   if (!syncConfigured()) return false;
   const synced = await uploadWorkspaceOutputs(workspaceId);
   if (!synced) return false;
+  const root = workspaceRoot(workspaceId);
   try {
-    await fs.rm(workspaceRoot(workspaceId), { recursive: true, force: true });
+    await fs.rm(root, { recursive: true, force: true });
     logger.info("workspace.pruned", { workspace: workspaceId });
     return true;
-  } catch (error) {
-    logger.warn("workspace.prune_failed", {
-      workspace: workspaceId,
-      error: (error as Error).message,
-    });
-    return false;
+  } catch {
+    // Root-owned files from sandbox runs: empty the directory from a
+    // throwaway container, then drop the (now empty) root from here.
+    await removeAsRoot(root, ["*", ".[!.]*"]);
+    try {
+      await fs.rm(root, { recursive: true, force: true });
+      logger.info("workspace.pruned", { workspace: workspaceId });
+      return true;
+    } catch (error) {
+      logger.warn("workspace.prune_failed", {
+        workspace: workspaceId,
+        error: (error as Error).message,
+      });
+      return false;
+    }
   }
 }
