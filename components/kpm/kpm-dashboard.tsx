@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { FilterSelect } from "@/components/ui/filter-select";
 import { KpmStatTile } from "@/components/kpm/kpm-stat-tile";
 import {
   ArtifactsByTypeChart,
@@ -135,18 +136,19 @@ export const KpmDashboard = () => {
             <span className="text-muted-foreground text-xs font-medium">
               Sekolah
             </span>
-            <select
+            <FilterSelect
               value={schoolId}
-              onChange={(event) => setSchoolId(event.target.value)}
-              className="border-border/60 bg-background focus-visible:ring-ring/40 h-8 max-w-64 rounded-lg border px-2.5 text-sm outline-none focus-visible:ring-2"
-            >
-              <option value="">Semua sekolah</option>
-              {schools.map((school) => (
-                <option key={school.id} value={school.id}>
-                  {school.name}
-                </option>
-              ))}
-            </select>
+              onValueChange={setSchoolId}
+              options={[
+                { value: "", label: "Semua sekolah" },
+                ...schools.map((school) => ({
+                  value: school.id,
+                  label: school.name,
+                })),
+              ]}
+              className="max-w-64"
+              ariaLabel="Sekolah"
+            />
           </label>
         </div>
 

@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { FilterSelect } from "@/components/ui/filter-select";
 import { cn } from "@/lib/utils";
 import { jsonFetch, patchJson, postJson } from "./api";
 import {
@@ -20,7 +21,6 @@ import {
   ErrorBanner,
   SCHOOL_TYPE_LABELS,
   TableSkeleton,
-  selectClassName,
 } from "./shared";
 import type { SchoolRow } from "./types";
 
@@ -300,17 +300,14 @@ const SchoolFormDialog = ({
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1.5 text-sm">
               <span className="font-medium">Jenis</span>
-              <select
+              <FilterSelect
                 value={type}
-                onChange={(event) => setType(event.target.value)}
-                className={selectClassName}
-              >
-                {TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setType}
+                options={TYPE_OPTIONS}
+                disabled={pending}
+                className="w-full"
+                ariaLabel="Jenis"
+              />
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
               <span className="font-medium">Negeri</span>

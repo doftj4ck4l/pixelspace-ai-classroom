@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { FilterSelect } from "@/components/ui/filter-select";
 import { jsonFetch, patchJson, postJson } from "./api";
 import {
   Chip,
@@ -28,7 +29,6 @@ import {
   TableSkeleton,
   USER_STATUS_LABELS,
   formatDate,
-  selectClassName,
 } from "./shared";
 import type { SchoolRow, UserRow } from "./types";
 
@@ -170,42 +170,37 @@ export const UsersTab = () => {
             className="w-64 pl-8"
           />
         </div>
-        <select
+        <FilterSelect
           value={filters.role}
-          onChange={(event) =>
+          onValueChange={(value) =>
             setFilters((current) => ({
               ...current,
-              role: event.target.value,
+              role: value,
               offset: 0,
             }))
           }
-          className={selectClassName}
-        >
-          {ROLE_FILTER_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select
+          options={ROLE_FILTER_OPTIONS}
+          ariaLabel="Peranan"
+        />
+        <FilterSelect
           value={filters.schoolId}
-          onChange={(event) =>
+          onValueChange={(value) =>
             setFilters((current) => ({
               ...current,
-              schoolId: event.target.value,
+              schoolId: value,
               offset: 0,
             }))
           }
-          className={selectClassName}
-        >
-          <option value="">Semua sekolah</option>
-          <option value="none">Tiada sekolah</option>
-          {schools.map((school) => (
-            <option key={school.id} value={school.id}>
-              {school.name}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "", label: "Semua sekolah" },
+            { value: "none", label: "Tiada sekolah" },
+            ...schools.map((school) => ({
+              value: school.id,
+              label: school.name,
+            })),
+          ]}
+          ariaLabel="Sekolah"
+        />
       </div>
 
       <ErrorBanner message={error} />
@@ -271,41 +266,34 @@ export const UsersTab = () => {
                       <td className="px-4 py-3">{formatDate(row.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1.5">
-                          <select
+                          <FilterSelect
                             value={row.role}
-                            aria-label="Peranan"
-                            onChange={(event) =>
-                              void patchUser(row.id, {
-                                role: event.target.value,
-                              })
+                            ariaLabel="Peranan"
+                            onValueChange={(value) =>
+                              void patchUser(row.id, { role: value })
                             }
-                            className={selectClassName}
-                          >
-                            {ROLE_FILTER_OPTIONS.filter(
+                            options={ROLE_FILTER_OPTIONS.filter(
                               (option) => option.value,
-                            ).map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                          <select
+                            )}
+                            contentClassName="min-w-36"
+                          />
+                          <FilterSelect
                             value={row.schoolId ?? ""}
-                            aria-label="Sekolah"
-                            onChange={(event) =>
+                            ariaLabel="Sekolah"
+                            onValueChange={(value) =>
                               void patchUser(row.id, {
-                                schoolId: event.target.value || null,
+                                schoolId: value || null,
                               })
                             }
-                            className={selectClassName}
-                          >
-                            <option value="">Tiada sekolah</option>
-                            {schools.map((school) => (
-                              <option key={school.id} value={school.id}>
-                                {school.name}
-                              </option>
-                            ))}
-                          </select>
+                            options={[
+                              { value: "", label: "Tiada sekolah" },
+                              ...schools.map((school) => ({
+                                value: school.id,
+                                label: school.name,
+                              })),
+                            ]}
+                            className="max-w-44"
+                          />
                           <Button
                             variant="outline"
                             size="sm"
@@ -474,17 +462,14 @@ const CreateAccountDialog = ({
             </label>
             <label className="flex flex-col gap-1.5 text-sm">
               <span className="font-medium">Peranan</span>
-              <select
+              <FilterSelect
                 value={role}
-                onChange={(event) => setRole(event.target.value)}
-                className={selectClassName}
-              >
-                {CREATE_ROLE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                onValueChange={setRole}
+                options={CREATE_ROLE_OPTIONS}
+                disabled={pending}
+                className="w-full"
+                ariaLabel="Peranan"
+              />
             </label>
           </div>
           <label className="flex flex-col gap-1.5 text-sm">

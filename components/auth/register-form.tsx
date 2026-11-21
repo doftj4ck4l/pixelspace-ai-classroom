@@ -16,6 +16,7 @@ import {
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FilterSelect } from "@/components/ui/filter-select";
 import { AuthShell } from "@/components/auth/auth-shell";
 import {
   SchoolPicker,
@@ -373,26 +374,28 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
                   className="text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2"
                   aria-hidden="true"
                 />
-                <select
+                <FilterSelect
                   id="yearLabel"
                   value={yearLabel}
-                  onChange={(event) => {
-                    setYearLabel(event.target.value);
+                  onValueChange={(value) => {
+                    setYearLabel(value);
                     clearError("yearLabel");
                   }}
                   disabled={!school || pending}
-                  aria-invalid={Boolean(fieldErrors.yearLabel)}
-                  className={styles.select}
-                >
-                  <option value="">
-                    {school ? "Pilih tahun/tingkatan" : "Pilih sekolah dahulu"}
-                  </option>
-                  {yearOptions.map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
+                  options={yearOptions.map((year) => ({
+                    value: year,
+                    label: year,
+                  }))}
+                  placeholder={
+                    school ? "Pilih tahun/tingkatan" : "Pilih sekolah dahulu"
+                  }
+                  className={cn(
+                    styles.select,
+                    "flex items-center justify-between",
+                  )}
+                  contentClassName="min-w-40"
+                  ariaLabel="Tahun atau tingkatan"
+                />
                 <ChevronDownIcon
                   className="text-muted-foreground pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2"
                   aria-hidden="true"
