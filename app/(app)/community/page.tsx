@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { UsersIcon } from "lucide-react";
+import { UsersIcon } from "@/components/icons";
 import { getSessionUser } from "@/lib/auth-session";
 import { getRoleHome, roleOf } from "@/lib/roles";
 

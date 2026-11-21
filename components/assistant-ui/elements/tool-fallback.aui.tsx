@@ -16,7 +16,7 @@ import {
   CircleMinusIcon,
   LoaderIcon,
   XCircleIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   toolApprovalAcceptsText,
   useAuiState,

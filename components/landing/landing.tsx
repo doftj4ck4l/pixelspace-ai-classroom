@@ -17,7 +17,7 @@ import {
   TrophyIcon,
   UsersIcon,
   ZapIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

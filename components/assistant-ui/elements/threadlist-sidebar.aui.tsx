@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { MessagesSquare } from "lucide-react";
+import { MessagesSquare } from "@/components/icons";
 import { GitHubIcon } from "@/components/icons/github";
 import {
   Sidebar,

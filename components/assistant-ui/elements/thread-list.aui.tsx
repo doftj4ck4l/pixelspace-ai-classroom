@@ -20,7 +20,7 @@ import {
   SquarePenIcon,
   SearchIcon,
   TrashIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   forwardRef,
   Fragment,

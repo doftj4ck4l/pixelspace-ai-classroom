@@ -1,7 +1,7 @@
 "use client";
 
 import type { FC, ReactNode } from "react";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon } from "@/components/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,

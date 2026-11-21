@@ -64,7 +64,7 @@ import {
   PlayIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   createContext,
   useContext,

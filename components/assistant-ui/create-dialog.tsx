@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FC } from "react";
-import { PaperclipIcon, SparklesIcon, XIcon } from "lucide-react";
+import { PaperclipIcon, SparklesIcon, XIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

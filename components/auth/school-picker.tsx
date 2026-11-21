@@ -8,7 +8,7 @@ import {
   MapPinIcon,
   SchoolIcon,
   SearchIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { cn } from "cn";
 
 export type SchoolOption = {

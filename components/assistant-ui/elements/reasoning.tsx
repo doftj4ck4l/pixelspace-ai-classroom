@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useIsomorphicLayoutEffect } from "../utils/useIsomorphicLayoutEffect";
 import { cva, type VariantProps } from "class-variance-authority";
-import { BrainIcon, ChevronDownIcon } from "lucide-react";
+import { BrainIcon, ChevronDownIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import {
   CollapsibleRoot as Collapsible,

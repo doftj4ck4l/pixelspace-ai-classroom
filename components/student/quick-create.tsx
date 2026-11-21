@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAui } from "@assistant-ui/react";
-import { Loader2Icon, SparklesIcon } from "lucide-react";
+import { Loader2Icon, SparklesIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

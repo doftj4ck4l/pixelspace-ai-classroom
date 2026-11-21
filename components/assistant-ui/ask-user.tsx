@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FC } from "react";
-import { CheckIcon, Loader2Icon } from "lucide-react";
+import { CheckIcon, Loader2Icon } from "@/components/icons";
 import { makeAssistantDataUI, useAui } from "@assistant-ui/react";
 import { Button } from "@/components/ui/button";
 

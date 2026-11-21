@@ -12,7 +12,7 @@ import {
   FileText,
   Loader2Icon,
   AlertCircleIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   AttachmentPrimitive,
   ComposerPrimitive,

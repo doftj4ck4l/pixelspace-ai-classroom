@@ -10,7 +10,7 @@ import {
   ArrowUpRightIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   FlashcardDeck,
   type FlashcardSpec,

@@ -1,6 +1,6 @@
 "use client";
 
-import { TrophyIcon } from "lucide-react";
+import { TrophyIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import type { StudentSummary } from "./student-home";
 

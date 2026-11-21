@@ -7,7 +7,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import { Loader2Icon, PlusIcon, SearchIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, SearchIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

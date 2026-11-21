@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { BotIcon } from "lucide-react";
+import { BotIcon } from "@/components/icons";
 import { getSessionUser } from "@/lib/auth-session";
 import { getRoleHome, roleOf } from "@/lib/roles";
 import { BuddyMascot } from "@/components/student/buddy-mascot";

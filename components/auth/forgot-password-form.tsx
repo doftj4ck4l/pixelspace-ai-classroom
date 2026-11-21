@@ -2,7 +2,7 @@
 
 import { useState, type FC, type FormEvent } from "react";
 import Link from "next/link";
-import { ArrowRightIcon, Loader2Icon, MailCheckIcon } from "lucide-react";
+import { ArrowRightIcon, Loader2Icon, MailCheckIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthShell } from "@/components/auth/auth-shell";

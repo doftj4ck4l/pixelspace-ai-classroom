@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FC } from "react";
-import { MessageCircleIcon, SearchIcon, XIcon } from "lucide-react";
+import { MessageCircleIcon, SearchIcon, XIcon } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import { useAuiState } from "@assistant-ui/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";

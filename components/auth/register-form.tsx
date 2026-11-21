@@ -12,7 +12,7 @@ import {
   Loader2Icon,
   MailCheckIcon,
   UserIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

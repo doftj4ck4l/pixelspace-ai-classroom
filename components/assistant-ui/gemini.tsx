@@ -29,7 +29,7 @@ import {
   ThumbsDown,
   ThumbsUp,
   XIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { type FC, type PropsWithChildren, useState, useMemo } from "react";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";

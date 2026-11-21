@@ -7,7 +7,7 @@ import {
   type ComponentProps,
   type RefObject,
 } from "react";
-import { PauseIcon, PlayIcon } from "lucide-react";
+import { PauseIcon, PlayIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { field, inkButton, mono, paper } from "./surfaces";
 

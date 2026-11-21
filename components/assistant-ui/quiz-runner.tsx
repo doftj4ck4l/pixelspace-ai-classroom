@@ -26,7 +26,7 @@ import {
   Volume2Icon,
   VolumeXIcon,
   XIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,

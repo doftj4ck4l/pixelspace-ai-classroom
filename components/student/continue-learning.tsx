@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BookOpenIcon, ChevronRightIcon } from "lucide-react";
+import { BookOpenIcon, ChevronRightIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 type Artifact = {

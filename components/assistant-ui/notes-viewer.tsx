@@ -15,7 +15,7 @@ import {
   SendIcon,
   SparklesIcon,
   SquareCheckIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { accentTheme } from "@/components/assistant-ui/flashcard-deck";

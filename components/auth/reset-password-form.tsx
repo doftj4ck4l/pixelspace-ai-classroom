@@ -9,7 +9,7 @@ import {
   EyeOffIcon,
   Loader2Icon,
   ShieldAlertIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthShell } from "@/components/auth/auth-shell";

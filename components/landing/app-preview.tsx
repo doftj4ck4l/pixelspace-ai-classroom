@@ -9,7 +9,7 @@ import {
   ChevronRightIcon,
   DropletsIcon,
   SparklesIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import s from "./landing.module.css";
 
