@@ -8,6 +8,7 @@ import {
   type FC,
   type ReactNode,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAui } from "@assistant-ui/react";
 import {
@@ -34,7 +35,6 @@ import {
   SearchIcon,
   SparklesIcon,
   StarIcon,
-  UsersIcon,
   StickyNoteIcon,
   TableIcon,
   Trash2Icon,
@@ -693,15 +693,25 @@ const SharedArtifactMenu: FC<{
   );
 };
 
-const ALL_TABS = ["Suggested", "Favorites", "Your items", "Shared with you"];
-const MODULE_TABS = ["All", "Pinned", "Favorites", "Shared with you"];
+/** The Spaces section bar — the module list that used to live in the sidebar. */
+const SECTION_TABS: { id: string; label: string; Icon: LucideIcon }[] = [
+  { id: "all", label: "All", Icon: LayoutGridIcon },
+  { id: "flashcards", label: "Flashcards", Icon: LayersIcon },
+  { id: "quizzes", label: "Quizzes", Icon: CircleHelpIcon },
+  { id: "mindmaps", label: "Learning Map", Icon: WaypointsIcon },
+  { id: "slides", label: "Slides", Icon: PresentationIcon },
+  { id: "reports", label: "Reports", Icon: FileTextIcon },
+  { id: "infographics", label: "Infographics", Icon: ChartColumnIcon },
+  { id: "podcasts", label: "Podcasts", Icon: PodcastIcon },
+  { id: "notes", label: "Notes", Icon: StickyNoteIcon },
+  { id: "transformations", label: "Transformations", Icon: WandSparklesIcon },
+];
 
 export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const { setSection, setView } = useSidebarNav();
   const aui = useAui();
   const router = useRouter();
   const [docs, setDocs] = useState<Doc[] | null>(null);
-  const [tab, setTab] = useState<string>(mode === "all" ? "Suggested" : "All");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("newest");
   const [layout, setLayout] = useState<"grid" | "list">("grid");
@@ -836,9 +846,6 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         return false;
       }
       if (mode !== "all" && doc.type !== mode) return false;
-      if (tab === "Pinned" && !doc.pinned) return false;
-      if (tab === "Favorites" && !doc.favorite) return false;
-      if (tab === "Shared with you") return false;
       if (q && !doc.title.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -852,7 +859,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
       default:
         return result;
     }
-  }, [docs, artifactDocs, mode, tab, query, sort, sharedArtifacts]);
+  }, [docs, artifactDocs, mode, query, sort, sharedArtifacts]);
 
   /** Persist a new doc server-side (optimistic — the UI already shows it). */
   const persistDoc = (doc: Doc) => {
@@ -1088,17 +1095,9 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     setSection("slides");
   };
 
-  const tabs = mode === "all" ? ALL_TABS : MODULE_TABS;
-  const emptyMessage =
-    tab === "Shared with you"
-      ? "Nothing shared with you yet"
-      : tab === "Pinned"
-        ? "No pinned items"
-        : tab === "Favorites"
-          ? "No favorites yet"
-          : query
-            ? "No items match your search"
-            : "Nothing here yet — create something to get started";
+  const emptyMessage = query
+    ? "No items match your search"
+    : "Nothing here yet — create something to get started";
 
   if (viewingDoc) {
     const spec: FlashcardSpec =
@@ -1293,33 +1292,22 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
         </div>
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {tabs.map((item) => {
-              const TabIcon = {
-                All: LayoutGridIcon,
-                Suggested: SparklesIcon,
-                Pinned: PinIcon,
-                Favorites: StarIcon,
-                "Your items": FolderIcon,
-                "Shared with you": UsersIcon,
-              }[item];
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setTab(item)}
-                  className={cn(
-                    "flex h-8 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors sm:px-4",
-                    tab === item
-                      ? "bg-muted text-foreground font-medium"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                  )}
-                >
-                  {TabIcon ? <TabIcon className="size-3.5 shrink-0" /> : null}
-                  <span className="whitespace-nowrap">{item}</span>
-                </button>
-              );
-            })}
+          <div className="scrollbar-subtle -mx-1 flex max-w-full items-center gap-1.5 overflow-x-auto px-1 pb-1">
+            {SECTION_TABS.map((item) => (
+              <Link
+                key={item.id}
+                href={`/spaces/${item.id}`}
+                className={cn(
+                  "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors sm:px-4",
+                  mode === item.id
+                    ? "bg-muted text-foreground font-medium"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+              >
+                <item.Icon className="size-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{item.label}</span>
+              </Link>
+            ))}
           </div>
 
           <div className="flex items-center gap-1">

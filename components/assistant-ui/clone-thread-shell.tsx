@@ -3,7 +3,6 @@
 import {
   ThreadList,
   ThreadListItems,
-  ThreadListNew,
   ThreadListRoot,
 } from "@/components/assistant-ui/elements/thread-list.aui";
 import { SearchDialog } from "@/components/assistant-ui/search-dialog";
@@ -26,27 +25,15 @@ import {
 import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
-  ChartColumnIcon,
-  CircleHelpIcon,
   ClockIcon,
-  Columns3Icon,
-  FileTextIcon,
   HomeIcon,
-  LayersIcon,
   LayoutGridIcon,
   MenuIcon,
   MoonIcon,
   PanelLeftIcon,
-  PodcastIcon,
-  PlusIcon,
-  PresentationIcon,
   SearchIcon,
   SquarePenIcon,
-  StickyNoteIcon,
   SunIcon,
-  WandSparklesIcon,
-  WaypointsIcon,
-  type LucideIcon,
   LayoutDashboardIcon,
   ShieldCheckIcon,
 } from "lucide-react";
@@ -95,25 +82,6 @@ type CloneThreadShellProps = {
   wrapNewThreadTooltip?: boolean | undefined;
 };
 
-type NavItem = {
-  id: string;
-  label: string;
-  Icon: LucideIcon;
-};
-
-const NAV_ITEMS: NavItem[] = [
-  { id: "all", label: "All", Icon: Columns3Icon },
-  { id: "flashcards", label: "Flashcards", Icon: LayersIcon },
-  { id: "quizzes", label: "Quizzes", Icon: CircleHelpIcon },
-  { id: "mindmaps", label: "Learning Map", Icon: WaypointsIcon },
-  { id: "slides", label: "Slides", Icon: PresentationIcon },
-  { id: "reports", label: "Reports", Icon: FileTextIcon },
-  { id: "infographics", label: "Infographics", Icon: ChartColumnIcon },
-  { id: "podcasts", label: "Podcasts", Icon: PodcastIcon },
-  { id: "notes", label: "Notes", Icon: StickyNoteIcon },
-  { id: "transformations", label: "Transformations", Icon: WandSparklesIcon },
-];
-
 const ThemeToggle: FC = () => {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -160,8 +128,6 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
 
   // Navigation is the URL now: /chat*, /spaces/<section>, /scheduled.
   const inSpace = pathname.startsWith("/spaces");
-  // The admin console is a full-page workspace: no chat sidebar there.
-  const isAdminRoute = pathname.startsWith("/admin");
   const view: SidebarView = pathname.startsWith("/scheduled")
     ? "scheduled"
     : inSpace
@@ -217,22 +183,22 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
     }
   };
 
-  const createRow = (
-    <ThreadListNew className="h-9 w-full gap-2 px-3 text-sm has-[>svg]:px-3">
-      <PlusIcon className="size-4 shrink-0" />
-      <span className="whitespace-nowrap">Create</span>
-    </ThreadListNew>
-  );
-
-  const newChatRow = (
-    <ThreadListNew className="h-9 w-full gap-2 px-3 has-[>svg]:px-3">
+  // One consistent front door: "New chat" always starts a fresh thread and
+  // lands on /chat, whatever page you are on.
+  const newThread = (
+    <button
+      type="button"
+      onClick={() => {
+        void aui.threads.switchToNewThread();
+        router.push("/chat");
+        setMobileOpen(false);
+      }}
+      className="bg-muted/60 hover:bg-muted flex h-9 w-full items-center gap-2 rounded-full px-3 text-sm transition-colors"
+    >
       <SquarePenIcon className="size-4 shrink-0" />
       <span className="whitespace-nowrap">New chat</span>
-    </ThreadListNew>
+    </button>
   );
-
-  const newThread =
-    view === "space" ? createRow : view === "home" ? newChatRow : null;
 
   return (
     <SidebarNavContext.Provider value={nav}>
@@ -344,12 +310,12 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
         </div>
 
         <aside
-          inert={sidebarCollapsed || isAdminRoute}
-          aria-hidden={sidebarCollapsed || isAdminRoute}
+          inert={sidebarCollapsed}
+          aria-hidden={sidebarCollapsed}
           className={cn(
             "bg-muted/30 hidden h-full shrink-0 flex-col overflow-hidden transition-[width] duration-200 md:flex",
             railClassName,
-            isAdminRoute || sidebarCollapsed ? "w-0" : "w-65 border-r",
+            sidebarCollapsed ? "w-0" : "w-65 border-r",
           )}
         >
           <div className="flex h-12 shrink-0 items-center gap-0.5 overflow-hidden px-2">
@@ -477,25 +443,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               </Link>
             </nav>
 
-            {view === "space" ? (
-              <nav className="mt-2 flex flex-col gap-0.5">
-                {NAV_ITEMS.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/spaces/${item.id}`}
-                    className={cn(
-                      "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
-                      section === item.id
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    <item.Icon className="size-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                ))}
-              </nav>
-            ) : view === "scheduled" ? (
+            {view === "scheduled" ? (
               <div className="mt-4 flex flex-col">
                 <span className="text-muted-foreground/70 px-3 py-1 text-sm">
                   No scheduled tasks
