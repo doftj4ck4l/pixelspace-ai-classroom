@@ -1,13 +1,12 @@
 "use client";
 
 import {
-  CircleHelp,
-  Languages,
-  LogOut,
+  Help as CircleHelp,
+  Language as Languages,
+  Logout as LogOut,
+  Person as User,
   Settings,
-  User,
-  type LucideIcon,
-} from "lucide-react";
+} from "@material-symbols-svg/react/rounded";
 import { useEffect, useState, type FC } from "react";
 import { useRouter } from "next/navigation";
 import { signOut, useSession } from "@/lib/auth-client";
@@ -38,7 +37,7 @@ type LanguageId = (typeof LANGUAGES)[number]["id"];
 type MenuLink = {
   id: string;
   label: string;
-  Icon: LucideIcon;
+  Icon: typeof User;
   href: string;
 };
 

@@ -25,21 +25,29 @@ import {
 import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
-  ClockIcon,
-  HomeIcon,
-  LayoutGridIcon,
-  MenuIcon,
-  MoonIcon,
-  PanelLeftIcon,
-  SearchIcon,
-  SquarePenIcon,
-  SunIcon,
-  LayoutDashboardIcon,
-  ShieldCheckIcon,
-  UsersIcon,
-  ClipboardListIcon,
-  BotIcon,
-} from "lucide-react";
+  AdminPanelSettings as AdminIcon,
+  AdminPanelSettingsFill as AdminFillIcon,
+  Apps as HubIcon,
+  AppsFill as HubFillIcon,
+  Checklist as DutiesIcon,
+  ChecklistFill as DutiesFillIcon,
+  DarkMode as MoonIcon,
+  EditSquare as NewChatIcon,
+  Group as SpacesIcon,
+  GroupFill as SpacesFillIcon,
+  Home as HomeIcon,
+  HomeFill as HomeFillIcon,
+  LeftPanelClose as PanelLeftIcon,
+  LightMode as SunIcon,
+  Menu as MenuIcon,
+  Monitoring as KpmIcon,
+  MonitoringFill as KpmFillIcon,
+  Schedule as ScheduleIcon,
+  ScheduleFill as ScheduleFillIcon,
+  Search as SearchIcon,
+  SmartToy as BuddyIcon,
+  SmartToyFill as BuddyFillIcon,
+} from "@material-symbols-svg/react/rounded";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -198,7 +206,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
       }}
       className="bg-muted hover:bg-muted/80 flex h-10 min-h-10 w-full items-center gap-2.5 rounded-full px-4 text-sm font-medium transition-colors"
     >
-      <SquarePenIcon className="size-4 shrink-0" />
+      <NewChatIcon className="size-4 shrink-0" />
       <span className="whitespace-nowrap">New chat</span>
     </button>
   );
@@ -239,7 +247,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             }}
             className="size-8"
           >
-            <HomeIcon className="size-4" />
+            {view === "home" ? (
+              <HomeFillIcon className="size-4" />
+            ) : (
+              <HomeIcon className="size-4" />
+            )}
           </TooltipIconButton>
           <TooltipIconButton
             variant="ghost"
@@ -255,7 +267,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               view === "space" && "bg-muted text-foreground",
             )}
           >
-            <LayoutGridIcon className="size-4" />
+            {view === "space" ? (
+              <HubFillIcon className="size-4" />
+            ) : (
+              <HubIcon className="size-4" />
+            )}
           </TooltipIconButton>
           <TooltipIconButton
             variant="ghost"
@@ -271,7 +287,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               view === "scheduled" && "bg-muted text-foreground",
             )}
           >
-            <ClockIcon className="size-4" />
+            {view === "scheduled" ? (
+              <ScheduleFillIcon className="size-4" />
+            ) : (
+              <ScheduleIcon className="size-4" />
+            )}
           </TooltipIconButton>
           {role === "superadmin" && (
             <TooltipIconButton
@@ -288,7 +308,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 pathname.startsWith("/admin") && "bg-muted text-foreground",
               )}
             >
-              <ShieldCheckIcon className="size-4" />
+              {pathname.startsWith("/admin") ? (
+                <AdminFillIcon className="size-4" />
+              ) : (
+                <AdminIcon className="size-4" />
+              )}
             </TooltipIconButton>
           )}
           {showSearch && (
@@ -387,7 +411,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
-                    <HomeIcon className="size-4 shrink-0" />
+                    {pathname.startsWith("/student") ? (
+                      <HomeFillIcon className="size-4 shrink-0" />
+                    ) : (
+                      <HomeIcon className="size-4 shrink-0" />
+                    )}
                     <span className="truncate">Rumah</span>
                   </Link>
                 )}
@@ -401,7 +429,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
-                    <LayoutDashboardIcon className="size-4 shrink-0" />
+                    {pathname.startsWith("/kpm") ? (
+                      <KpmFillIcon className="size-4 shrink-0" />
+                    ) : (
+                      <KpmIcon className="size-4 shrink-0" />
+                    )}
                     <span className="truncate">KPM Dashboard</span>
                   </Link>
                 )}
@@ -415,7 +447,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
-                    <ShieldCheckIcon className="size-4 shrink-0" />
+                    {pathname.startsWith("/admin") ? (
+                      <AdminFillIcon className="size-4 shrink-0" />
+                    ) : (
+                      <AdminIcon className="size-4 shrink-0" />
+                    )}
                     <span className="truncate">Admin</span>
                   </Link>
                 )}
@@ -428,7 +464,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                   )}
                 >
-                  <LayoutGridIcon className="size-4 shrink-0" />
+                  {view === "space" ? (
+                    <HubFillIcon className="size-4 shrink-0" />
+                  ) : (
+                    <HubIcon className="size-4 shrink-0" />
+                  )}
                   <span className="truncate">Hub</span>
                 </Link>
                 {(role === "teacher" || role === "student") && (
@@ -441,7 +481,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
-                    <UsersIcon className="size-4 shrink-0" />
+                    {pathname.startsWith("/community") ? (
+                      <SpacesFillIcon className="size-4 shrink-0" />
+                    ) : (
+                      <SpacesIcon className="size-4 shrink-0" />
+                    )}
                     <span className="truncate">Spaces</span>
                   </Link>
                 )}
@@ -455,7 +499,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
-                    <BotIcon className="size-4 shrink-0" />
+                    {pathname.startsWith("/buddy") ? (
+                      <BuddyFillIcon className="size-4 shrink-0" />
+                    ) : (
+                      <BuddyIcon className="size-4 shrink-0" />
+                    )}
                     <span className="truncate">Buddy</span>
                   </Link>
                 )}
@@ -469,7 +517,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
-                    <ClipboardListIcon className="size-4 shrink-0" />
+                    {pathname.startsWith("/duties") ? (
+                      <DutiesFillIcon className="size-4 shrink-0" />
+                    ) : (
+                      <DutiesIcon className="size-4 shrink-0" />
+                    )}
                     <span className="truncate">Duties</span>
                   </Link>
                 )}
@@ -482,7 +534,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                   )}
                 >
-                  <ClockIcon className="size-4 shrink-0" />
+                  {view === "scheduled" ? (
+                    <ScheduleFillIcon className="size-4 shrink-0" />
+                  ) : (
+                    <ScheduleIcon className="size-4 shrink-0" />
+                  )}
                   <span className="truncate">Scheduled</span>
                 </Link>
               </nav>
