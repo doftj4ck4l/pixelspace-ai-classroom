@@ -266,13 +266,7 @@ const CREATE_MODULE_ITEMS: {
   { type: "slides", label: "Slide Deck", Icon: PresentationIcon },
   { type: "reports", label: "Report", Icon: FileTextIcon },
   { type: "infographics", label: "Infographic", Icon: ChartColumnIcon },
-  { type: "podcasts", label: "Podcast", Icon: PodcastIcon },
   { type: "notes", label: "Notes", Icon: StickyNoteIcon },
-  {
-    type: "transformations",
-    label: "Transformation",
-    Icon: WandSparklesIcon,
-  },
 ];
 
 const DocGlyph: FC<{ type: DocType; size?: "sm" | "lg" }> = ({
@@ -702,9 +696,7 @@ const SECTION_TABS: { id: string; label: string; Icon: LucideIcon }[] = [
   { id: "slides", label: "Slides", Icon: PresentationIcon },
   { id: "reports", label: "Reports", Icon: FileTextIcon },
   { id: "infographics", label: "Infographics", Icon: ChartColumnIcon },
-  { id: "podcasts", label: "Podcasts", Icon: PodcastIcon },
   { id: "notes", label: "Notes", Icon: StickyNoteIcon },
-  { id: "transformations", label: "Transformations", Icon: WandSparklesIcon },
 ];
 
 export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {

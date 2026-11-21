@@ -193,7 +193,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
         router.push("/chat");
         setMobileOpen(false);
       }}
-      className="bg-muted hover:bg-muted/80 flex h-10 w-full items-center gap-2.5 rounded-full px-4 text-sm font-medium transition-colors"
+      className="bg-muted hover:bg-muted/80 flex h-10 min-h-10 w-full items-center gap-2.5 rounded-full px-4 text-sm font-medium transition-colors"
     >
       <SquarePenIcon className="size-4 shrink-0" />
       <span className="whitespace-nowrap">New chat</span>
