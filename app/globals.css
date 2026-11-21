@@ -159,6 +159,11 @@
     @apply border-border;
   }
 
+  html,
+  body {
+    font-family: var(--font-sans);
+  }
+
   :root {
     color-scheme: light;
   }
