@@ -355,119 +355,121 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
 
           <ThreadListRoot
             className={cn(
-              "relative flex-1 transition-[padding,width] duration-200",
-              sidebarCollapsed
-                ? "w-12 overflow-hidden px-2 pt-1"
-                : "w-65 overflow-y-auto p-2",
+              "relative flex min-h-0 flex-1 flex-col transition-[padding,width] duration-200",
+              sidebarCollapsed ? "w-12 overflow-hidden px-2 pt-1" : "w-65 p-2",
             )}
           >
-            {wrapNewThreadTooltip && newThread ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger render={newThread} />
-                  {sidebarCollapsed && (
-                    <TooltipContent side="right">New chat</TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              newThread
-            )}
+            <div className="shrink-0">
+              {wrapNewThreadTooltip && newThread ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger render={newThread} />
+                    {sidebarCollapsed && (
+                      <TooltipContent side="right">New chat</TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                newThread
+              )}
 
-            <nav className="mt-2 flex flex-col gap-0.5">
-              {role === "student" && (
-                <Link
-                  href="/student"
-                  className={cn(
-                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                    pathname.startsWith("/student")
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                  )}
-                >
-                  <HomeIcon className="size-4 shrink-0" />
-                  <span className="truncate">Rumah</span>
-                </Link>
-              )}
-              {role === "kpm" && (
-                <Link
-                  href="/kpm"
-                  className={cn(
-                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                    pathname.startsWith("/kpm")
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                  )}
-                >
-                  <LayoutDashboardIcon className="size-4 shrink-0" />
-                  <span className="truncate">KPM Dashboard</span>
-                </Link>
-              )}
-              {role === "superadmin" && (
-                <Link
-                  href="/admin"
-                  className={cn(
-                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                    pathname.startsWith("/admin")
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                  )}
-                >
-                  <ShieldCheckIcon className="size-4 shrink-0" />
-                  <span className="truncate">Admin</span>
-                </Link>
-              )}
-              <Link
-                href="/spaces/all"
-                className={cn(
-                  "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                  view === "space"
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              <nav className="mt-2 flex flex-col gap-0.5">
+                {role === "student" && (
+                  <Link
+                    href="/student"
+                    className={cn(
+                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                      pathname.startsWith("/student")
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <HomeIcon className="size-4 shrink-0" />
+                    <span className="truncate">Rumah</span>
+                  </Link>
                 )}
-              >
-                <LayoutGridIcon className="size-4 shrink-0" />
-                <span className="truncate">Spaces</span>
-              </Link>
-              <Link
-                href="/scheduled"
-                className={cn(
-                  "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                  view === "scheduled"
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                {role === "kpm" && (
+                  <Link
+                    href="/kpm"
+                    className={cn(
+                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                      pathname.startsWith("/kpm")
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <LayoutDashboardIcon className="size-4 shrink-0" />
+                    <span className="truncate">KPM Dashboard</span>
+                  </Link>
                 )}
-              >
-                <ClockIcon className="size-4 shrink-0" />
-                <span className="truncate">Scheduled</span>
-              </Link>
-            </nav>
+                {role === "superadmin" && (
+                  <Link
+                    href="/admin"
+                    className={cn(
+                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                      pathname.startsWith("/admin")
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    <ShieldCheckIcon className="size-4 shrink-0" />
+                    <span className="truncate">Admin</span>
+                  </Link>
+                )}
+                <Link
+                  href="/spaces/all"
+                  className={cn(
+                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                    view === "space"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <LayoutGridIcon className="size-4 shrink-0" />
+                  <span className="truncate">Spaces</span>
+                </Link>
+                <Link
+                  href="/scheduled"
+                  className={cn(
+                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                    view === "scheduled"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <ClockIcon className="size-4 shrink-0" />
+                  <span className="truncate">Scheduled</span>
+                </Link>
+              </nav>
 
-            {view === "scheduled" ? (
-              <div className="mt-4 flex flex-col">
-                <span className="text-muted-foreground/70 px-3 py-1 text-sm">
-                  No scheduled tasks
+              {view === "scheduled" ? (
+                <div className="mt-4 flex flex-col">
+                  <span className="text-muted-foreground/70 px-3 py-1 text-sm">
+                    No scheduled tasks
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="scrollbar-subtle -mx-1 mt-1 min-h-0 flex-1 overflow-y-auto px-1">
+              {hasThreads && (
+                <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
+                  Recents
                 </span>
-              </div>
-            ) : null}
-
-            {hasThreads && (
-              <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
-                Recents
-              </span>
-            )}
-
-            <ThreadListItems
-              searchQuery=""
-              aria-hidden={sidebarCollapsed}
-              inert={sidebarCollapsed}
-              className={cn(
-                "transition-[opacity,transform] duration-150",
-                sidebarCollapsed
-                  ? "pointer-events-none opacity-0"
-                  : "translate-x-0 opacity-100",
               )}
-            />
+
+              <ThreadListItems
+                searchQuery=""
+                aria-hidden={sidebarCollapsed}
+                inert={sidebarCollapsed}
+                className={cn(
+                  "transition-[opacity,transform] duration-150",
+                  sidebarCollapsed
+                    ? "pointer-events-none opacity-0"
+                    : "translate-x-0 opacity-100",
+                )}
+              />
+            </div>
           </ThreadListRoot>
 
           <div className="border-border/60 mt-auto flex shrink-0 items-center gap-2 border-t px-3 py-2.5">
