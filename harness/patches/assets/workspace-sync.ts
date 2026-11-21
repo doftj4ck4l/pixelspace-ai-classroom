@@ -88,18 +88,14 @@ function safeRelative(value: string): string | null {
 const shellQuote = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`;
 
 /**
- * Remove paths inside a workspace as root.
+ * Run a shell script as root with the workspace mounted.
  *
  * Sandbox containers run as root, so the API process (uid 1000) cannot always
  * delete what they wrote — EACCES on prune and on user deletes. A throwaway
  * container mounts the workspace and does the removal with the permissions
  * that created the files.
  */
-async function removeAsRoot(root: string, paths: string[]): Promise<boolean> {
-  if (!paths.length) return false;
-  const script = paths
-    .map((rel) => `rm -rf ${shellQuote(`${root}/${rel}`)}`)
-    .join("; ");
+async function runAsRoot(root: string, script: string): Promise<boolean> {
   try {
     const proc = Bun.spawn(
       [
@@ -453,7 +449,10 @@ export async function deleteWorkspaceOutput(
     removed = true;
   } catch {
     // Sandbox files are root-owned; delete with the permissions that wrote it.
-    removed = await removeAsRoot(root, [rel]);
+    removed = await runAsRoot(
+      root,
+      `rm -rf ${shellQuote(`${root}/${rel}`)}`,
+    );
   }
   try {
     const manifest = await readManifest(root);
@@ -497,7 +496,10 @@ export async function pruneWorkspace(workspaceId: string): Promise<boolean> {
   } catch {
     // Root-owned files from sandbox runs: empty the directory from a
     // throwaway container, then drop the (now empty) root from here.
-    await removeAsRoot(root, ["*", ".[!.]*"]);
+    await runAsRoot(
+      root,
+      `rm -rf ${shellQuote(root)}/* ${shellQuote(root)}/.[!.]*`,
+    );
     try {
       await fs.rm(root, { recursive: true, force: true });
       logger.info("workspace.pruned", { workspace: workspaceId });
