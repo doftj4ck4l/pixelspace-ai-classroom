@@ -341,8 +341,8 @@ export function LoginShell({
               )}
               <p className={cn(s.register, r.register)}>
                 {student ? "Baru di sini?" : "Belum ada akaun?"}{" "}
-                <Link href={`/register/${theme}`}>
-                  {student ? "Daftar sebagai pelajar" : "Daftar sebagai guru"}
+                <Link href={student ? `/register/${theme}` : "/"}>
+                  {student ? "Daftar sebagai pelajar" : "Daftar di laman utama"}
                 </Link>
               </p>
               {student && (
