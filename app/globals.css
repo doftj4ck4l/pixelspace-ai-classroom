@@ -159,9 +159,9 @@
     @apply border-border;
   }
 
-  html,
   body {
-    font-family: var(--font-sans);
+    font-family:
+      "Google Sans", var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   }
 
   :root {
