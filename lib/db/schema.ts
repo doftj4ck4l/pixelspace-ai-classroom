@@ -143,6 +143,12 @@ export const threads = pgTable(
     /** Set when this thread is the AI edit session for a deck artifact. */
     deckId: text("deck_id"),
     status: text("status").notNull().default("regular"),
+    /**
+     * Run state of the latest turn: idle | running | done | error | stopped.
+     * Persisted so a chat that is still executing server-side is visible
+     * after a refresh, and flips when the relay settles.
+     */
+    runStatus: text("run_status").notNull().default("idle"),
     lastMessageAt: timestamp("last_message_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },

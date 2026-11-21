@@ -1,0 +1,1 @@
+ALTER TABLE "threads" ADD COLUMN "run_status" text DEFAULT 'idle' NOT NULL;

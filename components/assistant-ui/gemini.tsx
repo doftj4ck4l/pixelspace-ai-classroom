@@ -34,6 +34,7 @@ import { type FC, type PropsWithChildren, useState, useMemo } from "react";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
 import { AskUserDataUI } from "@/components/assistant-ui/ask-user";
+import { ContextCompactedDataUI } from "@/components/assistant-ui/context-notice";
 import { RenderUiBlock } from "@/components/assistant-ui/render-ui";
 import { ToolFallback } from "@/components/assistant-ui/elements/tool-fallback.aui";
 import {
@@ -89,6 +90,7 @@ export const ThreadView: FC = () => {
   return (
     <>
       <AskUserDataUI />
+      <ContextCompactedDataUI />
       <ThreadContent />
     </>
   );

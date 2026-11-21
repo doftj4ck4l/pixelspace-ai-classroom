@@ -43,10 +43,30 @@ type HistoryRow = {
 type ThreadJson = {
   remoteId: string;
   status: "regular" | "archived";
+  runStatus?: string;
   title?: string;
   lastMessageAt?: string;
   createdAt?: string;
 };
+
+/** Server run state rides on the thread's `custom` metadata. */
+const customFor = (thread: ThreadJson) => ({
+  runStatus: thread.runStatus ?? "idle",
+});
+
+const threadMeta = (thread: ThreadJson) => ({
+  remoteId: thread.remoteId,
+  status: thread.status,
+  title: thread.title,
+  custom: customFor(thread),
+  // Threads without activity (e.g. migrated ones) group by creation date
+  // instead of defaulting into "Today".
+  lastMessageAt: thread.lastMessageAt
+    ? new Date(thread.lastMessageAt)
+    : thread.createdAt
+      ? new Date(thread.createdAt)
+      : undefined,
+});
 
 function useThreadListAdapters() {
   const aui = useAui();
@@ -96,24 +116,76 @@ const emitThreadId = (id: string) => {
   for (const listener of threadIdListeners) listener(id);
 };
 
+/**
+ * Polls the stored run status so a detached run's settle still lands in the
+ * sidebar (and in the open thread's transcript) — the client can disconnect
+ * from a run without the run stopping, so the UI has to re-sync from the
+ * server rather than trust only its own streams.
+ */
+const RunStatusSync = () => {
+  const aui = useAui();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+
+  useEffect(() => {
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let previous = new Map<string, string>();
+
+    const poll = async () => {
+      let next = previous;
+      let anyRunning = false;
+      try {
+        const data = (await fetch("/api/pi/threads?light=1").then((r) =>
+          r.json(),
+        )) as { threads?: { remoteId: string; runStatus?: string }[] };
+        if (disposed) return;
+        next = new Map(
+          (data.threads ?? []).map((t) => [t.remoteId, t.runStatus ?? "idle"]),
+        );
+        anyRunning = [...next.values()].some((status) => status === "running");
+        const changed =
+          next.size !== previous.size ||
+          [...next].some(([id, status]) => previous.get(id) !== status);
+        const openId = pathnameRef.current.startsWith("/chat/")
+          ? decodeURIComponent(pathnameRef.current.split("/")[2] ?? "")
+          : undefined;
+        const openSettled =
+          openId !== undefined &&
+          previous.get(openId) === "running" &&
+          next.get(openId) !== "running";
+        if (changed) void aui.threads.reload();
+        if (openSettled && !aui.thread.getState().isRunning) {
+          void aui.threads.reloadMainThread();
+        }
+      } catch {
+        // transient — try again sooner than the idle cadence
+        if (!disposed) timer = setTimeout(poll, 15000);
+        previous = next;
+        return;
+      }
+      previous = next;
+      timer = setTimeout(poll, anyRunning ? 5000 : 30000);
+    };
+
+    timer = setTimeout(poll, 1200);
+    return () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [aui]);
+
+  return null;
+};
+
 const threadListAdapter: RemoteThreadListAdapter = {
   async list() {
     const data = (await fetch("/api/pi/threads").then((r) => r.json())) as {
       threads?: ThreadJson[];
     };
     return {
-      threads: (data.threads ?? []).map((thread) => ({
-        remoteId: thread.remoteId,
-        status: thread.status,
-        title: thread.title,
-        // Threads without activity (e.g. migrated ones) group by creation
-        // date instead of defaulting into "Today".
-        lastMessageAt: thread.lastMessageAt
-          ? new Date(thread.lastMessageAt)
-          : thread.createdAt
-            ? new Date(thread.createdAt)
-            : undefined,
-      })),
+      threads: (data.threads ?? []).map(threadMeta),
     };
   },
   async initialize() {
@@ -151,16 +223,7 @@ const threadListAdapter: RemoteThreadListAdapter = {
     const thread = (await fetch(`/api/pi/threads/${remoteId}`).then((r) =>
       r.json(),
     )) as ThreadJson;
-    return {
-      remoteId: thread.remoteId,
-      status: thread.status,
-      title: thread.title,
-      lastMessageAt: thread.lastMessageAt
-        ? new Date(thread.lastMessageAt)
-        : thread.createdAt
-          ? new Date(thread.createdAt)
-          : undefined,
-    };
+    return threadMeta(thread);
   },
   async generateTitle(remoteId, messages) {
     return createAssistantStream(async (controller) => {
@@ -208,6 +271,9 @@ export const AppShell = ({
         // No sendAutomaticallyWhen: every tool executes server-side inside the
         // pi harness, so the client must never auto-continue a run.
         transport: new AssistantChatTransport({ api: "/api/chat" }),
+        // A message sent while the thread is running waits in composer.queue
+        // and dispatches when the run settles, like pixelspacev3's follow-ups.
+        unstable_enableMessageQueue: true,
         adapters: {
           attachments: new CompositeAttachmentAdapter([
             new SimpleImageAttachmentAdapter(),
@@ -235,6 +301,7 @@ export const AppShell = ({
     <AssistantRuntimeProvider runtime={runtime}>
       <div className="h-dvh w-full overflow-hidden">
         <ThreadUrlSync />
+        <RunStatusSync />
         <CloneThreadShell role={role}>{children}</CloneThreadShell>
       </div>
     </AssistantRuntimeProvider>

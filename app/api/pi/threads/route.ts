@@ -6,13 +6,17 @@ import { registry } from "@/lib/pi/registry";
 
 type PiConversation = { id: string; title?: string; updatedAt?: number };
 
-export async function GET() {
+export async function GET(req: Request) {
   const { user, response } = await requireApiUser();
   if (!user) return response;
 
+  // Polling (run-status sync) only needs the stored rows; skip the harness
+  // title reconciliation so a 5-second poll stays one cheap query.
+  const light = new URL(req.url).searchParams.get("light") === "1";
+
   const threads = await registry.list(user.id);
 
-  if (piConfigured()) {
+  if (!light && piConfigured()) {
     try {
       const res = await piFetch("/api/conversations");
       if (res.ok) {
@@ -42,6 +46,7 @@ export async function GET() {
     threads: threads.map((thread) => ({
       remoteId: thread.remoteId,
       status: thread.status,
+      runStatus: thread.runStatus ?? "idle",
       title: thread.title,
       lastMessageAt: thread.lastMessageAt,
       createdAt: thread.createdAt,

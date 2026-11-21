@@ -323,7 +323,16 @@ const ThreadListSkeleton: FC = () => {
 };
 
 export const ThreadListItem: FC = () => {
+  // Two sources of truth: a runtime this client is streaming, or a run the
+  // server says is still executing (e.g. after a reload, or a run started in
+  // another tab) — both must show as running in the sidebar.
   const isRunning = useAuiState((s) => s.threadListItem.isRunning);
+  const serverRunning = useAuiState(
+    (s) =>
+      (s.threadListItem.custom as { runStatus?: string } | undefined)
+        ?.runStatus === "running",
+  );
+  const running = isRunning || serverRunning;
   const [isRenaming, setIsRenaming] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const restoreFocusRef = useRef(false);
@@ -352,7 +361,7 @@ export const ThreadListItem: FC = () => {
           data-slot="aui_thread-list-item-trigger"
           className="focus-visible:ring-ring/50 flex h-full min-w-0 flex-1 items-center rounded-lg px-3 text-start text-sm outline-none group-hover:pe-9 group-has-focus-visible:pe-9 group-has-data-[state=open]:pe-9 group-data-active:pe-9 focus-visible:ring-1"
         >
-          {isRunning && (
+          {running && (
             <Loader2Icon
               aria-hidden
               data-slot="aui_thread-list-item-running"
@@ -365,7 +374,7 @@ export const ThreadListItem: FC = () => {
           >
             <ThreadListItemPrimitive.Title fallback="New chat" />
           </span>
-          {isRunning && <span className="sr-only">Running</span>}
+          {running && <span className="sr-only">Running</span>}
         </ThreadListItemPrimitive.Trigger>
       )}
       <ThreadListItemMore onRename={() => setIsRenaming(true)} />

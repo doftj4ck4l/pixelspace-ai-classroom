@@ -12,6 +12,7 @@ import { requireApiUser } from "@/lib/auth-session";
 import { artifactRegistry, type PiArtifact } from "@/lib/pi/artifacts";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
+import { threadRuns } from "@/lib/pi/runs";
 import { remapDeckProgress } from "@/lib/flashcards/progress";
 import { validateDeckSpec, type FlashcardSpec } from "@/lib/flashcards/spec";
 import { remapQuizProgress } from "@/lib/quizzes/progress";
@@ -607,6 +608,17 @@ const piChat = async (
 
   const thread = threadId ? await registry.get(userId, threadId) : undefined;
 
+  // A real thread's run is registered before the upstream call so the stop
+  // route can find it immediately. Session-only Q&A runs (no thread) stay
+  // tied to the request signal and die with the panel that asked.
+  const run = threadId ? threadRuns.register(threadId) : undefined;
+  if (threadId) {
+    await registry.update(userId, threadId, {
+      runStatus: "running",
+      lastMessageAt: new Date().toISOString(),
+    });
+  }
+
   const piMessages = toPiMessages(body.messages);
   if (deckEditContext) {
     const lastUser = [...piMessages].reverse().find((m) => m.role === "user");
@@ -631,20 +643,52 @@ const piChat = async (
           : {}),
         messages: piMessages,
       }),
-      signal: req.signal,
+      // Detached runs die only through the stop route (or the harness), never
+      // because the browser navigated away or reloaded.
+      signal: run ? run.controller.signal : req.signal,
     });
   } catch {
+    if (threadId && run) {
+      threadRuns.unregister(threadId, run);
+      await registry.update(userId, threadId, { runStatus: "idle" });
+    }
     return null;
   }
-  if (!upstream.ok || !upstream.body) return null;
+  if (!upstream.ok || !upstream.body) {
+    if (threadId && run) {
+      threadRuns.unregister(threadId, run);
+      await registry.update(userId, threadId, { runStatus: "idle" });
+    }
+    return null;
+  }
 
   const reader = upstream.body.getReader();
   const decoder = new TextDecoder();
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
-      writer.write({ type: "start" });
-      writer.write({ type: "start-step" });
+      // Detached from the request: after the client disconnects (reload,
+      // closed tab) the loop keeps draining the harness stream so captures,
+      // the title and the thread status all settle. Writes to a dead stream
+      // must never throw or stop the drain.
+      let clientGone = req.signal.aborted;
+      const onClientGone = () => {
+        clientGone = true;
+      };
+      if (!clientGone) {
+        req.signal.addEventListener("abort", onClientGone, { once: true });
+      }
+      const emit = (chunk: Parameters<typeof writer.write>[0]) => {
+        if (clientGone) return;
+        try {
+          writer.write(chunk);
+        } catch {
+          clientGone = true;
+        }
+      };
+
+      emit({ type: "start" });
+      emit({ type: "start-step" });
 
       let textId: string | null = null;
       let textSeq = 0;
@@ -658,14 +702,23 @@ const piChat = async (
 
       const closeText = () => {
         if (textId) {
-          writer.write({ type: "text-end", id: textId });
+          emit({ type: "text-end", id: textId });
           textId = null;
         }
       };
 
       try {
         for (;;) {
-          const { done, value } = await reader.read();
+          let read: ReadableStreamReadResult<Uint8Array>;
+          try {
+            read = await reader.read();
+          } catch (error) {
+            // The stop route aborted this relay: end the drain quietly. The
+            // settle below records the run as stopped.
+            if (run && run.controller.signal.aborted) break;
+            throw error;
+          }
+          const { done, value } = read;
           if (done) break;
           buffer += decoder.decode(value, { stream: true });
           const frames = buffer.split("\n\n");
@@ -683,9 +736,9 @@ const piChat = async (
             if (event.type === "text" && typeof event.delta === "string") {
               if (!textId) {
                 textId = String(textSeq++);
-                writer.write({ type: "text-start", id: textId });
+                emit({ type: "text-start", id: textId });
               }
-              writer.write({
+              emit({
                 type: "text-delta",
                 id: textId,
                 delta: event.delta,
@@ -713,13 +766,13 @@ const piChat = async (
               const queued = pendingToolIds.get(event.name) ?? [];
               queued.push(event.id);
               pendingToolIds.set(event.name, queued);
-              writer.write({
+              emit({
                 type: "tool-input-start",
                 toolCallId: event.id,
                 toolName: event.name,
                 dynamic: true,
               });
-              writer.write({
+              emit({
                 type: "tool-input-available",
                 toolCallId: event.id,
                 toolName: event.name,
@@ -764,7 +817,7 @@ const piChat = async (
                   }
                 }
                 if (event.ok === false) {
-                  writer.write({
+                  emit({
                     type: "tool-output-error",
                     toolCallId,
                     errorText: String(event.content ?? "Tool call failed"),
@@ -775,7 +828,7 @@ const piChat = async (
                     typeof event.content === "string"
                       ? event.content.slice(0, 4000)
                       : event.content;
-                  writer.write({
+                  emit({
                     type: "tool-output-available",
                     toolCallId,
                     output: { content, ms: event.ms, calls: event.calls },
@@ -789,7 +842,7 @@ const piChat = async (
             ) {
               // The agent has paused the run waiting for a human. The question
               // id is live-only, so it has to ride a data part to the client.
-              writer.write({
+              emit({
                 type: "data-ask-user",
                 data: {
                   questionId: event.id,
@@ -803,10 +856,30 @@ const piChat = async (
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
               } as any);
             } else if (
+              event.type === "context" &&
+              event.compacted &&
+              typeof event.compacted === "object"
+            ) {
+              // The harness compacted older turns to fit the window. Surface
+              // it as a data part so the thread can show a small divider.
+              const compacted = event.compacted as {
+                fromTokens?: number;
+                toTokens?: number;
+              };
+              emit({
+                type: "data-context-compacted",
+                data: {
+                  fromTokens: compacted.fromTokens ?? 0,
+                  toTokens: compacted.toTokens ?? 0,
+                },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              } as any);
+            } else if (
               event.type === "conversation" &&
               typeof event.id === "string" &&
               threadId
             ) {
+              threadRuns.setConversationId(threadId, event.id);
               await registry.update(userId, threadId, {
                 conversationId: event.id,
               });
@@ -833,7 +906,7 @@ const piChat = async (
         // run. Close every one we opened but never completed.
         for (const toolCallId of openToolIds) {
           if (!completedToolIds.has(toolCallId)) {
-            writer.write({
+            emit({
               type: "tool-output-error",
               toolCallId,
               errorText: "The tool did not return a result.",
@@ -844,15 +917,31 @@ const piChat = async (
         closeText();
       }
 
-      if (failure) throw new Error(failure);
+      try {
+        // Settle the thread: stopped when the stop route aborted this relay,
+        // error when the harness reported one, done otherwise.
+        const settled: "stopped" | "error" | "done" = run?.controller.signal
+          .aborted
+          ? "stopped"
+          : failure
+            ? "error"
+            : "done";
+        if (threadId) {
+          await registry.update(userId, threadId, {
+            runStatus: settled,
+            ...(settled !== "error"
+              ? { lastMessageAt: new Date().toISOString() }
+              : {}),
+          });
+        }
 
-      if (threadId) {
-        await registry.update(userId, threadId, {
-          lastMessageAt: new Date().toISOString(),
-        });
+        if (failure) throw new Error(failure);
+
+        emit({ type: "finish-step" });
+        emit({ type: "finish" });
+      } finally {
+        if (threadId && run) threadRuns.unregister(threadId, run);
       }
-      writer.write({ type: "finish-step" });
-      writer.write({ type: "finish" });
     },
     onError: (error) =>
       error instanceof Error ? error.message : String(error),

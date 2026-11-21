@@ -36,6 +36,7 @@ import {
   ErrorPrimitive,
   groupPartByType,
   MessagePrimitive,
+  QueueItemPrimitive,
   SuggestionPrimitive,
   ThreadPrimitive,
   type FileMessagePartComponent,
@@ -58,12 +59,14 @@ import {
   PencilIcon,
   PhoneIcon,
   RefreshCwIcon,
+  ScheduleIcon,
   TriangleAlertIcon,
   Loader2Icon,
   SquareIcon,
   PlayIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
+  XIcon,
 } from "@/components/icons";
 import {
   createContext,
@@ -542,6 +545,29 @@ const Composer: FC<{ autoFocus: boolean }> = ({ autoFocus }) => {
         }
       >
         <ComposerAttachments />
+        <ComposerPrimitive.Queue>
+          {() => (
+            <div
+              data-slot="aui-composer-queue-item"
+              className="text-muted-foreground mx-2.5 flex items-center gap-2 rounded-lg border border-dashed px-2.5 py-1.5 text-xs"
+            >
+              <ScheduleIcon className="size-3.5 shrink-0" />
+              <QueueItemPrimitive.Text className="min-w-0 flex-1 truncate" />
+              <span className="shrink-0 opacity-70">Menunggu</span>
+              <QueueItemPrimitive.Remove
+                render={
+                  <button
+                    type="button"
+                    aria-label="Buang daripada baris gilir"
+                    className="hover:text-foreground -me-0.5 shrink-0 rounded p-0.5 transition-colors"
+                  />
+                }
+              >
+                <XIcon className="size-3.5" />
+              </QueueItemPrimitive.Remove>
+            </div>
+          )}
+        </ComposerPrimitive.Queue>
         <ComposerPrimitive.Input
           placeholder="Send a message..."
           className="aui-composer-input caret-primary placeholder:text-muted-foreground/60 max-h-48 min-h-10 w-full resize-none bg-transparent px-2.5 py-1 text-base leading-6 outline-none"
@@ -564,6 +590,19 @@ const ComposerAction: FC = () => {
       s.composer.submission !== undefined &&
       !(s.thread.isRunning && s.thread.capabilities.cancel),
   );
+  const remoteId = useAuiState((s) => s.threadListItem.remoteId);
+
+  // Stopping must reach the server: aborting the fetch only stops this
+  // browser reading, while the run keeps executing in the harness. Best-effort
+  // — a run that already finished returns stopped: false, not an error here.
+  const requestStop = () => {
+    if (!remoteId) return;
+    void fetch("/api/pi/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ threadId: remoteId }),
+    }).catch(() => {});
+  };
 
   return (
     <div className="aui-composer-action-wrapper relative flex items-center justify-between">
@@ -661,6 +700,7 @@ const ComposerAction: FC = () => {
           }
         >
           <ComposerPrimitive.Cancel
+            onClick={requestStop}
             render={
               <Button
                 type="button"

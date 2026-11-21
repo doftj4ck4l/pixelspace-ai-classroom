@@ -13,6 +13,7 @@ export type PiThread = {
   conversationId?: string;
   title?: string;
   status: "regular" | "archived";
+  runStatus?: "idle" | "running" | "done" | "error" | "stopped";
   lastMessageAt?: string;
   createdAt?: string;
 };
@@ -24,6 +25,7 @@ const toPiThread = (row: ThreadRow): PiThread => ({
   ...(row.piConversationId ? { conversationId: row.piConversationId } : {}),
   ...(row.title ? { title: row.title } : {}),
   status: row.status === "archived" ? "archived" : "regular",
+  runStatus: row.runStatus as PiThread["runStatus"],
   ...(row.lastMessageAt
     ? { lastMessageAt: row.lastMessageAt.toISOString() }
     : {}),
@@ -90,6 +92,9 @@ export const registry = {
           : {}),
         ...(patch.title !== undefined ? { title: patch.title } : {}),
         ...(patch.status !== undefined ? { status: patch.status } : {}),
+        ...(patch.runStatus !== undefined
+          ? { runStatus: patch.runStatus }
+          : {}),
         ...(patch.lastMessageAt !== undefined
           ? { lastMessageAt: new Date(patch.lastMessageAt) }
           : {}),

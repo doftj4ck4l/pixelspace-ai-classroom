@@ -71,6 +71,13 @@
       "when": 1795267541622,
       "tag": "0009_small_tarot",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795270794125,
+      "tag": "0010_puzzling_orphan",
+      "breakpoints": true
     }
   ]
 }

@@ -153,6 +153,14 @@ export const ArtifactAiPanel: FC<{
   const stop = () => {
     abortRef.current?.abort();
     abortRef.current = null;
+    // Aborting the fetch only stops this panel reading; the harness run keeps
+    // going. Tell the server to cancel it too. Best-effort — a run that
+    // already finished returns stopped: false, which is not an error here.
+    void fetch("/api/pi/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ artifactEditTargetId: artifactId }),
+    }).catch(() => {});
     setBusy(false);
     setAsk(null);
     setMessages((prev) => [
