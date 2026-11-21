@@ -11,8 +11,10 @@ import {
   MoreHorizontalIcon,
   PictureAsPdfIcon,
   PlusIcon,
+  PlayIcon,
   PresentationIcon,
   SearchIcon,
+  SmartDisplayIcon,
   TableIcon,
   Trash2Icon,
   UploadFileIcon,
@@ -35,7 +37,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-type SourceKind = "pdf" | "doc" | "slides" | "sheets" | "images" | "other";
+type SourceKind =
+  | "pdf"
+  | "doc"
+  | "slides"
+  | "sheets"
+  | "images"
+  | "youtube"
+  | "other";
 
 type SourceRow = {
   id: string;
@@ -46,6 +55,7 @@ type SourceRow = {
   kind: SourceKind;
   createdAt: string;
   url: string;
+  thumb?: string;
 };
 
 const KIND_THEME: Record<
@@ -87,6 +97,13 @@ const KIND_THEME: Record<
     Icon: ImageIcon,
     label: "Imej",
   },
+  youtube: {
+    cover:
+      "bg-gradient-to-br from-red-300/50 via-rose-200/40 to-red-100/30 dark:from-red-900/60 dark:via-rose-950/50 dark:to-red-950/40",
+    color: "text-red-600",
+    Icon: SmartDisplayIcon,
+    label: "YouTube",
+  },
   other: {
     cover:
       "bg-gradient-to-br from-slate-300/50 via-slate-200/40 to-slate-100/30 dark:from-slate-800/60 dark:via-slate-900/50 dark:to-slate-950/40",
@@ -107,6 +124,7 @@ const TABS: {
   { id: "slides", label: "Slaid", Icon: PresentationIcon },
   { id: "sheets", label: "Hamparan", Icon: TableIcon },
   { id: "images", label: "Imej", Icon: ImageIcon },
+  { id: "youtube", label: "YouTube", Icon: SmartDisplayIcon },
 ];
 
 const ACCEPT =
@@ -131,6 +149,11 @@ export const SourcesPage: FC = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<SourceRow | null>(null);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoSaving, setVideoSaving] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
@@ -172,6 +195,35 @@ export const SourcesPage: FC = () => {
     await fetch(`/api/sources/${row.id}`, { method: "DELETE" }).catch(() => {});
   };
 
+  const addVideo = async () => {
+    if (!videoUrl.trim() || videoSaving) return;
+    setVideoSaving(true);
+    setVideoError(null);
+    try {
+      const res = await fetch("/api/sources/youtube", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: videoUrl, title: videoTitle }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        setVideoError(data?.error ?? "Gagal menambah video.");
+        return;
+      }
+      setVideoOpen(false);
+      setVideoUrl("");
+      setVideoTitle("");
+      setTab("youtube");
+      load();
+    } catch {
+      setVideoError("Gagal menambah video.");
+    } finally {
+      setVideoSaving(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (rows ?? []).filter((row) => {
@@ -209,18 +261,28 @@ export const SourcesPage: FC = () => {
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
               />
             </div>
-            <Button
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              className="h-9 gap-2 rounded-full px-4 text-sm"
-            >
-              {uploading ? (
-                <Loader2Icon className="size-4 animate-spin" />
-              ) : (
-                <UploadFileIcon className="size-4" />
-              )}
-              {uploading ? "Memuat naik…" : "Muat naik"}
-            </Button>
+            {tab === "youtube" ? (
+              <Button
+                onClick={() => setVideoOpen(true)}
+                className="h-9 gap-2 rounded-full px-4 text-sm"
+              >
+                <SmartDisplayIcon className="size-4" />
+                Tambah video
+              </Button>
+            ) : (
+              <Button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="h-9 gap-2 rounded-full px-4 text-sm"
+              >
+                {uploading ? (
+                  <Loader2Icon className="size-4 animate-spin" />
+                ) : (
+                  <UploadFileIcon className="size-4" />
+                )}
+                {uploading ? "Memuat naik…" : "Muat naik"}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -332,14 +394,36 @@ export const SourcesPage: FC = () => {
                     </div>
                   </div>
 
-                  <div className="relative flex h-28 items-center justify-center sm:h-32">
-                    <div
-                      aria-hidden="true"
-                      className="absolute -top-6 -left-6 size-24 rounded-full bg-white/40 blur-2xl dark:bg-white/10"
-                    />
-                    <theme.Icon
-                      className={cn("relative size-16 opacity-90", theme.color)}
-                    />
+                  <div className="relative flex h-28 items-center justify-center overflow-hidden sm:h-32">
+                    {row.kind === "youtube" && row.thumb ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={row.thumb}
+                          alt=""
+                          loading="lazy"
+                          className="absolute inset-0 size-full object-cover"
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/10">
+                          <span className="flex size-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm">
+                            <PlayIcon className="size-6" />
+                          </span>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          aria-hidden="true"
+                          className="absolute -top-6 -left-6 size-24 rounded-full bg-white/40 blur-2xl dark:bg-white/10"
+                        />
+                        <theme.Icon
+                          className={cn(
+                            "relative size-16 opacity-90",
+                            theme.color,
+                          )}
+                        />
+                      </>
+                    )}
                   </div>
 
                   <div className="relative z-10 rounded-2xl bg-white/75 p-3 backdrop-blur-md dark:bg-black/35">
@@ -351,7 +435,10 @@ export const SourcesPage: FC = () => {
                     </p>
                     <div className="text-muted-foreground mt-1.5 flex items-center gap-1.5 text-xs">
                       <theme.Icon className="size-3.5" />
-                      {theme.label} · {formatSize(row.size)} ·{" "}
+                      {theme.label}
+                      {row.kind === "youtube"
+                        ? " · "
+                        : ` · ${formatSize(row.size)} · `}
                       {formatDate(row.createdAt)}
                     </div>
                   </div>
@@ -361,20 +448,77 @@ export const SourcesPage: FC = () => {
 
             <button
               type="button"
-              onClick={() => fileRef.current?.click()}
+              onClick={() =>
+                tab === "youtube"
+                  ? setVideoOpen(true)
+                  : fileRef.current?.click()
+              }
               className="border-border/60 hover:bg-muted/40 flex min-h-[248px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed p-6 text-center transition-colors"
             >
               <span className="bg-muted flex size-12 items-center justify-center rounded-xl">
                 <PlusIcon className="size-5" />
               </span>
-              <span className="text-sm font-semibold">Tambah sumber</span>
+              <span className="text-sm font-semibold">
+                {tab === "youtube" ? "Tambah video YouTube" : "Tambah sumber"}
+              </span>
               <span className="text-muted-foreground max-w-44 text-xs">
-                Muat naik PDF, DOCX, XLSX, PPTX, imej dan lagi (maks 25 MB)
+                {tab === "youtube"
+                  ? "Tampal pautan YouTube untuk dijadikan sumber pengajaran"
+                  : "Muat naik PDF, DOCX, XLSX, PPTX, imej dan lagi (maks 25 MB)"}
               </span>
             </button>
           </div>
         )}
       </div>
+
+      <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah video YouTube</DialogTitle>
+            <DialogDescription>
+              Tampal pautan video untuk dijadikan sumber pengajaran.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <label className="grid gap-1.5 text-sm">
+              <span className="font-medium">Pautan YouTube</span>
+              <input
+                value={videoUrl}
+                onChange={(event) => setVideoUrl(event.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 rounded-xl border px-3 text-sm outline-none focus-visible:ring-2"
+              />
+            </label>
+            <label className="grid gap-1.5 text-sm">
+              <span className="font-medium">
+                Tajuk <span className="text-muted-foreground">(pilihan)</span>
+              </span>
+              <input
+                value={videoTitle}
+                onChange={(event) => setVideoTitle(event.target.value)}
+                placeholder="Diambil automatik daripada YouTube"
+                className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 rounded-xl border px-3 text-sm outline-none focus-visible:ring-2"
+              />
+            </label>
+            {videoError && (
+              <p className="text-destructive text-sm">{videoError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVideoOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              onClick={() => void addVideo()}
+              disabled={videoSaving || !videoUrl.trim()}
+              className="gap-2"
+            >
+              {videoSaving && <Loader2Icon className="size-4 animate-spin" />}
+              Tambah
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={pendingDelete !== null}

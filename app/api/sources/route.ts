@@ -22,16 +22,25 @@ export async function GET() {
     .orderBy(desc(sources.createdAt));
   return NextResponse.json(
     {
-      sources: rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        ext: row.ext,
-        mime: row.mime,
-        size: row.size,
-        kind: kindForExt(row.ext),
-        createdAt: row.createdAt.toISOString(),
-        url: `/api/sources/${row.id}/file`,
-      })),
+      sources: rows.map((row) => {
+        const kind = kindForExt(row.ext);
+        const youtube = kind === "youtube";
+        return {
+          id: row.id,
+          title: row.title,
+          ext: row.ext,
+          mime: row.mime,
+          size: row.size,
+          kind,
+          createdAt: row.createdAt.toISOString(),
+          url: youtube
+            ? `https://www.youtube.com/watch?v=${row.path}`
+            : `/api/sources/${row.id}/file`,
+          ...(youtube
+            ? { thumb: `https://i.ytimg.com/vi/${row.path}/hqdefault.jpg` }
+            : {}),
+        };
+      }),
     },
     { headers: { "Cache-Control": "no-store" } },
   );

@@ -23,6 +23,7 @@ export {
   GraphicEq as AudioLinesIcon,
   BarChart as BarChart3Icon,
   MenuBook as BookOpenIcon,
+  SmartDisplay as SmartDisplayIcon,
   SmartToy as BotIcon,
   DataObject as BracesIcon,
   Psychology as BrainIcon,

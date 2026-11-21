@@ -32,6 +32,7 @@ export type SourceKind =
   | "slides"
   | "sheets"
   | "images"
+  | "youtube"
   | "other";
 
 export const kindForExt = (ext: string): SourceKind => {
@@ -42,6 +43,7 @@ export const kindForExt = (ext: string): SourceKind => {
   if (value === "xls" || value === "xlsx" || value === "csv") return "sheets";
   if (["png", "jpg", "jpeg", "webp", "gif", "svg"].includes(value))
     return "images";
+  if (value === "youtube") return "youtube";
   return "other";
 };
 
