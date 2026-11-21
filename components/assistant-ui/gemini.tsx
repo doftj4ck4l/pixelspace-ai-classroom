@@ -8,6 +8,7 @@ import {
   ErrorPrimitive,
   groupPartByType,
   MessagePrimitive,
+  QueueItemPrimitive,
   ThreadPrimitive,
   useAuiState,
 } from "@assistant-ui/react";
@@ -25,6 +26,7 @@ import {
   PencilRuler,
   PlusIcon,
   RefreshCwIcon,
+  ScheduleIcon,
   Telescope,
   ThumbsDown,
   ThumbsUp,
@@ -158,6 +160,29 @@ const Composer: FC = () => {
 
   return (
     <ComposerPrimitive.Root className="mx-auto flex w-full max-w-2xl flex-col rounded-4xl bg-white p-3 dark:bg-[#1e1f20]">
+      <ComposerPrimitive.Queue>
+        {() => (
+          <div
+            data-slot="aui-composer-queue-item"
+            className="text-muted-foreground mx-1 mb-2 flex items-center gap-2 rounded-2xl bg-[#f0f4f9] px-3 py-1.5 text-xs dark:bg-[#2b2c2e]"
+          >
+            <ScheduleIcon className="size-3.5 shrink-0" />
+            <QueueItemPrimitive.Text className="min-w-0 flex-1 truncate" />
+            <span className="shrink-0 opacity-70">Menunggu</span>
+            <QueueItemPrimitive.Remove
+              render={
+                <button
+                  type="button"
+                  aria-label="Buang daripada baris gilir"
+                  className="hover:text-foreground -me-0.5 shrink-0 rounded p-0.5 transition-colors"
+                />
+              }
+            >
+              <XIcon className="size-3.5" />
+            </QueueItemPrimitive.Remove>
+          </div>
+        )}
+      </ComposerPrimitive.Queue>
       <AuiIf condition={(s) => s.composer.attachments.length > 0}>
         <div className="flex flex-row gap-2.5 overflow-x-auto px-1 pt-1 pb-2.5">
           <ComposerPrimitive.Attachments
@@ -272,6 +297,20 @@ const sendBtnClass =
   "flex size-9 shrink-0 items-center justify-center rounded-full bg-[#1b8a7f] text-white transition-colors hover:bg-[#23a093]";
 
 const GeminiSendButton: FC = () => {
+  const remoteId = useAuiState((s) => s.threadListItem.remoteId);
+
+  // Stopping must reach the server: aborting the fetch only stops this
+  // browser reading, while the run keeps executing in the harness. Best-effort
+  // — a run that already finished returns stopped: false, not an error here.
+  const requestStop = () => {
+    if (!remoteId) return;
+    void fetch("/api/pi/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ threadId: remoteId }),
+    }).catch(() => {});
+  };
+
   return (
     <>
       <AuiIf condition={(s) => !s.thread.isRunning && !s.composer.isEmpty}>
@@ -284,6 +323,7 @@ const GeminiSendButton: FC = () => {
       </AuiIf>
       <AuiIf condition={(s) => s.thread.isRunning}>
         <ComposerPrimitive.Cancel
+          onClick={requestStop}
           aria-label="Stop generating"
           className={sendBtnClass}
         >
