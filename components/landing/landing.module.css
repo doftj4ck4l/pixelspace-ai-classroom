@@ -8,7 +8,7 @@
   background:
     radial-gradient(ellipse at 8% 43%, #07172a66, transparent 45%), #040b19;
   color: var(--ink);
-  font-family: var(--font-inter), sans-serif;
+  font-family: "Google Sans", var(--font-inter), sans-serif;
   -webkit-font-smoothing: antialiased;
   color-scheme: dark;
 }

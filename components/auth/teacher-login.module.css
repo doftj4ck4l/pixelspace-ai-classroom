@@ -10,7 +10,7 @@
   background:
     radial-gradient(ellipse at 15% 15%, #fff9, transparent 60%), #f3fbfc;
   color: #101113;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "Google Sans", var(--font-inter), sans-serif;
   color-scheme: light;
   --muted-foreground: #5e697a;
   --foreground: #101113;
