@@ -158,6 +158,8 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
 
   // Navigation is the URL now: /chat*, /spaces/<section>, /scheduled.
   const inSpace = pathname.startsWith("/spaces");
+  // The admin console is a full-page workspace: no chat sidebar there.
+  const isAdminRoute = pathname.startsWith("/admin");
   const view: SidebarView = pathname.startsWith("/scheduled")
     ? "scheduled"
     : inSpace
@@ -245,7 +247,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             onClick={() => {
               const wasCollapsed = sidebarCollapsed;
               if (wasCollapsed) setSidebarCollapsed(false);
-              if (view !== "home") {
+              if (!pathname.startsWith("/chat")) {
                 router.push("/chat");
                 return;
               }
@@ -327,12 +329,12 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
         </div>
 
         <aside
-          inert={sidebarCollapsed}
-          aria-hidden={sidebarCollapsed}
+          inert={sidebarCollapsed || isAdminRoute}
+          aria-hidden={sidebarCollapsed || isAdminRoute}
           className={cn(
             "bg-muted/30 hidden h-full shrink-0 flex-col overflow-hidden transition-[width] duration-200 md:flex",
             railClassName,
-            sidebarCollapsed ? "w-0" : "w-65 border-r",
+            isAdminRoute || sidebarCollapsed ? "w-0" : "w-65 border-r",
           )}
         >
           <div className="flex h-12 shrink-0 items-center gap-0.5 overflow-hidden px-2">
