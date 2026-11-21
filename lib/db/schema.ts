@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  integer,
 } from "drizzle-orm/pg-core";
 
 /* ------------------------------------------------------------------ auth */
@@ -169,6 +170,24 @@ export const artifacts = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [index("artifacts_user_id_idx").on(table.userId)],
+);
+
+/** Teacher teaching materials (uploaded PDFs, docs, slides, sheets, images). */
+export const sources = pgTable(
+  "sources",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    ext: text("ext").notNull(),
+    mime: text("mime").notNull().default("application/octet-stream"),
+    size: integer("size").notNull().default(0),
+    path: text("path").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("sources_user_idx").on(table.userId)],
 );
 
 /** Per-account mastery for a deck: which card indices are "dikuasai". */

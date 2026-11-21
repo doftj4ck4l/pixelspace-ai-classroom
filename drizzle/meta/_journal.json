@@ -50,6 +50,13 @@
       "when": 1795183657008,
       "tag": "0006_milky_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795266502111,
+      "tag": "0007_cheerful_freak",
+      "breakpoints": true
     }
   ]
 }
