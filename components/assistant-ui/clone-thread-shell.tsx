@@ -7,6 +7,7 @@ import {
   ThreadListRoot,
 } from "@/components/assistant-ui/elements/thread-list.aui";
 import { SearchDialog } from "@/components/assistant-ui/search-dialog";
+import { useSession } from "@/lib/auth-client";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
 import { ProfileMenu } from "@/components/assistant-ui/profile-menu";
 import { Button } from "@/components/ui/button";
@@ -155,6 +156,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
 
   // Navigation is the URL now: /chat*, /spaces/<section>, /scheduled.
   const inSpace = pathname.startsWith("/spaces");
@@ -237,8 +239,21 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
       <div className="relative flex h-full w-full overflow-hidden">
         <div
           data-slot="aui-app-rail"
-          className="bg-muted/30 hidden h-full w-12 shrink-0 flex-col items-center gap-1 py-2 md:flex"
+          className={cn(
+            "bg-muted/30 hidden h-full w-12 shrink-0 flex-col items-center gap-1 py-2 md:flex",
+            !sidebarCollapsed && "md:hidden",
+          )}
         >
+          <TooltipIconButton
+            variant="ghost"
+            size="icon"
+            tooltip="Pixelspace"
+            side="right"
+            onClick={() => setSidebarCollapsed(false)}
+            className="size-8"
+          >
+            <span className="size-5 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
+          </TooltipIconButton>
           <TooltipIconButton
             variant="ghost"
             size="icon"
@@ -341,12 +356,9 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             {headerContent !== undefined ? (
               headerContent
             ) : (
-              <span className="flex-1 truncate ps-2 text-sm font-medium">
-                {view === "space"
-                  ? "Space"
-                  : view === "scheduled"
-                    ? "Scheduled"
-                    : "Pixelspace AI Classroom"}
+              <span className="flex min-w-0 flex-1 items-center gap-2 ps-2 text-sm font-semibold">
+                <span className="size-5 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
+                <span className="truncate">Pixelspace</span>
               </span>
             )}
             {showSearch && hasThreads && (
@@ -396,26 +408,77 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               newThread
             )}
 
+            <nav className="mt-2 flex flex-col gap-0.5">
+              {role === "student" && (
+                <Link
+                  href="/student"
+                  className={cn(
+                    "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                    pathname.startsWith("/student")
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <HomeIcon className="size-4 shrink-0" />
+                  <span className="truncate">Rumah</span>
+                </Link>
+              )}
+              {role === "kpm" && (
+                <Link
+                  href="/kpm"
+                  className={cn(
+                    "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                    pathname.startsWith("/kpm")
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <LayoutDashboardIcon className="size-4 shrink-0" />
+                  <span className="truncate">KPM Dashboard</span>
+                </Link>
+              )}
+              {role === "superadmin" && (
+                <Link
+                  href="/admin"
+                  className={cn(
+                    "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                    pathname.startsWith("/admin")
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <ShieldCheckIcon className="size-4 shrink-0" />
+                  <span className="truncate">Admin</span>
+                </Link>
+              )}
+              <Link
+                href="/spaces/all"
+                className={cn(
+                  "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                  view === "space"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+              >
+                <LayoutGridIcon className="size-4 shrink-0" />
+                <span className="truncate">Spaces</span>
+              </Link>
+              <Link
+                href="/scheduled"
+                className={cn(
+                  "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                  view === "scheduled"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+              >
+                <ClockIcon className="size-4 shrink-0" />
+                <span className="truncate">Scheduled</span>
+              </Link>
+            </nav>
+
             {view === "space" ? (
               <nav className="mt-2 flex flex-col gap-0.5">
-                {role === "student" && (
-                  <Link
-                    href="/student"
-                    className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors"
-                  >
-                    <HomeIcon className="size-4 shrink-0" />
-                    <span className="truncate">Rumah</span>
-                  </Link>
-                )}
-                {role === "kpm" && (
-                  <Link
-                    href="/kpm"
-                    className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors"
-                  >
-                    <LayoutDashboardIcon className="size-4 shrink-0" />
-                    <span className="truncate">KPM Dashboard</span>
-                  </Link>
-                )}
                 {NAV_ITEMS.map((item) => (
                   <Link
                     key={item.id}
@@ -458,6 +521,19 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               )}
             />
           </ThreadListRoot>
+
+          <div className="border-border/60 mt-auto flex shrink-0 items-center gap-2 border-t px-3 py-2.5">
+            <ProfileMenu />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">
+                {session?.user?.name ?? "Account"}
+              </p>
+              <p className="text-muted-foreground truncate text-xs">
+                {session?.user?.email ?? ""}
+              </p>
+            </div>
+            <ThemeToggle />
+          </div>
         </aside>
 
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
