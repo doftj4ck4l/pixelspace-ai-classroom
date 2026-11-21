@@ -193,7 +193,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
         router.push("/chat");
         setMobileOpen(false);
       }}
-      className="bg-muted/60 hover:bg-muted flex h-9 w-full items-center gap-2 rounded-full px-3 text-sm transition-colors"
+      className="bg-muted hover:bg-muted/80 flex h-10 w-full items-center gap-2.5 rounded-full px-4 text-sm font-medium transition-colors"
     >
       <SquarePenIcon className="size-4 shrink-0" />
       <span className="whitespace-nowrap">New chat</span>
@@ -379,7 +379,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 <Link
                   href="/student"
                   className={cn(
-                    "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
                     pathname.startsWith("/student")
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -393,7 +393,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 <Link
                   href="/kpm"
                   className={cn(
-                    "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
                     pathname.startsWith("/kpm")
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -407,7 +407,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 <Link
                   href="/admin"
                   className={cn(
-                    "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
                     pathname.startsWith("/admin")
                       ? "bg-muted text-foreground"
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -420,7 +420,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               <Link
                 href="/spaces/all"
                 className={cn(
-                  "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                  "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
                   view === "space"
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
@@ -432,7 +432,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               <Link
                 href="/scheduled"
                 className={cn(
-                  "flex h-9 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+                  "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
                   view === "scheduled"
                     ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
