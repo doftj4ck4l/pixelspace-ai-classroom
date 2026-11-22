@@ -34,8 +34,6 @@ import {
   DarkMode as MoonIcon,
   Group as SpacesIcon,
   GroupFill as SpacesFillIcon,
-  Home as HomeIcon,
-  HomeFill as HomeFillIcon,
   MenuBook as TextbooksIcon,
   MenuBookFill as TextbooksFillIcon,
   LeftPanelClose as PanelLeftIcon,
@@ -49,7 +47,7 @@ import {
   SchoolFill as SchoolIcon,
   Settings as SettingsIcon,
 } from "@material-symbols-svg/react/rounded/w600";
-import { useT } from "@/lib/i18n";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import {
   HubMark as HubIcon,
   HubMarkFill as HubFillIcon,
@@ -69,6 +67,7 @@ import {
   type FC,
   type MouseEvent,
   type ReactNode,
+  type ComponentType,
 } from "react";
 
 export type SidebarView = "home" | "space" | "scheduled";
@@ -226,176 +225,119 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
     </button>
   );
 
+  type ShellNavItem = {
+    href: string;
+    labelKey: TranslationKey;
+    Icon: ComponentType<{ className?: string }>;
+    FillIcon: ComponentType<{ className?: string }>;
+    active: boolean;
+  };
+
+  const navItems: ShellNavItem[] = [
+    ...(role === "kpm"
+      ? ([
+          {
+            href: "/kpm",
+            labelKey: "shell.kpm",
+            Icon: KpmIcon,
+            FillIcon: KpmFillIcon,
+            active: pathname.startsWith("/kpm"),
+          },
+        ] as ShellNavItem[])
+      : []),
+    ...(role === "superadmin"
+      ? ([
+          {
+            href: "/admin",
+            labelKey: "shell.admin",
+            Icon: AdminIcon,
+            FillIcon: AdminFillIcon,
+            active: pathname.startsWith("/admin"),
+          },
+        ] as ShellNavItem[])
+      : []),
+    {
+      href: "/spaces/all",
+      labelKey: "shell.hub",
+      Icon: HubIcon,
+      FillIcon: HubFillIcon,
+      active: view === "space",
+    },
+    ...(role === "teacher" || role === "student" || role === "superadmin"
+      ? ([
+          {
+            href: "/textbooks",
+            labelKey: "shell.textbooks",
+            Icon: TextbooksIcon,
+            FillIcon: TextbooksFillIcon,
+            active: pathname.startsWith("/textbooks"),
+          },
+        ] as ShellNavItem[])
+      : []),
+    ...(role === "teacher" || role === "student"
+      ? ([
+          {
+            href: "/community",
+            labelKey: "shell.spaces",
+            Icon: SpacesIcon,
+            FillIcon: SpacesFillIcon,
+            active: pathname.startsWith("/community"),
+          },
+        ] as ShellNavItem[])
+      : []),
+    ...(role === "student"
+      ? ([
+          {
+            href: "/buddy",
+            labelKey: "shell.buddy",
+            Icon: BuddyIcon,
+            FillIcon: BuddyFillIcon,
+            active: pathname.startsWith("/buddy"),
+          },
+        ] as ShellNavItem[])
+      : []),
+    ...(role === "teacher"
+      ? ([
+          {
+            href: "/duties",
+            labelKey: "shell.duties",
+            Icon: DutiesIcon,
+            FillIcon: DutiesFillIcon,
+            active: pathname.startsWith("/duties"),
+          },
+        ] as ShellNavItem[])
+      : []),
+    {
+      href: "/scheduled",
+      labelKey: "shell.scheduled",
+      Icon: ScheduleIcon,
+      FillIcon: ScheduleFillIcon,
+      active: view === "scheduled",
+    },
+  ];
+
   const navigation = (
     <nav className={cn("mt-2 flex flex-col gap-0.5", teacherStyles.navigation)}>
-      {role === "student" && (
+      {navItems.map((item) => (
         <Link
-          href="/student"
-          aria-current={pathname.startsWith("/student") ? "page" : undefined}
+          key={item.href}
+          href={item.href}
+          aria-current={item.active ? "page" : undefined}
           className={cn(
             "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-            pathname.startsWith("/student")
+            item.active
               ? "bg-muted text-foreground"
               : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
           )}
         >
-          {pathname.startsWith("/student") ? (
-            <HomeFillIcon className="size-4 shrink-0" />
+          {item.active ? (
+            <item.FillIcon className="size-4 shrink-0" />
           ) : (
-            <HomeIcon className="size-4 shrink-0" />
+            <item.Icon className="size-4 shrink-0" />
           )}
-          <span className="truncate">{t("shell.rumah")}</span>
+          <span className="truncate">{t(item.labelKey)}</span>
         </Link>
-      )}
-      {role === "kpm" && (
-        <Link
-          href="/kpm"
-          aria-current={pathname.startsWith("/kpm") ? "page" : undefined}
-          className={cn(
-            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-            pathname.startsWith("/kpm")
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-          )}
-        >
-          {pathname.startsWith("/kpm") ? (
-            <KpmFillIcon className="size-4 shrink-0" />
-          ) : (
-            <KpmIcon className="size-4 shrink-0" />
-          )}
-          <span className="truncate">{t("shell.kpm")}</span>
-        </Link>
-      )}
-      {role === "superadmin" && (
-        <Link
-          href="/admin"
-          aria-current={pathname.startsWith("/admin") ? "page" : undefined}
-          className={cn(
-            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-            pathname.startsWith("/admin")
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-          )}
-        >
-          {pathname.startsWith("/admin") ? (
-            <AdminFillIcon className="size-4 shrink-0" />
-          ) : (
-            <AdminIcon className="size-4 shrink-0" />
-          )}
-          <span className="truncate">{t("shell.admin")}</span>
-        </Link>
-      )}
-      <Link
-        href="/spaces/all"
-        aria-current={view === "space" ? "page" : undefined}
-        className={cn(
-          "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-          view === "space"
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-        )}
-      >
-        {view === "space" ? (
-          <HubFillIcon className="size-4 shrink-0" />
-        ) : (
-          <HubIcon className="size-4 shrink-0" />
-        )}
-        <span className="truncate">{t("shell.hub")}</span>
-      </Link>
-      {(role === "teacher" || role === "student" || role === "superadmin") && (
-        <Link
-          href="/textbooks"
-          aria-current={pathname.startsWith("/textbooks") ? "page" : undefined}
-          className={cn(
-            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-            pathname.startsWith("/textbooks")
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-          )}
-        >
-          {pathname.startsWith("/textbooks") ? (
-            <TextbooksFillIcon className="size-4 shrink-0" />
-          ) : (
-            <TextbooksIcon className="size-4 shrink-0" />
-          )}
-          <span className="truncate">{t("shell.textbooks")}</span>
-        </Link>
-      )}
-
-      {(role === "teacher" || role === "student") && (
-        <Link
-          href="/community"
-          aria-current={pathname.startsWith("/community") ? "page" : undefined}
-          className={cn(
-            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-            pathname.startsWith("/community")
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-          )}
-        >
-          {pathname.startsWith("/community") ? (
-            <SpacesFillIcon className="size-4 shrink-0" />
-          ) : (
-            <SpacesIcon className="size-4 shrink-0" />
-          )}
-          <span className="truncate">{t("shell.spaces")}</span>
-        </Link>
-      )}
-      {role === "student" && (
-        <Link
-          href="/buddy"
-          aria-current={pathname.startsWith("/buddy") ? "page" : undefined}
-          className={cn(
-            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-            pathname.startsWith("/buddy")
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-          )}
-        >
-          {pathname.startsWith("/buddy") ? (
-            <BuddyFillIcon className="size-4 shrink-0" />
-          ) : (
-            <BuddyIcon className="size-4 shrink-0" />
-          )}
-          <span className="truncate">{t("shell.buddy")}</span>
-        </Link>
-      )}
-      {role === "teacher" && (
-        <Link
-          href="/duties"
-          aria-current={pathname.startsWith("/duties") ? "page" : undefined}
-          className={cn(
-            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-            pathname.startsWith("/duties")
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-          )}
-        >
-          {pathname.startsWith("/duties") ? (
-            <DutiesFillIcon className="size-4 shrink-0" />
-          ) : (
-            <DutiesIcon className="size-4 shrink-0" />
-          )}
-          <span className="truncate">{t("shell.duties")}</span>
-        </Link>
-      )}
-      <Link
-        href="/scheduled"
-        aria-current={view === "scheduled" ? "page" : undefined}
-        className={cn(
-          "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-          view === "scheduled"
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-        )}
-      >
-        {view === "scheduled" ? (
-          <ScheduleFillIcon className="size-4 shrink-0" />
-        ) : (
-          <ScheduleIcon className="size-4 shrink-0" />
-        )}
-        <span className="truncate">{t("shell.scheduled")}</span>
-      </Link>
+      ))}
     </nav>
   );
 
@@ -427,87 +369,40 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           <TooltipIconButton
             variant="ghost"
             size="icon"
-            tooltip={t("shell.home")}
+            tooltip={t("shell.newChat")}
             side="right"
             onClick={() => {
-              const wasCollapsed = sidebarCollapsed;
-              if (wasCollapsed) setSidebarCollapsed(false);
-              if (!pathname.startsWith("/chat")) {
-                router.push("/chat");
-                return;
-              }
-              if (!wasCollapsed) void aui.threads.switchToNewThread();
+              setSidebarCollapsed(false);
+              void aui.threads.switchToNewThread();
+              router.push("/chat");
             }}
             className="size-8"
           >
-            {view === "home" ? (
-              <HomeFillIcon className="size-5" />
-            ) : (
-              <HomeIcon className="size-5" />
-            )}
+            <NewChatIcon className="size-5" />
           </TooltipIconButton>
-          <TooltipIconButton
-            variant="ghost"
-            size="icon"
-            tooltip={t("shell.hub")}
-            side="right"
-            onClick={() => {
-              setSidebarCollapsed(false);
-              router.push(view === "space" ? "/chat" : "/spaces/all");
-            }}
-            className={cn(
-              "size-8",
-              view === "space" && "bg-muted text-foreground",
-            )}
-          >
-            {view === "space" ? (
-              <HubFillIcon className="size-5" />
-            ) : (
-              <HubIcon className="size-5" />
-            )}
-          </TooltipIconButton>
-          <TooltipIconButton
-            variant="ghost"
-            size="icon"
-            tooltip={t("shell.scheduled")}
-            side="right"
-            onClick={() => {
-              setSidebarCollapsed(false);
-              router.push(view === "scheduled" ? "/chat" : "/scheduled");
-            }}
-            className={cn(
-              "size-8",
-              view === "scheduled" && "bg-muted text-foreground",
-            )}
-          >
-            {view === "scheduled" ? (
-              <ScheduleFillIcon className="size-5" />
-            ) : (
-              <ScheduleIcon className="size-5" />
-            )}
-          </TooltipIconButton>
-          {role === "superadmin" && (
+          {navItems.map((item) => (
             <TooltipIconButton
+              key={item.href}
               variant="ghost"
               size="icon"
-              tooltip={t("shell.admin")}
+              tooltip={t(item.labelKey)}
               side="right"
               onClick={() => {
                 setSidebarCollapsed(false);
-                router.push("/admin");
+                router.push(item.href);
               }}
               className={cn(
                 "size-8",
-                pathname.startsWith("/admin") && "bg-muted text-foreground",
+                item.active && "bg-muted text-foreground",
               )}
             >
-              {pathname.startsWith("/admin") ? (
-                <AdminFillIcon className="size-5" />
+              {item.active ? (
+                <item.FillIcon className="size-5" />
               ) : (
-                <AdminIcon className="size-5" />
+                <item.Icon className="size-5" />
               )}
             </TooltipIconButton>
-          )}
+          ))}
           {showSearch && (
             <TooltipIconButton
               variant="ghost"
@@ -550,13 +445,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             ) : (
               <Link
                 href={
-                  role === "student"
-                    ? "/student"
-                    : role === "kpm"
-                      ? "/kpm"
-                      : role === "superadmin"
-                        ? "/admin"
-                        : "/community"
+                  role === "kpm"
+                    ? "/kpm"
+                    : role === "superadmin"
+                      ? "/admin"
+                      : "/community"
                 }
                 className={teacherStyles.brand}
               >
