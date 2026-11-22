@@ -94,8 +94,6 @@ type Card = {
   refIds: string[];
 };
 
-const QUOTA_BYTES = 500 * 1024 * 1024;
-
 const CATEGORY_STYLE: Record<
   Exclude<Category, "all">,
   { cover: string; chip: string }
@@ -306,17 +304,6 @@ export const SpaceSourcesPanel: FC<{
       .filter((card) => !needle || card.title.toLowerCase().includes(needle));
   }, [cards, category, query]);
 
-  const usedBytes = useMemo(
-    () =>
-      (rows ?? [])
-        .filter((row) => row.kind === "upload")
-        .reduce((sum, row) => {
-          const upload = uploadById.get(row.refId);
-          return sum + (upload?.size ?? 0);
-        }, 0),
-    [rows, uploadById],
-  );
-
   const attach = async (refIds: string[]) => {
     for (const refId of refIds) {
       await fetch(`/api/spaces/${spaceId}/sources`, {
@@ -418,8 +405,6 @@ export const SpaceSourcesPanel: FC<{
     setBusy(false);
   };
 
-  const percent = Math.min(100, Math.round((usedBytes / QUOTA_BYTES) * 100));
-
   const categoryTabs: {
     id: Category;
     label: string;
@@ -457,25 +442,6 @@ export const SpaceSourcesPanel: FC<{
           </div>
         </div>
         <div className={s.sourceActions}>
-          <div className={s.storage}>
-            <StorageIcon />
-            <div className={s.storageBody}>
-              <p>
-                {t("spaceDetail.storage", {
-                  used: formatSize(usedBytes),
-                  quota: formatSize(QUOTA_BYTES),
-                })}
-              </p>
-              <div className={s.meterRow}>
-                <div className={s.meter}>
-                  <div style={{ width: `${percent}%` }} />
-                </div>
-                <span className="text-muted-foreground text-xs">
-                  {percent}%
-                </span>
-              </div>
-            </div>
-          </div>
           {!readOnly ? (
             <>
               <input

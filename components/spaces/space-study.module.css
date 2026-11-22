@@ -22,18 +22,18 @@
 .workspace {
   position: relative;
   width: 100%;
-  max-width: 1680px;
+  max-width: 1428px;
   margin-inline: auto;
-  padding-inline: 40px;
+  padding-inline: 34px;
 }
 .hero .workspace {
-  padding-top: 32px;
+  padding-top: 27px;
 }
 .back {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
+  gap: 7px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--space-muted);
 }
@@ -44,15 +44,15 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-top: 24px;
-  min-height: 100px;
+  gap: 17px;
+  margin-top: 20px;
+  min-height: 85px;
 }
 .subjectIcon {
   color: #141329;
   display: flex;
-  width: 100px;
-  height: 100px;
+  width: 85px;
+  height: 85px;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -60,7 +60,7 @@
   background: linear-gradient(135deg, #dffff6, #a7eee4);
 }
 .subjectIcon span {
-  font-size: 56px;
+  font-size: 48px;
   font-weight: 700;
   line-height: 1;
   filter: grayscale(1);
@@ -71,7 +71,7 @@
 }
 .title {
   overflow-wrap: anywhere;
-  font-size: 34px;
+  font-size: 29px;
   font-weight: 750;
   line-height: 1.2;
   letter-spacing: -0.8px;
@@ -80,19 +80,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 7px;
+  margin-top: 5px;
   color: var(--space-muted);
-  font-size: 13px;
+  font-size: 11px;
 }
 .metadata > span,
 .metadata > button {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   border-radius: 20px;
   background: #ffffffb3;
-  padding: 4px 10px;
+  padding: 3px 8px;
   font-weight: 500;
   box-shadow: 0 2px 8px #8170c909;
 }
@@ -101,34 +101,34 @@
   background: #ede5ff;
 }
 .metadata svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 .description {
-  margin-top: 7px;
-  font-size: 14px;
+  margin-top: 6px;
+  font-size: 12px;
   color: var(--space-muted);
 }
 .heroArt {
   flex-shrink: 0;
-  width: 220px;
-  height: 156px;
+  width: 187px;
+  height: 133px;
   margin-block: -28px;
 }
 .heroArt .artwork {
-  width: 200px;
-  height: 200px;
-  margin-top: -24px;
+  width: 170px;
+  height: 170px;
+  margin-top: -20px;
 }
 .actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-left: auto;
 }
 .share,
 .more {
-  height: 42px;
+  height: 36px;
   border: 1px solid #fff;
   background: #ffffffdb;
   box-shadow: 0 3px 5px #6738df14;
@@ -136,34 +136,34 @@
   border-radius: 99px;
 }
 .share {
-  gap: 8px;
-  padding-inline: 18px;
+  gap: 7px;
+  padding-inline: 15px;
   font-weight: 600;
 }
 .more {
   display: flex;
-  width: 44px;
+  width: 37px;
   align-items: center;
   justify-content: center;
 }
 .tabs {
   display: flex;
-  gap: 20px;
-  margin-top: 28px;
+  gap: 17px;
+  margin-top: 24px;
   border-bottom: 1px solid var(--space-line);
-  padding-bottom: 18px;
+  padding-bottom: 15px;
 }
 .tab {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 44px;
+  gap: 8px;
+  min-height: 37px;
   border-radius: 99px;
-  padding: 10px 24px;
+  padding: 8px 20px;
   color: var(--space-muted);
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   transition:
     background 0.15s,
@@ -187,11 +187,11 @@
   content: "";
 }
 .tab svg {
-  width: 21px;
-  height: 21px;
+  width: 18px;
+  height: 18px;
 }
 .content {
-  padding-bottom: 40px;
+  padding-bottom: 34px;
 }
 .sources {
   display: flex;
@@ -203,76 +203,76 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  min-height: 106px;
-  padding-block: 24px;
+  gap: 17px;
+  min-height: 90px;
+  padding-block: 20px;
   border-bottom: 1px solid var(--space-line);
 }
 .sourceHeading {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
 }
 .sectionIcon {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 37px;
+  height: 37px;
   border-radius: 50%;
   background: #f1ecff;
   color: #6224d7;
 }
 .sectionIcon svg {
-  width: 25px;
-  height: 25px;
+  width: 21px;
+  height: 21px;
 }
 .sourceHeading h2 {
-  font-size: 25px;
+  font-size: 21px;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.5px;
 }
 .sourceHeading p {
-  margin-top: 4px;
-  font-size: 14px;
+  margin-top: 3px;
+  font-size: 12px;
   color: var(--space-muted);
 }
 .sourceActions {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 .storage {
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-width: 310px;
+  gap: 12px;
+  min-width: 264px;
 }
 .storage > svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 .storageBody {
   flex: 1;
 }
 .storage p {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--space-muted);
 }
 .meterRow {
   display: flex;
   align-items: center;
-  gap: 22px;
-  margin-top: 5px;
+  gap: 19px;
+  margin-top: 4px;
 }
 .meter {
   flex: 1;
   overflow: hidden;
-  height: 8px;
+  height: 7px;
   border-radius: 99px;
   background: #ebe8f7;
 }
@@ -282,18 +282,18 @@
   background: linear-gradient(90deg, #2bc8bd, #11bba9);
 }
 .meterRow > span {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--space-muted);
 }
 .addButton {
-  height: 45px;
-  gap: 10px;
+  height: 38px;
+  gap: 8px;
   border-radius: 99px;
-  padding-inline: 20px;
+  padding-inline: 17px;
   background: linear-gradient(180deg, #8439f2, #4a1bc7);
   color: #fff;
-  font-size: 14px;
+  font-size: 12px;
 }
 .addButton:hover {
   background: linear-gradient(180deg, #7430df, #4316b7);
@@ -301,13 +301,13 @@
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding-block: 18px 22px;
+  gap: 12px;
+  padding-block: 15px 19px;
 }
 .filters {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
   flex: 1;
   overflow-x: auto;
@@ -317,25 +317,25 @@
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 8px;
-  min-height: 42px;
+  gap: 7px;
+  min-height: 36px;
   border-radius: 99px;
-  padding: 8px 10px;
-  font-size: 13px;
+  padding: 7px 8px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--space-ink);
   white-space: nowrap;
 }
 .filter[aria-pressed="true"] {
   background: #dafaf2;
-  padding-inline: 20px;
+  padding-inline: 17px;
 }
 .filter:hover {
   background: #f0ebfb;
 }
 .filter svg {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   color: #34316b;
 }
 .filter:first-child svg {
@@ -345,11 +345,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 24px;
+  min-width: 20px;
+  height: 20px;
   border-radius: 99px;
   background: #eeeaf8;
-  font-size: 12px;
+  font-size: 10px;
 }
 .filter[aria-pressed="true"] .filterCount {
   background: #9deee1;
@@ -358,24 +358,24 @@
 .viewTools {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
 }
 .search {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 42px;
-  width: 210px;
+  gap: 8px;
+  height: 36px;
+  width: 178px;
   border: 1px solid var(--space-line);
   border-radius: 99px;
-  padding-inline: 14px;
+  padding-inline: 12px;
   background: #ffffff60;
   box-shadow: 0 2px 4px #6959a607;
 }
 .search svg {
-  width: 19px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
   color: #514a85;
   flex-shrink: 0;
 }
@@ -384,7 +384,7 @@
   min-width: 0;
   background: transparent;
   outline: none;
-  font-size: 13px;
+  font-size: 11px;
 }
 .search input::placeholder {
   color: #77709d;
@@ -395,7 +395,7 @@
 }
 .viewSwitch {
   display: flex;
-  height: 42px;
+  height: 36px;
   align-items: center;
   border-radius: 99px;
   padding: 3px;
@@ -405,8 +405,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 36px;
+  width: 36px;
+  height: 31px;
   border-radius: 99px;
   color: #514a85;
 }
@@ -416,13 +416,13 @@
   box-shadow: 0 2px 5px #6959a60d;
 }
 .viewSwitch svg {
-  width: 20px;
-  height: 20px;
+  width: 17px;
+  height: 17px;
 }
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px;
+  gap: 20px;
 }
 .card {
   --cover: #d4f8f0;
@@ -468,7 +468,7 @@
 }
 .cardCover {
   position: relative;
-  height: 132px;
+  height: 112px;
   overflow: hidden;
   background: linear-gradient(
     145deg,
@@ -480,7 +480,7 @@
 .cardCover::after {
   position: absolute;
   width: 110%;
-  height: 130px;
+  height: 110px;
   border-radius: 50%;
   content: "";
   background: #ffffff38;
@@ -507,16 +507,16 @@
 .categoryChip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 9px;
+  gap: 5px;
+  padding: 3px 8px;
   border-radius: 99px;
   background: #ffffffed;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
 }
 .categoryChip svg {
-  width: 22px;
-  height: 22px;
+  width: 19px;
+  height: 19px;
   padding: 3px;
   border-radius: 7px;
   color: var(--accent);
@@ -524,8 +524,8 @@
 }
 .cardMenu {
   display: flex;
-  width: 34px;
-  height: 32px;
+  width: 29px;
+  height: 27px;
   align-items: center;
   justify-content: center;
   border-radius: 99px;
@@ -533,8 +533,8 @@
   box-shadow: 0 2px 4px #39306a09;
 }
 .cardMenu svg {
-  width: 20px;
-  height: 20px;
+  width: 17px;
+  height: 17px;
 }
 .coverLink {
   position: absolute;
@@ -542,18 +542,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 22px;
+  padding-top: 19px;
 }
 .coverLink .artwork {
-  width: 136px;
-  height: 136px;
+  width: 116px;
+  height: 116px;
 }
 .cardBody {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  min-height: 102px;
-  padding: 13px 20px 16px;
+  gap: 8px;
+  min-height: 87px;
+  padding: 11px 17px 14px;
 }
 .cardTitle {
   display: -webkit-box;
@@ -561,7 +561,7 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   text-align: left;
-  font-size: 18px;
+  font-size: 15px;
   line-height: 1.3;
   font-weight: 650;
   letter-spacing: -0.4px;
@@ -572,14 +572,14 @@
 .cardMeta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   margin-top: auto;
   color: var(--space-muted);
-  font-size: 13px;
+  font-size: 11px;
 }
 .cardMeta svg {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
 }
 .cardMeta span {
@@ -590,8 +590,8 @@
 .artwork {
   display: block;
   flex-shrink: 0;
-  width: 140px;
-  height: 140px;
+  width: 119px;
+  height: 119px;
   background-image: url("/spaces/resource-artwork.png");
   background-repeat: no-repeat;
   background-size: 300% 200%;
@@ -613,13 +613,13 @@
   background-position: 100% 100%;
 }
 .empty {
-  margin-top: 12px;
+  margin-top: 10px;
   border: 1px dashed var(--space-line);
   border-radius: 20px;
-  padding: 60px 20px;
+  padding: 51px 17px;
   color: var(--space-muted);
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
 }
 :global(.dark) .page {
   --space-ink: #f1edff;
@@ -675,12 +675,12 @@
 }
 @media (max-width: 1450px) {
   .heroArt {
-    width: 170px;
+    width: 144px;
   }
   .heroArt .artwork {
-    width: 170px;
-    height: 170px;
-    margin-top: -8px;
+    width: 144px;
+    height: 144px;
+    margin-top: -7px;
   }
   .toolbar {
     flex-wrap: wrap;
@@ -694,20 +694,20 @@
 }
 @media (max-width: 1200px) {
   .workspace {
-    padding-inline: 28px;
+    padding-inline: 24px;
   }
   .heroArt {
     display: none;
   }
   .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18px;
+    gap: 15px;
   }
   .sourceActions {
-    gap: 16px;
+    gap: 14px;
   }
   .storage {
-    min-width: 240px;
+    min-width: 204px;
   }
   .filters {
     flex-basis: 100%;
@@ -719,18 +719,18 @@
 @media (max-width: 999px) {
   .header {
     flex-wrap: wrap;
-    gap: 14px;
+    gap: 12px;
   }
   .subjectIcon {
-    width: 76px;
-    height: 76px;
+    width: 65px;
+    height: 65px;
     border-radius: 20px;
   }
   .subjectIcon span {
-    font-size: 40px;
+    font-size: 34px;
   }
   .title {
-    font-size: 28px;
+    font-size: 24px;
   }
   .actions {
     flex-basis: 100%;
@@ -744,93 +744,93 @@
     justify-content: space-between;
   }
   .sourceHeader {
-    gap: 20px;
+    gap: 17px;
   }
   .storage {
-    max-width: 340px;
+    max-width: 289px;
     flex: 1;
   }
   .tabs {
-    gap: 6px;
+    gap: 5px;
   }
   .tab {
-    padding-inline: 16px;
+    padding-inline: 14px;
   }
 }
 @media (max-width: 767px) {
   .hero .workspace {
-    padding-top: 58px;
+    padding-top: 49px;
   }
   .workspace {
-    padding-inline: 20px;
+    padding-inline: 17px;
   }
   .header {
-    margin-top: 18px;
+    margin-top: 15px;
   }
   .metadata {
-    gap: 5px;
-    font-size: 11px;
+    gap: 4px;
+    font-size: 9px;
   }
   .metadata > span,
   .metadata > button {
-    padding: 4px 7px;
+    padding: 3px 6px;
   }
   .subjectInfo {
-    min-width: 180px;
+    min-width: 153px;
   }
   .tabs {
-    margin-top: 20px;
-    padding-bottom: 14px;
+    margin-top: 17px;
+    padding-bottom: 12px;
   }
   .tab {
-    min-height: 42px;
-    padding: 9px 13px;
-    gap: 7px;
-    font-size: 13px;
+    min-height: 36px;
+    padding: 8px 11px;
+    gap: 6px;
+    font-size: 11px;
   }
   .tab[aria-selected="true"]::after {
     bottom: -16px;
   }
   .tab svg {
-    width: 19px;
-    height: 19px;
+    width: 16px;
+    height: 16px;
   }
   .sourceHeading h2 {
-    font-size: 22px;
+    font-size: 19px;
   }
   .sourceHeading p {
-    font-size: 13px;
+    font-size: 11px;
   }
   .sourceActions {
     flex-wrap: wrap;
   }
   .storage {
-    min-width: 180px;
+    min-width: 153px;
   }
   .storage > svg {
     display: none;
   }
   .sourceActions .addButton {
-    padding-inline: 16px;
+    padding-inline: 14px;
   }
   .search {
-    width: min(240px, calc(100vw - 150px));
+    width: min(204px, calc(100vw - 128px));
   }
   .viewTools {
     width: 100%;
     justify-content: space-between;
   }
   .grid {
-    gap: 16px;
+    gap: 14px;
   }
   .cardBody {
-    padding: 12px 14px;
+    padding: 10px 12px;
   }
   .cardTitle {
-    font-size: 15px;
+    font-size: 13px;
   }
   .cardMeta {
-    font-size: 12px;
+    font-size: 10px;
   }
 }
 @media (max-width: 430px) {
@@ -838,20 +838,20 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .cardCover {
-    height: 150px;
+    height: 128px;
   }
   .coverLink .artwork {
-    width: 156px;
-    height: 156px;
+    width: 133px;
+    height: 133px;
   }
   .cardBody {
-    min-height: 90px;
+    min-height: 76px;
   }
   .cardTitle {
-    font-size: 17px;
+    font-size: 14px;
   }
   .sourceActions {
-    gap: 14px;
+    gap: 12px;
   }
   .storage {
     max-width: none;
@@ -861,11 +861,11 @@
     margin-left: auto;
   }
   .title {
-    font-size: 26px;
+    font-size: 22px;
   }
   .subjectIcon {
-    width: 62px;
-    height: 70px;
+    width: 53px;
+    height: 60px;
     border-radius: 18px;
   }
   .subjectInfo {
@@ -888,7 +888,7 @@
 }
 @media (max-width: 430px) {
   .sourceHeader {
-    padding-block: 20px;
+    padding-block: 17px;
   }
   .sourceActions {
     flex-wrap: nowrap;
@@ -898,15 +898,15 @@
     flex-basis: auto;
   }
   .storage p {
-    font-size: 11px;
+    font-size: 9px;
     line-height: 1.4;
   }
   .meterRow {
-    gap: 8px;
+    gap: 7px;
   }
   .sourceActions .addButton {
-    height: 42px;
-    padding-inline: 14px;
-    font-size: 13px;
+    height: 36px;
+    padding-inline: 12px;
+    font-size: 11px;
   }
 }
