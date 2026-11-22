@@ -15,6 +15,7 @@ import {
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/ai-sdk";
 import { createAssistantStream } from "assistant-stream";
 import { CloneThreadShell } from "@/components/assistant-ui/clone-thread-shell";
+import { chatSpace } from "@/lib/chat-space";
 
 /** Keeps the URL on the active thread: bare /chat becomes /chat/<remoteId>. */
 const ThreadUrlSync = () => {
@@ -270,7 +271,12 @@ export const AppShell = ({
       useChatRuntime({
         // No sendAutomaticallyWhen: every tool executes server-side inside the
         // pi harness, so the client must never auto-continue a run.
-        transport: new AssistantChatTransport({ api: "/api/chat" }),
+        transport: new AssistantChatTransport({
+          api: "/api/chat",
+          // A chat opened from a space carries the space id, so the relay
+          // can ground every turn in that space's sources.
+          body: () => (chatSpace.id ? { spaceId: chatSpace.id } : {}),
+        }),
         // A message sent while the thread is running waits in composer.queue
         // and dispatches when the run settles, like pixelspacev3's follow-ups.
         unstable_enableMessageQueue: true,

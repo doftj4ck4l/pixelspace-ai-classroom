@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FilterSelect } from "@/components/ui/filter-select";
+import { SpaceSources } from "@/components/spaces/space-sources";
 import { cn } from "@/lib/utils";
 
 type SpaceRow = {
@@ -586,6 +587,9 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                 ))}
               </div>
             </div>
+            {editing ? (
+              <SpaceSources spaceId={editing.id} level={editing.level} />
+            ) : null}
             {error && <p className="text-destructive text-sm">{error}</p>}
           </div>
           <DialogFooter>

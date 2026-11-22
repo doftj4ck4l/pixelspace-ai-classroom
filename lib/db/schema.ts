@@ -373,3 +373,19 @@ export const docs = pgTable(
   },
   (table) => [index("docs_user_id_idx").on(table.userId)],
 );
+
+/** Textbook/upload sources attached to a space (subject). */
+export const spaceSources = pgTable(
+  "space_sources",
+  {
+    id: text("id").primaryKey(),
+    spaceId: text("space_id")
+      .notNull()
+      .references(() => spaces.id, { onDelete: "cascade" }),
+    /** "textbook" (vector-db book id) or "upload" (sources.id). */
+    kind: text("kind").notNull(),
+    refId: text("ref_id").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("space_sources_space_idx").on(table.spaceId)],
+);

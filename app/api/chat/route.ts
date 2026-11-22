@@ -20,6 +20,7 @@ import { validateQuizSpec, type QuizSpec } from "@/lib/quizzes/spec";
 import { remapMindMapProgress } from "@/lib/mindmaps/remap";
 import { validateMindMapSpec, type MindMapSpec } from "@/lib/mindmaps/spec";
 import { remapNotesProgress } from "@/lib/notes/progress";
+import { buildSpaceContext } from "@/lib/textbooks/library";
 import { validateNotesSpec, type NotesSpec } from "@/lib/notes/spec";
 
 export const maxDuration = 300;
@@ -44,6 +45,8 @@ type ChatBody = {
   /** When set, this turn answers a question about a node of that map (no edit). */
   artifactAskTargetId?: string;
   artifactAskNodeId?: string;
+  /** When set, this turn runs inside a space (grounded in its sources). */
+  spaceId?: string;
 };
 
 const messageText = (message: UIMessage) =>
@@ -620,10 +623,15 @@ const piChat = async (
   }
 
   const piMessages = toPiMessages(body.messages);
-  if (deckEditContext) {
+  let turnContext: string | null = deckEditContext;
+  if (!turnContext && typeof body.spaceId === "string" && body.spaceId) {
+    // A chat inside a space: ground the turn in the space's textbook sources.
+    turnContext = await buildSpaceContext(body.spaceId, userText);
+  }
+  if (turnContext) {
     const lastUser = [...piMessages].reverse().find((m) => m.role === "user");
     if (lastUser) {
-      lastUser.content = `${deckEditContext}\n\nUser request: ${lastUser.content}`;
+      lastUser.content = `${turnContext}\n\nUser request: ${lastUser.content}`;
     }
   }
 

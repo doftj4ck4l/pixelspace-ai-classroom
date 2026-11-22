@@ -3,6 +3,11 @@ import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { schools, spaceMembers, spaces, users } from "@/lib/db/schema";
 import { requireRoleApi } from "@/lib/roles";
+import {
+  attachTextbookSubject,
+  levelOrderFor,
+  matchSubject,
+} from "@/lib/textbooks/library";
 
 const ACCENTS = ["teal", "blue", "amber", "violet", "rose", "emerald"];
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -148,5 +153,18 @@ export async function POST(req: Request) {
     accent,
     code,
   });
+
+  // Ground the new space in its textbook: match the name against the library
+  // at this level and attach the whole subject (best-effort).
+  try {
+    const levelOrder = levelOrderFor(level);
+    if (levelOrder !== null) {
+      const subject = await matchSubject(levelOrder, name);
+      if (subject) await attachTextbookSubject(id, levelOrder, subject);
+    }
+  } catch {
+    // the space exists either way; sources can be attached later
+  }
+
   return NextResponse.json({ id, code });
 }
