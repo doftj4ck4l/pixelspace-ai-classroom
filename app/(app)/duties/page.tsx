@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ClipboardListIcon } from "@/components/icons";
 import { getSessionUser } from "@/lib/auth-session";
 import { getRoleHome, roleOf } from "@/lib/roles";
+import { T } from "@/components/i18n-text";
 
 export const metadata: Metadata = { title: "Duties — Pixelspace AI Classroom" };
 
@@ -22,10 +23,11 @@ export default async function DutiesPage() {
               <ClipboardListIcon className="size-6" />
             </span>
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold sm:text-3xl">Duties</h1>
+              <h1 className="text-2xl font-semibold sm:text-3xl">
+                <T k="duties.title" />
+              </h1>
               <p className="text-muted-foreground mt-1 text-sm">
-                Jadual tugas guru — tugasan bertugas, pengawasan dan tugas
-                mingguan anda akan muncul di sini.
+                <T k="duties.subtitle" />
               </p>
             </div>
           </div>
@@ -35,10 +37,11 @@ export default async function DutiesPage() {
           <span className="bg-muted flex size-12 items-center justify-center rounded-xl">
             <ClipboardListIcon className="text-muted-foreground size-5" />
           </span>
-          <p className="text-sm font-medium">Belum ada tugasan</p>
+          <p className="text-sm font-medium">
+            <T k="duties.empty" />
+          </p>
           <p className="text-muted-foreground max-w-md text-sm">
-            Tugasan yang diberikan oleh pentadbir sekolah akan dipaparkan di
-            sini mengikut tarikh.
+            <T k="duties.emptyBody" />
           </p>
         </div>
       </div>

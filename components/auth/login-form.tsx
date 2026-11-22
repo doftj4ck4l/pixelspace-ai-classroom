@@ -16,6 +16,7 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoginShell } from "@/components/auth/login-shell";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import teacherStyles from "@/components/auth/teacher-login.module.css";
 import {
   sendVerification,
@@ -26,44 +27,45 @@ import { roleHome } from "@/components/auth/role-home";
 export type LoginTheme = "student" | "teacher" | "admin";
 
 type Spec = {
-  identifierLabel: string;
-  identifierPlaceholder: string;
-  passwordLabel: string;
-  passwordPlaceholder: string;
-  submit: string;
-  submitting: string;
+  identifierLabel: TranslationKey;
+  identifierPlaceholder: TranslationKey;
+  passwordLabel: TranslationKey;
+  passwordPlaceholder: TranslationKey;
+  submit: TranslationKey;
+  submitting: TranslationKey;
 };
 
 const SPECS: Record<LoginTheme, Spec> = {
   student: {
-    identifierLabel: "ID pelajar atau emel",
-    identifierPlaceholder: "cth. aiman.hakim atau nama@sekolah.edu.my",
-    passwordLabel: "Kata laluan",
-    passwordPlaceholder: "Kata laluan anda",
-    submit: "Jom masuk! 🚀",
-    submitting: "Sedang masuk…",
+    identifierLabel: "loginForm.id.student",
+    identifierPlaceholder: "loginForm.id.ph.student",
+    passwordLabel: "loginForm.password",
+    passwordPlaceholder: "loginForm.password.ph",
+    submit: "loginForm.submit.student",
+    submitting: "loginForm.submitting",
   },
   teacher: {
-    identifierLabel: "Emel atau ID",
-    identifierPlaceholder: "cth. nama@sekolah.edu.my atau nama.pengguna",
-    passwordLabel: "Kata laluan",
-    passwordPlaceholder: "Kata laluan anda",
-    submit: "Log masuk",
-    submitting: "Sedang masuk…",
+    identifierLabel: "loginForm.id.teacher",
+    identifierPlaceholder: "loginForm.id.ph.teacher",
+    passwordLabel: "loginForm.password",
+    passwordPlaceholder: "loginForm.password.ph",
+    submit: "loginForm.submit",
+    submitting: "loginForm.submitting",
   },
   admin: {
-    identifierLabel: "Emel atau ID pentadbir",
-    identifierPlaceholder: "cth. admin@pixelspace.my",
-    passwordLabel: "Kata laluan",
-    passwordPlaceholder: "Kata laluan anda",
-    submit: "Log masuk",
-    submitting: "Mengesahkan…",
+    identifierLabel: "loginForm.id.admin",
+    identifierPlaceholder: "loginForm.id.ph.teacher",
+    passwordLabel: "loginForm.password",
+    passwordPlaceholder: "loginForm.password.ph",
+    submit: "loginForm.submit",
+    submitting: "loginForm.verifying",
   },
 };
 
 export const LoginForm: FC<{
   theme: LoginTheme;
 }> = ({ theme }) => {
+  const t = useT();
   const spec = SPECS[theme];
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -93,18 +95,16 @@ export const LoginForm: FC<{
       if (authError) {
         if (authError.code === "EMAIL_NOT_VERIFIED") {
           setUnverifiedEmail(value.includes("@") ? value : null);
-          setError(
-            "Emel anda belum disahkan. Semak peti masuk anda dan klik pautan pengesahan sebelum log masuk.",
-          );
+          setError(t("loginForm.unverified"));
         } else {
-          setError("Emel/ID atau kata laluan tidak sah. Sila cuba lagi.");
+          setError(t("loginForm.invalid"));
         }
         setPending(false);
         return;
       }
       window.location.assign(roleHome(user?.role));
     } catch {
-      setError("Sambungan gagal. Sila cuba lagi.");
+      setError(t("loginForm.connection"));
       setPending(false);
     }
   };
@@ -124,7 +124,7 @@ export const LoginForm: FC<{
     >
       <div className={cn("flex flex-col gap-1.5", teacherStyles.field)}>
         <label htmlFor={`${theme}-identifier`} className={teacherStyles.label}>
-          {spec.identifierLabel}
+          {t(spec.identifierLabel)}
         </label>
         <div className={teacherStyles.inputGroup}>
           {<MailIcon className={teacherStyles.inputIcon} aria-hidden="true" />}
@@ -132,7 +132,7 @@ export const LoginForm: FC<{
             id={`${theme}-identifier`}
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
-            placeholder={spec.identifierPlaceholder}
+            placeholder={t(spec.identifierPlaceholder)}
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}
@@ -148,7 +148,7 @@ export const LoginForm: FC<{
 
       <div className={cn("flex flex-col gap-1.5", teacherStyles.field)}>
         <label htmlFor={`${theme}-password`} className={teacherStyles.label}>
-          {spec.passwordLabel}
+          {t(spec.passwordLabel)}
         </label>
         <div className={cn("relative", teacherStyles.inputGroup)}>
           {
@@ -162,7 +162,7 @@ export const LoginForm: FC<{
             type={showPassword ? "text" : "password"}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder={spec.passwordPlaceholder}
+            placeholder={t(spec.passwordPlaceholder)}
             autoComplete="current-password"
             required
             disabled={pending}
@@ -174,7 +174,7 @@ export const LoginForm: FC<{
             type="button"
             onClick={() => setShowPassword((value) => !value)}
             aria-label={
-              showPassword ? "Sembunyikan kata laluan" : "Tunjukkan kata laluan"
+              showPassword ? t("loginForm.hide") : t("loginForm.show")
             }
             aria-pressed={showPassword}
             className={cn(
@@ -211,13 +211,15 @@ export const LoginForm: FC<{
             />
             {<CheckIcon aria-hidden="true" />}
           </span>
-          <span className={teacherStyles.checkboxLabel}>Ingat saya</span>
+          <span className={teacherStyles.checkboxLabel}>
+            {t("loginForm.remember")}
+          </span>
         </label>
         <Link
           href="/forgot-password"
           className={cn("text-sm", teacherStyles.forgotLink)}
         >
-          Lupa kata laluan?
+          {t("loginForm.forgot")}
         </Link>
       </div>
 
@@ -237,7 +239,7 @@ export const LoginForm: FC<{
                 )}
               >
                 <MailCheckIcon className="size-3.5" aria-hidden="true" />
-                Pautan pengesahan baharu telah dihantar.
+                {t("loginForm.resent")}
               </p>
             ) : (
               <Button
@@ -254,10 +256,10 @@ export const LoginForm: FC<{
                       className="size-3.5 animate-spin"
                       aria-hidden="true"
                     />
-                    Sedang menghantar…
+                    {t("loginForm.resending")}
                   </>
                 ) : (
-                  "Hantar semula pautan pengesahan"
+                  t("loginForm.resend")
                 )}
               </Button>
             ))}
@@ -272,11 +274,11 @@ export const LoginForm: FC<{
         {pending ? (
           <>
             <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
-            {spec.submitting}
+            {t(spec.submitting)}
           </>
         ) : (
           <>
-            {spec.submit}
+            {t(spec.submit)}
             {theme !== "student" && <ArrowRightIcon aria-hidden="true" />}
           </>
         )}

@@ -19,6 +19,7 @@ import {
   ZapIcon,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -201,6 +202,7 @@ function SchoolContact() {
 }
 
 export function Landing() {
+  const t = useT();
   const [panel, setPanel] = useState<Panel>(null);
   const register = () => setPanel("register");
   const contact = () => setPanel("contact");
@@ -225,7 +227,7 @@ export function Landing() {
               className={s.loginButton}
               render={<Link href="/login" />}
             >
-              Log Masuk
+              {t("landing.login")}
             </Button>
             <Button className={s.headerRegister} onClick={register}>
               Daftar
@@ -250,7 +252,7 @@ export function Landing() {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuItem render={<Link href="/login" />}>
-                  Log Masuk
+                  {t("landing.login")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -265,9 +267,9 @@ export function Landing() {
             <div className={s.heroCopy}>
               <span className={s.eyebrow}>Pixelspace AI Classroom</span>
               <h1 id="hero-title">
-                Belajar lebih pintar,
+                {t("landing.heroTitle1")}
                 <br />
-                <span>bersama AI.</span>
+                <span>{t("landing.heroTitle2")}</span>
               </h1>
               <p>
                 Platform pembelajaran berasaskan AI untuk murid, guru dan

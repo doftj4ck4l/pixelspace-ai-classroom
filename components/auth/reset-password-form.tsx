@@ -11,11 +11,13 @@ import {
   ShieldAlertIcon,
 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
 import { Input } from "@/components/ui/input";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { authClient } from "@/lib/auth-client";
 
 const ResetFormInner: FC = () => {
+  const t = useT();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const linkError = searchParams.get("error");
@@ -59,7 +61,7 @@ const ResetFormInner: FC = () => {
           <span className="grid size-14 place-items-center rounded-full bg-[#E7F6F4] text-[#177e89] dark:bg-[#12312e] dark:text-[#8fd9c8]">
             <CheckCircle2Icon className="size-7" aria-hidden="true" />
           </span>
-          <h2 className="text-xl font-semibold">Kata laluan dikemas kini</h2>
+          <h2 className="text-xl font-semibold">{t("reset.updated")}</h2>
           <p className="text-muted-foreground text-sm">
             Semua sesi lain telah ditamatkan. Log masuk dengan kata laluan
             baharu anda.
@@ -93,15 +95,15 @@ const ResetFormInner: FC = () => {
         setTokenError(true);
         return;
       }
-      setError("Tetapan semula gagal. Sila cuba lagi.");
+      setError(t("reset.failed"));
       return;
     }
     setDone(true);
   };
 
   return (
-    <AuthShell subtitle="Pilih kata laluan baharu untuk akaun anda.">
-      <h2 className="text-center text-lg font-semibold">Kata laluan baharu</h2>
+    <AuthShell subtitle={t("reset.subtitle")}>
+      <h2 className="text-center text-lg font-semibold">{t("reset.title")}</h2>
       <form
         onSubmit={onSubmit}
         className="flex flex-col gap-4"
@@ -109,7 +111,7 @@ const ResetFormInner: FC = () => {
       >
         <div className="flex flex-col gap-1.5">
           <label htmlFor="reset-password" className="text-sm font-medium">
-            Kata laluan baharu
+            {t("reset.passwordLabel")}
           </label>
           <div className="relative">
             <Input
@@ -118,7 +120,7 @@ const ResetFormInner: FC = () => {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="new-password"
-              placeholder="Sekurang-kurangnya 8 aksara"
+              placeholder={t("reset.passwordPh")}
               autoFocus
               required
               disabled={pending}
@@ -128,9 +130,7 @@ const ResetFormInner: FC = () => {
               type="button"
               onClick={() => setShowPassword((value) => !value)}
               aria-label={
-                showPassword
-                  ? "Sembunyikan kata laluan"
-                  : "Tunjukkan kata laluan"
+                showPassword ? t("loginForm.hide") : t("loginForm.show")
               }
               className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
             >
@@ -143,14 +143,14 @@ const ResetFormInner: FC = () => {
           </div>
           {password.length > 0 && password.length < 8 && (
             <p className="text-sm text-red-500" role="alert">
-              Kata laluan mesti sekurang-kurangnya 8 aksara.
+              {t("reset.tooShort")}
             </p>
           )}
         </div>
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="reset-confirm" className="text-sm font-medium">
-            Sahkan kata laluan
+            {t("reset.confirmLabel")}
           </label>
           <Input
             id="reset-confirm"
@@ -158,14 +158,14 @@ const ResetFormInner: FC = () => {
             value={confirm}
             onChange={(event) => setConfirm(event.target.value)}
             autoComplete="new-password"
-            placeholder="Taip semula kata laluan baharu"
+            placeholder={t("reset.confirmPh")}
             required
             disabled={pending}
             className="h-10"
           />
           {confirm.length > 0 && confirm !== password && (
             <p className="text-sm text-red-500" role="alert">
-              Kata laluan tidak sepadan.
+              {t("reset.mismatch")}
             </p>
           )}
         </div>
@@ -184,10 +184,10 @@ const ResetFormInner: FC = () => {
           {pending ? (
             <>
               <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
-              Sedang menyimpan…
+              {t("reset.saving")}
             </>
           ) : (
-            "Simpan kata laluan"
+            t("reset.save")
           )}
         </Button>
       </form>

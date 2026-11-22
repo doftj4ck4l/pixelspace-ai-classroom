@@ -15,6 +15,7 @@ import {
 } from "@/components/icons";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
 import { Input } from "@/components/ui/input";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { AuthShell } from "@/components/auth/auth-shell";
@@ -108,6 +109,7 @@ const CLASSES: Record<RegisterRole, Classes> = {
 };
 
 export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
+  const t = useT();
   const styles = CLASSES[role];
   const isStudent = role === "student";
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -158,15 +160,14 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
 
   const nextFromDetails = () => {
     const errors: Record<string, string> = {};
-    if (fullName.trim().length < 3)
-      errors.fullName = "Masukkan nama penuh anda.";
+    if (fullName.trim().length < 3) errors.fullName = t("register.enterName");
     if (!USERNAME_PATTERN.test(username.trim()))
       errors.username =
         "ID: 3–20 aksara (huruf, nombor, titik atau garis bawah).";
     if (displayName.trim().length > 30)
       errors.displayName = "Maksimum 30 aksara.";
     if (!EMAIL_PATTERN.test(email.trim()))
-      errors.email = "Masukkan emel yang sah.";
+      errors.email = t("register.badEmail");
     setFieldErrors(errors);
     if (Object.keys(errors).length === 0) setStep(3);
   };
@@ -174,10 +175,9 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const errors: Record<string, string> = {};
-    if (password.length < 8)
-      errors.password = "Kata laluan mesti sekurang-kurangnya 8 aksara.";
-    if (confirm !== password) errors.confirm = "Kata laluan tidak sepadan.";
-    if (!terms) errors.terms = "Sila terima terma penggunaan.";
+    if (password.length < 8) errors.password = t("reset.tooShort");
+    if (confirm !== password) errors.confirm = t("reset.mismatch");
+    if (!terms) errors.terms = t("register.termsError");
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
     if (!school) {
@@ -202,7 +202,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
       });
     } catch {
       setPending(false);
-      setFormError("Sambungan gagal. Sila cuba lagi.");
+      setFormError(t("register.connection"));
       return;
     }
     setPending(false);
@@ -210,17 +210,15 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
     if (authError) {
       const code = authError.code ?? "";
       if (code.includes("USERNAME")) {
-        setFieldErrors({ username: "ID ini telah digunakan. Cuba yang lain." });
+        setFieldErrors({ username: t("register.idTaken") });
         setStep(2);
       } else if (code.includes("EXISTS")) {
         setFieldErrors({
-          email: "Emel ini sudah didaftarkan. Cuba log masuk.",
+          email: t("register.emailExists"),
         });
         setStep(2);
       } else {
-        setFormError(
-          "Pendaftaran gagal. Sila semak butiran anda dan cuba lagi.",
-        );
+        setFormError(t("register.failed"));
       }
       return;
     }
@@ -445,7 +443,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="username" className={styles.label}>
-              {isStudent ? "ID pelajar" : "ID guru"}
+              {isStudent ? t("register.studentId") : t("register.teacherId")}
             </label>
             <Input
               id="username"
@@ -458,21 +456,19 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
               autoCapitalize="none"
               autoComplete="username"
               spellCheck={false}
-              placeholder="cth. aiman.hakim"
+              placeholder={t("register.idPlaceholder")}
               disabled={pending}
               aria-invalid={Boolean(fieldErrors.username)}
               className={styles.input}
             />
             {field("username") ?? (
-              <p className={styles.hint}>
-                Gunakan ID ini atau emel anda untuk log masuk nanti.
-              </p>
+              <p className={styles.hint}>{t("register.idHint")}</p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="displayName" className={styles.label}>
-              Nama paparan (pilihan)
+              {t("register.displayNameLabel")}
             </label>
             <Input
               id="displayName"
@@ -481,7 +477,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
                 setDisplayName(event.target.value);
                 clearError("displayName");
               }}
-              placeholder="Nama yang dilihat oleh orang lain"
+              placeholder={t("register.displayNamePlaceholder")}
               disabled={pending}
               aria-invalid={Boolean(fieldErrors.displayName)}
               className={styles.input}
@@ -508,9 +504,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
               className={styles.input}
             />
             {field("email") ?? (
-              <p className={styles.hint}>
-                Kami akan hantar pautan pengesahan ke emel ini.
-              </p>
+              <p className={styles.hint}>{t("register.emailHint")}</p>
             )}
           </div>
 
@@ -523,14 +517,14 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
               className={cn("shrink-0", styles.ghost)}
             >
               <ArrowLeftIcon className="size-4" aria-hidden="true" />
-              Kembali
+              {t("register.back")}
             </Button>
             <Button
               type="button"
               onClick={nextFromDetails}
               className={cn("flex-1", styles.primary)}
             >
-              Seterusnya
+              {t("register.next")}
               <ArrowRightIcon className="size-4" aria-hidden="true" />
             </Button>
           </div>
@@ -541,7 +535,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
         <>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="password" className={styles.label}>
-              Kata laluan
+              {t("register.password")}
             </label>
             <div className="relative">
               <Input
@@ -554,7 +548,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
                   clearError("confirm");
                 }}
                 autoComplete="new-password"
-                placeholder="Sekurang-kurangnya 8 aksara"
+                placeholder={t("register.passwordPh")}
                 disabled={pending}
                 aria-invalid={Boolean(fieldErrors.password)}
                 className={cn(styles.input, "pr-10")}
@@ -592,7 +586,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
                 clearError("confirm");
               }}
               autoComplete="new-password"
-              placeholder="Taip semula kata laluan"
+              placeholder={t("register.confirmPassword")}
               disabled={pending}
               aria-invalid={Boolean(fieldErrors.confirm)}
               className={styles.input}
@@ -654,7 +648,7 @@ export const RegisterForm: FC<{ role: RegisterRole }> = ({ role }) => {
                   Sedang mendaftar…
                 </>
               ) : (
-                "Daftar sekarang"
+                t("register.submit")
               )}
             </Button>
           </div>

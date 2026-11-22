@@ -4,6 +4,7 @@ import { BotIcon } from "@/components/icons";
 import { getSessionUser } from "@/lib/auth-session";
 import { getRoleHome, roleOf } from "@/lib/roles";
 import { BuddyMascot } from "@/components/student/buddy-mascot";
+import { T } from "@/components/i18n-text";
 
 export const metadata: Metadata = { title: "Buddy — Pixelspace AI Classroom" };
 
@@ -23,10 +24,11 @@ export default async function BuddyPage() {
               <BotIcon className="size-6" />
             </span>
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold sm:text-3xl">Buddy</h1>
+              <h1 className="text-2xl font-semibold sm:text-3xl">
+                <T k="buddy.title" />
+              </h1>
               <p className="text-muted-foreground mt-1 text-sm">
-                Rakan pembelajaran AI anda — tanya soalan, minta petua ulang
-                kaji dan sambung belajar bersama maskot Pixelspace.
+                <T k="buddy.subtitle" />
               </p>
             </div>
           </div>
@@ -34,11 +36,11 @@ export default async function BuddyPage() {
 
         <div className="border-border/60 mt-8 flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed px-6 py-14 text-center">
           <BuddyMascot />
-          <p className="text-sm font-medium">Buddy sedang bersiap</p>
+          <p className="text-sm font-medium">
+            <T k="buddy.preparing" />
+          </p>
           <p className="text-muted-foreground max-w-md text-sm">
-            Sebentar lagi anda boleh berbual dengan Buddy tentang topik yang
-            sedang anda pelajari, minta petua ulang kaji dan ulang kaji
-            bersama-sama.
+            <T k="buddy.preparingBody" />
           </p>
         </div>
       </div>

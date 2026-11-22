@@ -4,6 +4,7 @@ import { useState, type FC, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowRightIcon, Loader2Icon, MailCheckIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
 import { Input } from "@/components/ui/input";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { authClient } from "@/lib/auth-client";
@@ -11,6 +12,7 @@ import { authClient } from "@/lib/auth-client";
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const ForgotPasswordForm: FC = () => {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -31,12 +33,12 @@ export const ForgotPasswordForm: FC = () => {
 
   if (sentTo) {
     return (
-      <AuthShell subtitle="Tetapan semula kata laluan" widthClass="max-w-md">
+      <AuthShell subtitle={t("forgot.title")} widthClass="max-w-md">
         <div className="flex flex-col items-center gap-3 text-center">
           <span className="grid size-14 place-items-center rounded-full bg-[#E7F6F4] text-[#177e89] dark:bg-[#12312e] dark:text-[#8fd9c8]">
             <MailCheckIcon className="size-7" aria-hidden="true" />
           </span>
-          <h2 className="text-xl font-semibold">Semak emel anda</h2>
+          <h2 className="text-xl font-semibold">{t("forgot.check")}</h2>
           <p className="text-muted-foreground text-sm">
             Jika <strong>{sentTo}</strong> berdaftar, pautan tetapan semula kata
             laluan akan dihantar tidak lama lagi. Pautan itu sah selama 30 minit
@@ -50,7 +52,7 @@ export const ForgotPasswordForm: FC = () => {
             href="/"
             className="text-sm font-semibold underline underline-offset-2"
           >
-            Kembali ke laman utama
+            {t("forgot.back")}
           </Link>
         </div>
       </AuthShell>
@@ -67,7 +69,7 @@ export const ForgotPasswordForm: FC = () => {
       >
         <div className="flex flex-col gap-1.5">
           <label htmlFor="forgot-email" className="text-sm font-medium">
-            Emel
+            {t("forgot.email")}
           </label>
           <Input
             id="forgot-email"
@@ -90,11 +92,11 @@ export const ForgotPasswordForm: FC = () => {
           {pending ? (
             <>
               <Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
-              Sedang menghantar…
+              {t("forgot.sending")}
             </>
           ) : (
             <>
-              Hantar pautan
+              {t("forgot.submit")}
               <ArrowRightIcon className="size-4" aria-hidden="true" />
             </>
           )}
@@ -102,16 +104,16 @@ export const ForgotPasswordForm: FC = () => {
       </form>
       <div className="flex flex-col items-center gap-1.5 text-center text-sm">
         <p className="text-muted-foreground">
-          Ingat kata laluan anda?{" "}
+          {t("forgot.remember")}{" "}
           <Link href="/" className="text-foreground underline">
-            Log masuk
+            {t("forgot.signIn")}
           </Link>
         </p>
         <Link
           href="/"
           className="text-muted-foreground text-xs underline-offset-2 hover:underline"
         >
-          ← Kembali ke laman utama
+          ← {t("forgot.back")}
         </Link>
       </div>
     </AuthShell>

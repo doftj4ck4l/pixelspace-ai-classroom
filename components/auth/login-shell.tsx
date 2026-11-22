@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import type { LoginTheme } from "./login-form";
 import s from "./teacher-login.module.css";
 import r from "./login-roles.module.css";
+import { useT } from "@/lib/i18n";
 
 function PixelspaceLogo() {
   const id = useId();
@@ -83,16 +84,17 @@ export function LoginShell({
 }) {
   const student = theme === "student";
   const admin = theme === "admin";
+  const t = useT();
   const title = student
-    ? "Hai, pelajar! 👋"
+    ? t("auth.studentTitle")
     : admin
-      ? "Pentadbir & KPM"
-      : "Log masuk";
+      ? t("auth.adminTitle")
+      : t("auth.title");
   const subtitle = student
-    ? "Sedia untuk belajar? Masuk dengan ID pelajar atau emel."
+    ? t("auth.studentSubtitle")
     : admin
-      ? "Log masuk dengan akaun rasmi pentadbir."
-      : "Gunakan emel atau ID anda untuk teruskan.";
+      ? t("auth.adminSubtitle")
+      : t("auth.subtitle");
   return (
     <main
       className={cn(s.page, student && r.studentPage, admin && r.adminPage)}
@@ -145,36 +147,32 @@ export function LoginShell({
             </>
           ) : (
             <>
-              <h1 id="teacher-intro-title" className={s.unifiedHeadline}>
-                Satu ruang pembelajaran
+              <h1 id="teacher-intro-title">
+                {t("auth.headline1")}
                 <br />
-                berkuasa AI untuk
+                {t("auth.headline2")}
                 <br />
-                <span>seluruh sekolah.</span>
+                <span>{t("auth.headline3")}</span>
               </h1>
-              <p className={cn(s.introText, r.introText)}>
-                Murid belajar dengan kad imbas, kuiz dan nota pintar; guru
-                merancang pengajaran dan penilaian; pentadbir memantau
-                perkembangan — semuanya dalam satu platform.
-              </p>
+              <p className={cn(s.introText, r.introText)}>{t("auth.intro")}</p>
               <ul className={s.benefits}>
                 <li>
                   <span>
                     <SparklesIcon aria-hidden="true" />
                   </span>
-                  Kad imbas, kuiz &amp; nota pintar
+                  {t("auth.benefit1")}
                 </li>
                 <li>
                   <span>
                     <BookOpenIcon aria-hidden="true" />
                   </span>
-                  Bahan pengajaran &amp; penilaian AI
+                  {t("auth.benefit2")}
                 </li>
                 <li>
                   <span>
                     <BarChart3Icon aria-hidden="true" />
                   </span>
-                  Analitik &amp; pengurusan sekolah
+                  {t("auth.benefit3")}
                 </li>
               </ul>
             </>
@@ -273,9 +271,9 @@ export function LoginShell({
           ) : (
             <>
               <p className={cn(s.register, r.register)}>
-                {student ? "Baru di sini?" : "Belum ada akaun?"}{" "}
+                {student ? t("auth.newHere") : t("auth.noAccount")}{" "}
                 <Link href={student ? `/register/${theme}` : "/"}>
-                  {student ? "Daftar sebagai pelajar" : "Daftar di laman utama"}
+                  {student ? t("auth.registerStudent") : t("auth.registerMain")}
                 </Link>
               </p>
               {student && (
@@ -286,7 +284,7 @@ export function LoginShell({
               )}
               <Link href="/" className={cn(s.homeLink, r.homeLink)}>
                 <ArrowLeftIcon aria-hidden="true" />
-                Kembali ke laman utama
+                {t("auth.homeLink")}
               </Link>
             </>
           )}
