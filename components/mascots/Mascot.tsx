@@ -6,6 +6,7 @@ import "./mascots.css";
 import { MascotExpression } from "./MascotExpression";
 import {
   STATE_DURATION,
+  isLooping,
   type MascotCharacter,
   type MascotState,
 } from "./types";
@@ -24,6 +25,8 @@ export interface MascotProps {
   className?: string;
   /** show the soft ground shadow */
   shadow?: boolean;
+  /** keep animating even when the OS requests reduced motion */
+  ignoreReducedMotion?: boolean;
   onAnimationComplete?: (state: MascotState) => void;
 }
 
@@ -196,19 +199,37 @@ export function Mascot({
   speed: speedProp,
   className,
   shadow = true,
+  ignoreReducedMotion = false,
   onAnimationComplete,
 }: MascotProps) {
   const settings = useMascotAnimationSettings();
   const speed = speedProp ?? settings.speed;
   const paused = settings.paused;
-  const reduced = settings.reducedMotion;
+  const reduced = settings.reducedMotion && !ignoreReducedMotion;
   const rig = getRig(character);
+
+  const replayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (replayTimer.current) clearTimeout(replayTimer.current);
+    },
+    [],
+  );
 
   const { state, go, nonce } = useMascotState(stateProp ?? "idle", {
     returnToIdle: !loop,
     speed,
     paused,
-    onAnimationComplete,
+    onAnimationComplete: (completed) => {
+      onAnimationComplete?.(completed);
+      if (loop && !isLooping(completed)) {
+        if (replayTimer.current) clearTimeout(replayTimer.current);
+        replayTimer.current = setTimeout(
+          () => go(completed, { replay: true }),
+          2000,
+        );
+      }
+    },
   });
 
   // external (declarative) control: reacting only to prop changes

@@ -96,6 +96,21 @@ export function useMascotState(
       );
   }, [clearTimer, scheduleCompletion, state]);
 
+  // a one-shot initial state (e.g. greeting) must still complete
+  useEffect(() => {
+    if (
+      !isLooping(state) &&
+      timerRef.current === null &&
+      remainingRef.current === null
+    ) {
+      scheduleCompletion(
+        state,
+        STATE_DURATION[state] / Math.max(speedRef.current, 0.001),
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // pause / resume with remaining-time preservation
   useEffect(() => {
     if (isLooping(state)) return;

@@ -70,10 +70,6 @@ const en = {
   "threads.delete": "Delete",
 
   "chat.greeting": "How can I help you today?",
-  "chat.greeting2": "What should we learn today?",
-  "chat.greeting3": "Ready to explore something new?",
-  "chat.greeting4": "Ask me about any subject!",
-  "chat.greeting5": "Let's make today's lesson great!",
   "chat.ask": "Ask Pixelspace AI Classroom",
   "chat.placeholder.flashcards": "What flashcards do you want to create?",
   "chat.placeholder.quizzes": "What quiz do you want to generate?",
@@ -395,10 +391,6 @@ const ms: Record<TranslationKey, string> = {
   "threads.delete": "Padam",
 
   "chat.greeting": "Apa yang boleh saya bantu hari ini?",
-  "chat.greeting2": "Apa yang ingin anda pelajari hari ini?",
-  "chat.greeting3": "Bersedia meneroka perkara baharu?",
-  "chat.greeting4": "Tanya saya tentang mana-mana subjek!",
-  "chat.greeting5": "Mari jadikan pembelajaran hari ini hebat!",
   "chat.ask": "Tanya Pixelspace AI Classroom",
   "chat.placeholder.flashcards": "Kad imbas apa yang anda mahu hasilkan?",
   "chat.placeholder.quizzes": "Kuiz apa yang anda mahu jana?",

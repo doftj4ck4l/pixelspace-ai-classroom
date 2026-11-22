@@ -269,6 +269,23 @@ const CREATE_MODULE_ITEMS: {
   { type: "notes", label: "Notes", Icon: StickyNoteIcon },
 ];
 
+const CREATE_CHAT_PROMPTS: Partial<Record<DocType, string>> = {
+  flashcards:
+    "Saya mahu bina kad imbas. Gunakan render_ui flashcards supaya kad boleh terus dilihat dan diacak. Sebelum membinanya, tanya saya dahulu: topik apa, dan untuk tahap atau kelas mana. Jangan bina apa-apa sebelum saya menjawab.",
+  quizzes:
+    "Saya mahu bina kuiz. Gunakan render_ui quizzes. Sebelum membinanya, tanya saya dahulu: topik apa, tahap atau kelas mana, dan berapa banyak soalan. Jangan bina apa-apa sebelum saya menjawab.",
+  mindmaps:
+    "Saya mahu bina peta pembelajaran. Gunakan render_ui mindmaps. Sebelum membinanya, tanya saya dahulu: topik apa, dan untuk tahap atau kelas mana. Jangan bina apa-apa sebelum saya menjawab.",
+  slides:
+    "Saya mahu bina slaid pembentangan (.pptx). Sebelum membinanya, tanya saya dahulu: topik apa, tahap atau kelas mana, dan berapa banyak slaid. Jangan bina apa-apa sebelum saya menjawab.",
+  reports:
+    "Saya mahu tulis laporan (PDF). Sebelum menulisnya, tanya saya dahulu: topik apa, dan untuk tahap atau kelas mana. Jangan tulis apa-apa sebelum saya menjawab.",
+  infographics:
+    "Saya mahu bina infografik. Sebelum membinanya, tanya saya dahulu: topik apa, dan untuk tahap atau kelas mana. Jangan bina apa-apa sebelum saya menjawab.",
+  notes:
+    "Saya mahu bina nota kajian. Gunakan render_ui notes. Sebelum membinanya, tanya saya dahulu: topik apa, dan untuk tahap atau kelas mana. Jangan bina apa-apa sebelum saya menjawab.",
+};
+
 const DocGlyph: FC<{ type: DocType; size?: "sm" | "lg" }> = ({
   type,
   size = "sm",
@@ -1062,6 +1079,23 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     }
   };
 
+  const startCreateInChat = async (type: DocType) => {
+    try {
+      const { id } = (await fetch("/api/pi/threads", {
+        method: "POST",
+      }).then((res) => res.json())) as { id: string };
+      await aui.threads.switchToThread(id);
+      aui.composer.setText(
+        CREATE_CHAT_PROMPTS[type] ??
+          "Saya mahu bina sesuatu yang baharu. Tanya saya dahulu apa yang saya mahu.",
+      );
+      aui.composer.send();
+      router.push("/chat");
+    } catch {
+      // stay on the hub; the user can retry
+    }
+  };
+
   const generateInfographic = async (input: CreateDialogInput) => {
     setCreateKind(null);
     try {
@@ -1261,7 +1295,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
             {mode === "all" ? (
               <CreateMenu
                 onStartFromTemplate={startFromTemplate}
-                onCreate={addDoc}
+                onCreate={startCreateInChat}
               />
             ) : mode === "slides" ? (
               <Button
