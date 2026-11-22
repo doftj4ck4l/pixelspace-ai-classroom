@@ -1,0 +1,1 @@
+ALTER TABLE "threads" ADD COLUMN "space_id" text;

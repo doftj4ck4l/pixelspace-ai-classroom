@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { threads } from "@/lib/db/schema";
 
@@ -16,6 +16,7 @@ export type PiThread = {
   runStatus?: "idle" | "running" | "done" | "error" | "stopped";
   lastMessageAt?: string;
   createdAt?: string;
+  spaceId?: string;
 };
 
 type ThreadRow = typeof threads.$inferSelect;
@@ -30,6 +31,7 @@ const toPiThread = (row: ThreadRow): PiThread => ({
     ? { lastMessageAt: row.lastMessageAt.toISOString() }
     : {}),
   createdAt: row.createdAt.toISOString(),
+  ...(row.spaceId ? { spaceId: row.spaceId } : {}),
 });
 
 export const registry = {
@@ -52,6 +54,20 @@ export const registry = {
 
   async create(userId: string, id: string): Promise<void> {
     await db.insert(threads).values({ id, userId }).onConflictDoNothing();
+  },
+
+  /** Remember the space a thread belongs to (first space wins). */
+  async setSpace(userId: string, id: string, spaceId: string): Promise<void> {
+    await db
+      .update(threads)
+      .set({ spaceId })
+      .where(
+        and(
+          eq(threads.id, id),
+          eq(threads.userId, userId),
+          isNull(threads.spaceId),
+        ),
+      );
   },
 
   /** The AI edit session for a deck artifact, if one exists. */

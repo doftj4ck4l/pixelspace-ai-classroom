@@ -8,7 +8,10 @@ import {
   createUIMessageStreamResponse,
   type UIMessage,
 } from "ai";
+import { and, eq } from "drizzle-orm";
 import { requireApiUser } from "@/lib/auth-session";
+import { db } from "@/lib/db";
+import { spaceMembers, spaces } from "@/lib/db/schema";
 import { artifactRegistry, type PiArtifact } from "@/lib/pi/artifacts";
 import { piConfigured, piFetch } from "@/lib/pi/client";
 import { registry } from "@/lib/pi/registry";
@@ -610,6 +613,39 @@ const piChat = async (
   }
 
   const thread = threadId ? await registry.get(userId, threadId) : undefined;
+
+  // A chat inside a space remembers its space (first turn wins), so the
+  // space's Hub tab can list the artifacts created for it.
+  if (
+    threadId &&
+    thread &&
+    !thread.spaceId &&
+    typeof body.spaceId === "string" &&
+    body.spaceId
+  ) {
+    const [target] = await db
+      .select({ id: spaces.id, userId: spaces.userId })
+      .from(spaces)
+      .where(eq(spaces.id, body.spaceId));
+    if (target) {
+      const allowed =
+        target.userId === userId ||
+        Boolean(
+          (
+            await db
+              .select({ id: spaceMembers.id })
+              .from(spaceMembers)
+              .where(
+                and(
+                  eq(spaceMembers.spaceId, target.id),
+                  eq(spaceMembers.userId, userId),
+                ),
+              )
+          )[0],
+        );
+      if (allowed) await registry.setSpace(userId, threadId, body.spaceId);
+    }
+  }
 
   // A real thread's run is registered before the upstream call so the stop
   // route can find it immediately. Session-only Q&A runs (no thread) stay

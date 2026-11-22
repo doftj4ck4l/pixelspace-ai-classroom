@@ -110,28 +110,20 @@ export const TextbooksPage: FC = () => {
           />
         </header>
 
-        <div className="scrollbar-subtle -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1">
-          {LEVEL_TABS.map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setLevel(value);
-                setSubject("all");
-              }}
-              className={cn(
-                "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                level === value
-                  ? "bg-foreground text-background border-transparent"
-                  : "text-muted-foreground hover:text-foreground border-border",
-              )}
-            >
-              {value === 0 ? t("books.all") : levelText(value)}
-            </button>
-          ))}
-        </div>
-
         <div className="mt-3 flex flex-wrap items-center gap-2">
+          <FilterSelect
+            value={String(level)}
+            onValueChange={(value) => {
+              setLevel(Number(value));
+              setSubject("all");
+            }}
+            ariaLabel="Tahap"
+            options={LEVEL_TABS.map((value) => ({
+              value: String(value),
+              label: value === 0 ? t("books.all") : levelText(value),
+            }))}
+            className="h-9 rounded-lg"
+          />
           <FilterSelect
             value={subject}
             onValueChange={setSubject}

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FC } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type FC,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -11,7 +17,6 @@ import {
   EditIcon,
   GroupIcon,
   KeyIcon,
-  LoginIcon,
   BracesIcon,
   LayersIcon,
   Loader2Icon,
@@ -26,6 +31,8 @@ import {
 import { SpaceArtwork } from "@/components/spaces/space-artwork";
 import s from "./space-study.module.css";
 import { SpaceSourcesPanel } from "@/components/spaces/space-sources-panel";
+import { SpaceHubPanel } from "@/components/spaces/space-hub-panel";
+import { HubMark as HubIcon } from "@/components/brand-icons";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -78,7 +85,7 @@ type Insights = {
   students: StudentRow[];
 };
 
-type Tab = "sources" | "students" | "analytics";
+type Tab = "sources" | "hub" | "students" | "analytics";
 
 const ACCENT_DOT: Record<string, string> = {
   teal: "bg-[#8fd9c8]",
@@ -102,9 +109,6 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
-  const [joinCode, setJoinCode] = useState("");
-  const [joining, setJoining] = useState(false);
-  const [joinError, setJoinError] = useState<string | null>(null);
   const [editName, setEditName] = useState(space.name);
   const [editDescription, setEditDescription] = useState(space.description);
   const [editAccent, setEditAccent] = useState(space.accent);
@@ -129,8 +133,13 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
   };
 
   const tabs = useMemo(() => {
-    const base: { id: Tab; label: string; Icon: typeof LayersIcon }[] = [
+    const base: {
+      id: Tab;
+      label: string;
+      Icon: ComponentType<{ className?: string }>;
+    }[] = [
       { id: "sources", label: t("spaceDetail.tab.sources"), Icon: LayersIcon },
+      { id: "hub", label: t("spaceDetail.tab.hub"), Icon: HubIcon },
     ];
     if (isOwner) {
       base.push(
@@ -166,35 +175,6 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // clipboard unavailable — the code is on screen anyway
-    }
-  };
-
-  const joinByCode = async () => {
-    const code = joinCode.trim().toUpperCase();
-    if (!code || joining) return;
-    setJoining(true);
-    setJoinError(null);
-    try {
-      const res = await fetch("/api/spaces/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as {
-          error?: string;
-        } | null;
-        setJoinError(data?.error ?? t("spaces.joinError"));
-        return;
-      }
-      const data = (await res.json()) as { id?: string };
-      setCodeOpen(false);
-      setJoinCode("");
-      if (data.id) router.push(`/community/${data.id}`);
-    } catch {
-      setJoinError(t("spaces.joinError"));
-    } finally {
-      setJoining(false);
     }
   };
 
@@ -309,11 +289,7 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
                   <Button
                     variant="outline"
                     className={s.share}
-                    onClick={() => {
-                      setJoinCode("");
-                      setJoinError(null);
-                      setCodeOpen(true);
-                    }}
+                    onClick={() => setCodeOpen(true)}
                   >
                     <KeyIcon className="size-4" />
                     {t("spaceDetail.shareCode")}
@@ -402,6 +378,8 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
             readOnly={!isOwner}
           />
         ) : null}
+
+        {tab === "hub" ? <SpaceHubPanel spaceId={space.id} /> : null}
 
         {tab === "students" ? (
           <section className="flex flex-col gap-3">
@@ -651,33 +629,6 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
               )}
               {copied ? t("spaceDetail.copied") : t("spaceDetail.copy")}
             </Button>
-          </div>
-          <div className="border-border/60 grid gap-2 border-t pt-3">
-            <p className="text-sm font-medium">
-              {t("spaceDetail.joinWithCode")}
-            </p>
-            <div className="flex items-center gap-2">
-              <input
-                value={joinCode}
-                onChange={(event) =>
-                  setJoinCode(event.target.value.toUpperCase())
-                }
-                placeholder="cth. MT4X7K"
-                maxLength={8}
-                className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 min-w-0 flex-1 rounded-xl border px-3 text-center font-mono text-sm tracking-[0.3em] uppercase outline-none focus-visible:ring-2"
-              />
-              <Button
-                onClick={() => void joinByCode()}
-                disabled={joining || joinCode.trim().length < 4}
-                className="shrink-0 gap-2"
-              >
-                <LoginIcon className="size-4" />
-                {t("spaces.join")}
-              </Button>
-            </div>
-            {joinError ? (
-              <p className="text-destructive text-xs">{joinError}</p>
-            ) : null}
           </div>
         </DialogContent>
       </Dialog>

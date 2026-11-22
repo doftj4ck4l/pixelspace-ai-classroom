@@ -1,0 +1,258 @@
+"use client";
+
+import { useEffect, useMemo, useState, type FC } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ChartColumnIcon,
+  CircleHelpIcon,
+  FileTextIcon,
+  LayersIcon,
+  LayoutGridIcon,
+  Loader2Icon,
+  PresentationIcon,
+  SearchIcon,
+  StickyNoteIcon,
+  WaypointsIcon,
+} from "@/components/icons";
+import { SlidePreview } from "@/components/assistant-ui/slide-preview";
+import { useI18n } from "@/lib/i18n";
+import s from "./space-study.module.css";
+
+type SpaceArtifact = {
+  id: string;
+  type: string;
+  title: string;
+  kind: string;
+  url: string | null;
+  createdAt: string;
+};
+
+type HubType =
+  | "flashcards"
+  | "quizzes"
+  | "mindmaps"
+  | "slides"
+  | "reports"
+  | "infographics"
+  | "notes";
+
+const HUB_TABS = [
+  {
+    id: "all",
+    labelKey: "spaceHub.all",
+    Icon: LayoutGridIcon,
+    emoji: "✨",
+    css: "other",
+  },
+  {
+    id: "flashcards",
+    labelKey: "spaceHub.flashcards",
+    Icon: LayersIcon,
+    emoji: "🃏",
+    css: "other",
+  },
+  {
+    id: "quizzes",
+    labelKey: "spaceHub.quizzes",
+    Icon: CircleHelpIcon,
+    emoji: "❓",
+    css: "video",
+  },
+  {
+    id: "mindmaps",
+    labelKey: "spaceHub.mindmaps",
+    Icon: WaypointsIcon,
+    emoji: "🗺️",
+    css: "other",
+  },
+  {
+    id: "slides",
+    labelKey: "spaceHub.slides",
+    Icon: PresentationIcon,
+    emoji: "📊",
+    css: "slides",
+  },
+  {
+    id: "reports",
+    labelKey: "spaceHub.reports",
+    Icon: FileTextIcon,
+    emoji: "📄",
+    css: "other",
+  },
+  {
+    id: "infographics",
+    labelKey: "spaceHub.infographics",
+    Icon: ChartColumnIcon,
+    emoji: "📈",
+    css: "video",
+  },
+  {
+    id: "notes",
+    labelKey: "spaceHub.notes",
+    Icon: StickyNoteIcon,
+    emoji: "📝",
+    css: "note",
+  },
+] as const;
+
+/**
+ * The space's Hub tab: everything the teacher (and the viewer themselves)
+ * generated in this space's chats — quizzes to attempt, slides to check,
+ * flashcards to review — with the same chip row the sources tab uses.
+ */
+export const SpaceHubPanel: FC<{ spaceId: string }> = ({ spaceId }) => {
+  const { t } = useI18n();
+  const router = useRouter();
+  const [rows, setRows] = useState<SpaceArtifact[] | null>(null);
+  const [category, setCategory] = useState<"all" | HubType>("all");
+  const [query, setQuery] = useState("");
+  const [preview, setPreview] = useState<{ id: string; title: string } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/spaces/${spaceId}/artifacts`)
+      .then((res) => (res.ok ? res.json() : { artifacts: [] }))
+      .then((data: { artifacts?: SpaceArtifact[] }) => {
+        if (!cancelled) setRows(data.artifacts ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [spaceId]);
+
+  const counts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const row of rows ?? []) out[row.type] = (out[row.type] ?? 0) + 1;
+    return out;
+  }, [rows]);
+
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return (rows ?? [])
+      .filter((row) => category === "all" || row.type === category)
+      .filter((row) => !needle || row.title.toLowerCase().includes(needle));
+  }, [rows, category, query]);
+
+  const open = (artifact: SpaceArtifact) => {
+    if (artifact.type === "slides") {
+      if ((artifact.url ?? "").split("?")[0]?.toLowerCase().endsWith(".pptx")) {
+        setPreview({ id: artifact.id, title: artifact.title });
+      }
+      return;
+    }
+    if (
+      artifact.type === "flashcards" ||
+      artifact.type === "quizzes" ||
+      artifact.type === "mindmaps" ||
+      artifact.type === "notes" ||
+      artifact.type === "reports" ||
+      artifact.type === "infographics"
+    ) {
+      router.push(`/spaces/${artifact.type}/${artifact.id}`);
+    }
+  };
+
+  return (
+    <div className={s.sources}>
+      <div className={s.toolbar}>
+        <div className={s.filters}>
+          {HUB_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setCategory(tab.id)}
+              aria-pressed={category === tab.id}
+              className={s.filter}
+            >
+              <tab.Icon className="size-3.5" />
+              {t(tab.labelKey)}
+              <span className={s.filterCount}>
+                {tab.id === "all" ? (rows ?? []).length : (counts[tab.id] ?? 0)}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className={s.viewTools}>
+          <label className={s.search}>
+            <SearchIcon className="text-muted-foreground size-4 shrink-0" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              aria-label={t("spaceDetail.search")}
+              placeholder={t("spaceDetail.search")}
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+            />
+          </label>
+        </div>
+      </div>
+
+      {rows === null ? (
+        <div className="text-muted-foreground flex items-center justify-center gap-2 py-12 text-sm">
+          <Loader2Icon className="size-4 animate-spin" />
+          {t("common.loading")}
+        </div>
+      ) : visible.length === 0 ? (
+        <div className={s.empty}>{t("spaceHub.empty")}</div>
+      ) : (
+        <div className={s.grid}>
+          {visible.map((artifact) => {
+            const tab = HUB_TABS.find((entry) => entry.id === artifact.type);
+            const Icon = tab?.Icon ?? FileTextIcon;
+            return (
+              <article
+                key={artifact.id}
+                className={s.card}
+                data-category={tab?.css ?? "other"}
+              >
+                <div className={s.cardCover}>
+                  <button
+                    type="button"
+                    className={s.coverLink}
+                    aria-label={artifact.title}
+                    onClick={() => open(artifact)}
+                  >
+                    <span className="text-4xl leading-none">
+                      {tab?.emoji ?? "📦"}
+                    </span>
+                  </button>
+                  <div className={s.cardTop}>
+                    <span className={s.categoryChip}>
+                      <Icon />
+                      {tab ? t(tab.labelKey) : artifact.type}
+                    </span>
+                  </div>
+                </div>
+                <div className={s.cardBody}>
+                  <button
+                    type="button"
+                    className={s.cardTitle}
+                    onClick={() => open(artifact)}
+                  >
+                    {artifact.title}
+                  </button>
+                  <span className={s.cardMeta}>
+                    {new Date(artifact.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {preview ? (
+        <SlidePreview
+          artifactId={preview.id}
+          title={preview.title}
+          downloads={[]}
+          onClose={() => setPreview(null)}
+        />
+      ) : null}
+    </div>
+  );
+};

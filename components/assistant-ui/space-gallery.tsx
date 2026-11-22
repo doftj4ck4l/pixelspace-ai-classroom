@@ -23,7 +23,6 @@ import {
   FolderIcon,
   ImageIcon,
   LayersIcon,
-  LayoutDashboardIcon,
   LayoutGridIcon,
   ListIcon,
   MoreHorizontalIcon,
@@ -77,9 +76,7 @@ import {
   type GenerationSource,
 } from "@/components/assistant-ui/harness";
 import {
-  NewPresentationDialog,
   SlideEditor,
-  TEMPLATES,
   blankSlide,
   type SlideData,
 } from "@/components/assistant-ui/slide-editor";
@@ -277,9 +274,8 @@ const typeFromFileName = (name: string): DocType => {
 };
 
 const CreateMenu: FC<{
-  onStartFromTemplate: () => void;
   onCreate: (type: DocType, title?: string) => void;
-}> = ({ onStartFromTemplate, onCreate }) => {
+}> = ({ onCreate }) => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -294,11 +290,6 @@ const CreateMenu: FC<{
           side="bottom"
           className="max-h-96 min-w-56 overflow-y-auto"
         >
-          <DropdownMenuItem onClick={onStartFromTemplate}>
-            <LayoutDashboardIcon className="size-4" />
-            Start from template
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
           {CREATE_MODULE_ITEMS.map(({ type, label, Icon }) => (
             <DropdownMenuItem key={type} onClick={() => onCreate(type)}>
               <Icon className="size-4" />
@@ -657,7 +648,7 @@ const SECTION_TABS: { id: string; label: string; Icon: LucideIcon }[] = [
 ];
 
 export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
-  const { setSection, setView } = useSidebarNav();
+  const { setView } = useSidebarNav();
   const aui = useAui();
   const router = useRouter();
   const t = useT();
@@ -673,9 +664,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const [progressMap, setProgressMap] = useState<Record<string, DeckProgress>>(
     {},
   );
-  const [showNewPresentation, setShowNewPresentation] = useState(false);
   const [createKind, setCreateKind] = useState<ModuleKind | null>(null);
-  const templatesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -875,14 +864,6 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     setEditingId(doc.id);
   };
 
-  const createDeck = (title: string, slides: SlideData[]) => {
-    const doc: Doc = { ...newDoc("slides", title), slides };
-    setDocs((prev) => [doc, ...(prev ?? [])]);
-    persistDoc(doc);
-    setShowNewPresentation(false);
-    setEditingId(doc.id);
-  };
-
   const siblingsOf = (doc: Doc) =>
     sharedArtifacts
       .filter(
@@ -1054,14 +1035,6 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     }
   };
 
-  const startFromTemplate = () => {
-    if (mode === "slides") {
-      templatesRef.current?.scrollIntoView({ behavior: "smooth" });
-      return;
-    }
-    setSection("slides");
-  };
-
   const emptyMessage = query
     ? "No items match your search"
     : "Nothing here yet — create something to get started";
@@ -1204,10 +1177,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                   className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
                 />
               </div>
-              <CreateMenu
-                onStartFromTemplate={startFromTemplate}
-                onCreate={startCreateInChat}
-              />
+              <CreateMenu onCreate={startCreateInChat} />
             </>
           }
         />
@@ -1284,41 +1254,6 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
             </button>
           </div>
         </div>
-
-        {mode === "slides" && (
-          <div className="mt-8" ref={templatesRef}>
-            <h2 className="text-base font-semibold">
-              Create together in Space
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Choose a template to start working with your team
-            </p>
-            <div className="scrollbar-subtle mt-4 flex gap-4 overflow-x-auto pb-3">
-              {TEMPLATES.map((template) => (
-                <button
-                  key={template.id}
-                  type="button"
-                  onClick={() =>
-                    createDeck(template.title, [
-                      blankSlide(template.title, "Created from template"),
-                    ])
-                  }
-                  className="w-64 shrink-0 text-left"
-                >
-                  <div className="border-border/60 aspect-[16/10] overflow-hidden rounded-xl border transition-transform duration-200 hover:scale-[1.02]">
-                    <template.render />
-                  </div>
-                  <p className="mt-2.5 text-center text-sm font-medium">
-                    {template.title}
-                  </p>
-                  <p className="text-muted-foreground text-center text-xs">
-                    Slides
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {docs !== null &&
           (layout === "grid" ? (
@@ -1503,12 +1438,6 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
           </div>
         )}
       </div>
-
-      <NewPresentationDialog
-        open={showNewPresentation}
-        onOpenChange={setShowNewPresentation}
-        onCreate={createDeck}
-      />
 
       <CreateDialog
         open={createKind !== null}

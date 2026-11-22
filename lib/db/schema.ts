@@ -142,6 +142,8 @@ export const threads = pgTable(
     title: text("title"),
     /** Set when this thread is the AI edit session for a deck artifact. */
     deckId: text("deck_id"),
+    /** Set when the thread was started from inside a space (space Hub). */
+    spaceId: text("space_id"),
     status: text("status").notNull().default("regular"),
     /**
      * Run state of the latest turn: idle | running | done | error | stopped.
