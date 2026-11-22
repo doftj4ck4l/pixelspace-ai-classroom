@@ -32,9 +32,9 @@
 .sidebar .brandHeader {
   position: relative;
   z-index: 1;
-  height: 88px;
-  padding-inline: 24px 18px;
-  gap: 6px;
+  height: 80px;
+  padding-inline: 22px 16px;
+  gap: 5px;
 }
 .brand {
   display: flex;
@@ -44,8 +44,8 @@
   min-width: 0;
 }
 .brand > svg {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   color: #9252ff;
 }
@@ -55,13 +55,13 @@
   gap: 2px;
 }
 .brandWords strong {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 750;
   line-height: 1.1;
   letter-spacing: -0.5px;
 }
 .brandWords small {
-  font-size: 10px;
+  font-size: 9.5px;
   line-height: 1.2;
   font-weight: 600;
   letter-spacing: 0.45px;
@@ -69,25 +69,25 @@
   white-space: nowrap;
 }
 .sidebar .brandHeader button {
-  width: 30px;
-  height: 32px;
+  width: 28px;
+  height: 30px;
 }
 .sidebar .brandHeader button svg {
-  width: 21px;
-  height: 21px;
+  width: 19px;
+  height: 19px;
 }
 .sidebar .threadRoot {
-  width: 294px;
-  padding: 0 18px;
+  width: 272px;
+  padding: 0 16px;
   z-index: 1;
 }
 .newChat {
   background: var(--teacher-active);
   color: #34109c;
   font-weight: 650;
-  height: 43px;
-  gap: 12px;
-  padding-inline: 22px;
+  height: 40px;
+  gap: 11px;
+  padding-inline: 20px;
 }
 .newChat:hover {
   background: #e5d8ff;
@@ -101,9 +101,9 @@
   gap: 4px;
 }
 .navigation a {
-  height: 42px;
-  padding-inline: 22px;
-  gap: 13px;
+  height: 38px;
+  padding-inline: 20px;
+  gap: 12px;
   color: var(--teacher-muted);
   font-weight: 500;
 }
@@ -130,18 +130,18 @@
   padding-inline: 12px;
   padding-block: 4px 8px;
   color: var(--teacher-muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 .sidebar .recents :global([data-slot="aui_thread-list-item-trigger"]) {
   color: var(--teacher-ink);
-  font-size: 14px;
+  font-size: 13px;
 }
 .sidebar .sidebarArt {
   position: absolute;
-  width: 120px;
-  height: 120px;
-  bottom: 142px;
-  right: 24px;
+  width: 106px;
+  height: 106px;
+  bottom: 130px;
+  right: 20px;
   z-index: 0;
   opacity: 0.85;
   pointer-events: none;
@@ -149,35 +149,35 @@
 .sidebar .account {
   position: relative;
   z-index: 1;
-  height: 85px;
-  padding: 15px 24px;
+  height: 76px;
+  padding: 12px 22px;
   border-color: var(--teacher-line);
   background: #ffffff68;
   gap: 12px;
 }
 .account > button {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
 }
 .account p:first-child {
   font-weight: 650;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 .account p:last-child {
   color: var(--teacher-muted);
-  font-size: 12px;
+  font-size: 11.5px;
 }
 .settings {
   display: flex;
-  width: 24px;
-  height: 32px;
+  width: 22px;
+  height: 28px;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
 }
 .settings svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 .settings:hover {
   background: var(--teacher-active);

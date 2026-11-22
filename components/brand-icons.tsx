@@ -35,13 +35,13 @@ export const NewChatMark: FC<IconProps> = (props) => (
     <path
       d="M4.6 19.4l.6-3.2L15.9 5.5a1.75 1.75 0 0 1 2.6 2.6L7.8 18.8l-3.2.6Z"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="2"
       strokeLinejoin="round"
     />
     <path
       d="M14.4 7l2.6 2.6"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="2"
       strokeLinecap="round"
     />
     <path
@@ -54,15 +54,15 @@ export const NewChatMark: FC<IconProps> = (props) => (
 /** A hub and its four spokes — the Hub mark. */
 export const HubMark: FC<IconProps> = (props) => (
   <Svg {...props}>
-    <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.7" />
-    <circle cx="12" cy="4.3" r="1.8" stroke="currentColor" strokeWidth="1.7" />
-    <circle cx="19.7" cy="12" r="1.8" stroke="currentColor" strokeWidth="1.7" />
-    <circle cx="12" cy="19.7" r="1.8" stroke="currentColor" strokeWidth="1.7" />
-    <circle cx="4.3" cy="12" r="1.8" stroke="currentColor" strokeWidth="1.7" />
+    <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="2" />
+    <circle cx="12" cy="4.3" r="1.8" stroke="currentColor" strokeWidth="2" />
+    <circle cx="19.7" cy="12" r="1.8" stroke="currentColor" strokeWidth="2" />
+    <circle cx="12" cy="19.7" r="1.8" stroke="currentColor" strokeWidth="2" />
+    <circle cx="4.3" cy="12" r="1.8" stroke="currentColor" strokeWidth="2" />
     <path
       d="M12 9.5V6.1M14.5 12h3.4M12 14.5v3.4M9.5 12H6.1"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="2"
       strokeLinecap="round"
     />
   </Svg>
@@ -74,7 +74,7 @@ export const HubMarkFill: FC<IconProps> = (props) => (
     <path
       d="M12 9.5V6.1M14.5 12h3.4M12 14.5v3.4M9.5 12H6.1"
       stroke="currentColor"
-      strokeWidth="1.9"
+      strokeWidth="2.1"
       strokeLinecap="round"
     />
     <circle cx="12" cy="12" r="3.1" fill="currentColor" />
@@ -95,12 +95,12 @@ export const PixiMark: FC<IconProps> = (props) => (
       height="12"
       rx="5"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="2"
     />
     <path
       d="M12 7.2V4.7"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="2"
       strokeLinecap="round"
     />
     <circle cx="12" cy="3.6" r="1.15" fill="currentColor" />
@@ -109,7 +109,7 @@ export const PixiMark: FC<IconProps> = (props) => (
     <path
       d="M10.5 16c.85.75 2.15.75 3 0"
       stroke="currentColor"
-      strokeWidth="1.5"
+      strokeWidth="1.8"
       strokeLinecap="round"
     />
   </Svg>
@@ -121,7 +121,7 @@ export const PixiMarkFill: FC<IconProps> = (props) => (
     <path
       d="M12 7.2V4.7"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="2"
       strokeLinecap="round"
     />
     <circle cx="12" cy="3.6" r="1.15" fill="currentColor" />
@@ -140,7 +140,7 @@ export const SparkMark: FC<IconProps> = (props) => (
     <path
       d="M12 2.6c.6 4.4 1.4 6 5.7 6.9-4.3.9-5.1 2.5-5.7 6.9-.6-4.4-1.4-6-5.7-6.9 4.3-.9 5.1-2.5 5.7-6.9Z"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="2"
       strokeLinejoin="round"
     />
     <path

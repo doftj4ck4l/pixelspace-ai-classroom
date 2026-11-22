@@ -50,7 +50,7 @@ import {
   Search as SearchIcon,
   SchoolFill as SchoolIcon,
   Settings as SettingsIcon,
-} from "@material-symbols-svg/react/rounded/w300";
+} from "@material-symbols-svg/react/rounded/w600";
 import { useT } from "@/lib/i18n";
 import {
   HubMark as HubIcon,
@@ -564,7 +564,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             sidebarCollapsed
               ? "w-0"
               : isTeacher
-                ? "w-[294px] border-r"
+                ? "w-[272px] border-r"
                 : "w-65 border-r",
             isTeacher && teacherStyles.sidebar,
           )}
