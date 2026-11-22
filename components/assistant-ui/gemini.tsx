@@ -182,6 +182,7 @@ const MentionInput: FC<{ placeholder: string }> = ({ placeholder }) => {
   >(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [highlight, setHighlight] = useState(0);
 
   useEffect(() => {
     if (skipRef.current) {
@@ -209,6 +210,7 @@ const MentionInput: FC<{ placeholder: string }> = ({ placeholder }) => {
     }
     setQuery(raw);
     setOpen(true);
+    setHighlight(0);
   }, [text]);
 
   useEffect(() => {
@@ -246,6 +248,39 @@ const MentionInput: FC<{ placeholder: string }> = ({ placeholder }) => {
     });
   };
 
+  // Capture-phase keys so Enter picks the suggestion instead of sending.
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!open || suggestions.length === 0) return;
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        setHighlight((index) => (index + 1) % suggestions.length);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        event.stopPropagation();
+        setHighlight(
+          (index) => (index - 1 + suggestions.length) % suggestions.length,
+        );
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        const suggestion =
+          suggestions[Math.min(highlight, suggestions.length - 1)];
+        if (suggestion) insert(suggestion.name);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(false);
+      }
+    };
+    el.addEventListener("keydown", onKeyDown, true);
+    return () => el.removeEventListener("keydown", onKeyDown, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, suggestions, highlight, text]);
+
   return (
     <div className="relative min-w-0 flex-1">
       {open && suggestions.length > 0 ? (
@@ -253,13 +288,16 @@ const MentionInput: FC<{ placeholder: string }> = ({ placeholder }) => {
           <p className="text-muted-foreground px-3 pt-2.5 pb-1 text-xs font-medium">
             {t("chat.mentionSpaces")}
           </p>
-          {suggestions.map((space) => (
+          {suggestions.map((space, index) => (
             <button
               key={space.id}
               type="button"
               onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setHighlight(index)}
               onClick={() => insert(space.name)}
-              className="hover:bg-muted/60 flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm"
+              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm ${
+                index === highlight ? "bg-muted/60" : "hover:bg-muted/60"
+              }`}
             >
               <HubIcon className="size-4 shrink-0 text-[#177e89]" />
               <span className="min-w-0 flex-1 truncate font-medium">
