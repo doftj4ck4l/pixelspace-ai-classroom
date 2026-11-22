@@ -1,0 +1,29 @@
+# Vector database for the textbook library (Postgres + pgvector).
+#
+# A separate instance from the app database on purpose: the textbook
+# embeddings are a copy of the old system's knowledge base (books + chunks),
+# restored here verbatim, and the app only reads from it. Loopback only — the
+# app's routes are the only client.
+#
+#   docker compose -f docker-compose.vectors.yml up -d
+services:
+  vectors:
+    image: pgvector/pgvector:pg18
+    container_name: paic2-vectors
+    environment:
+      POSTGRES_USER: textbook
+      POSTGRES_PASSWORD: textbook
+      POSTGRES_DB: textbook_kb
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - paic2-vectors-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U textbook -d textbook_kb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  paic2-vectors-data:
