@@ -366,7 +366,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                     {isTeacher ? (
                       <div
                         onClick={(event) => event.stopPropagation()}
-                        className="ml-auto flex items-center justify-center rounded-full bg-white/70 opacity-0 backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 dark:bg-black/30 [&_button]:size-6"
+                        className="ml-auto flex items-center justify-center rounded-full bg-white/70 backdrop-blur dark:bg-black/30 [&_button]:size-6"
                       >
                         <DropdownMenu>
                           <DropdownMenuTrigger
@@ -394,7 +394,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                     ) : (
                       <div
                         onClick={(event) => event.stopPropagation()}
-                        className="ml-auto flex items-center justify-center rounded-full bg-white/70 opacity-0 backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 dark:bg-black/30 [&_button]:size-6"
+                        className="ml-auto flex items-center justify-center rounded-full bg-white/70 backdrop-blur dark:bg-black/30 [&_button]:size-6"
                       >
                         <DropdownMenu>
                           <DropdownMenuTrigger

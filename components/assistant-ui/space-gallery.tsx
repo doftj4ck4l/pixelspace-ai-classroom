@@ -492,7 +492,7 @@ const GalleryCard: FC<{
         )}
         <div
           onClick={(event) => event.stopPropagation()}
-          className="ml-auto flex items-center justify-center rounded-full bg-white/70 opacity-0 backdrop-blur transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 dark:bg-black/30 [&_button]:size-6"
+          className="ml-auto flex items-center justify-center rounded-full bg-white/70 backdrop-blur dark:bg-black/30 [&_button]:size-6"
         >
           {menu}
         </div>
@@ -1472,10 +1472,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                   {doc.favorite && (
                     <StarIcon className="size-3.5 shrink-0 fill-current text-amber-400" />
                   )}
-                  <div
-                    onClick={(event) => event.stopPropagation()}
-                    className="opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-                  >
+                  <div onClick={(event) => event.stopPropagation()}>
                     {doc.artifactId ? (
                       <SharedArtifactMenu
                         doc={doc}

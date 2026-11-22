@@ -33,7 +33,7 @@ export function AppPageHeader({
         </div>
         <div
           aria-hidden="true"
-          className="relative ml-auto hidden h-24 w-56 shrink-0 md:block"
+          className="relative ml-auto hidden h-24 w-56 shrink-0 xl:block"
         >
           <div className="absolute top-1/2 right-0 size-24 -translate-y-1/2 rounded-full bg-[#8fd9c8]/50 blur-2xl dark:bg-[#0f4f4a]/60" />
           <div className="border-border/60 bg-card absolute top-1/2 right-8 h-16 w-28 -translate-y-1/2 rotate-6 rounded-xl border shadow-sm" />
