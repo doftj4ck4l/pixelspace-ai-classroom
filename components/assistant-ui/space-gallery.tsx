@@ -34,7 +34,6 @@ import {
   PodcastIcon,
   PresentationIcon,
   SearchIcon,
-  SparklesIcon,
   StarIcon,
   StickyNoteIcon,
   TableIcon,
@@ -1205,28 +1204,10 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
                   className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
                 />
               </div>
-              {mode === "all" ? (
-                <CreateMenu
-                  onStartFromTemplate={startFromTemplate}
-                  onCreate={startCreateInChat}
-                />
-              ) : mode === "slides" ? (
-                <Button
-                  onClick={() => setShowNewPresentation(true)}
-                  className="h-9 rounded-full px-4 text-sm"
-                >
-                  <PlusIcon className="size-4" />
-                  New slides
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setCreateKind(mode)}
-                  className="h-9 rounded-full px-4 text-sm"
-                >
-                  <SparklesIcon className="size-4" />
-                  New {MODULE_TITLES[mode].toLowerCase()}
-                </Button>
-              )}
+              <CreateMenu
+                onStartFromTemplate={startFromTemplate}
+                onCreate={startCreateInChat}
+              />
             </>
           }
         />
