@@ -124,7 +124,7 @@ const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
                   ? workingKeyFor(runningTool)
                   : "chat.working.generic",
               )
-            : undefined
+            : t("chat.steps", { n: group.indices.length })
         }
       />
       <ToolGroupContent>{children}</ToolGroupContent>
