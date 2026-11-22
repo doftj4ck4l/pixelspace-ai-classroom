@@ -164,19 +164,27 @@ export const TextbooksPage: FC = () => {
                 key={book.id}
                 type="button"
                 onClick={() => window.open(book.fileUrl, "_blank")}
-                className="border-border/60 bg-card hover:border-foreground/20 group flex flex-col overflow-hidden rounded-2xl border text-left transition-colors"
+                className="group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-[#d8f3ec] via-[#eefaf6] to-[#f7fcfb] p-2.5 text-left transition-shadow hover:shadow-lg dark:border-white/10 dark:from-[#0f3f3a] dark:via-[#12312e] dark:to-[#0c2523]"
               >
-                <Cover book={book} className="aspect-[3/4] w-full" />
-                <div className="flex min-w-0 flex-1 flex-col gap-1 px-3 py-2.5">
-                  <span className="line-clamp-2 text-sm font-medium">
+                <div className="relative overflow-hidden rounded-2xl">
+                  <Cover book={book} className="aspect-[3/4] w-full" />
+                  <span className="text-foreground absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium backdrop-blur dark:bg-black/40">
+                    <BookOpenIcon className="size-3.5 text-[#177e89]" />
+                    {levelText(book.levelOrder)}
+                  </span>
+                </div>
+                <div className="relative z-10 mt-2.5 flex flex-1 flex-col rounded-2xl bg-white/75 p-3 backdrop-blur-md dark:bg-black/35">
+                  <p
+                    className="line-clamp-2 text-sm font-semibold"
+                    title={book.title}
+                  >
                     {book.title}
-                  </span>
-                  <span className="text-muted-foreground mt-auto truncate text-xs">
-                    {book.subject} · {levelText(book.levelOrder)}
+                  </p>
+                  <div className="text-muted-foreground mt-auto flex items-center gap-1.5 pt-1.5 text-xs">
                     {book.pages
-                      ? ` · ${t("books.pages", { n: book.pages })}`
-                      : ""}
-                  </span>
+                      ? t("books.pages", { n: book.pages })
+                      : book.subject}
+                  </div>
                 </div>
               </button>
             ))}
