@@ -7,10 +7,9 @@ import { SchoolsTab } from "./schools-tab";
 import { UsersTab } from "./users-tab";
 import { RequestsTab } from "./requests-tab";
 import { FeedbackTab } from "./feedback-tab";
-import { TextbooksTab } from "./textbooks-tab";
 import type { FeedbackRow } from "./types";
 
-type Tab = "schools" | "users" | "requests" | "feedback" | "textbooks";
+type Tab = "schools" | "users" | "requests" | "feedback";
 
 export const AdminConsole = () => {
   const [tab, setTab] = useState<Tab>("schools");
@@ -41,7 +40,6 @@ export const AdminConsole = () => {
     { id: "users", label: "Pengguna" },
     { id: "requests", label: "Permintaan", badge: pendingCount },
     { id: "feedback", label: "Maklum Balas", badge: newFeedbackCount },
-    { id: "textbooks", label: "Buku Teks" },
   ];
 
   return (
@@ -93,7 +91,6 @@ export const AdminConsole = () => {
           {tab === "feedback" ? (
             <FeedbackTab onChanged={refreshBadges} />
           ) : null}
-          {tab === "textbooks" ? <TextbooksTab /> : null}
         </div>
       </div>
     </main>

@@ -300,7 +300,7 @@ export const booksForSpace = async (
     [ids],
   );
   for (const book of books) {
-    meta.set(book.id, {
+    meta.set(Number(book.id), {
       title: book.title,
       subject: book.subject,
       level: book.level,

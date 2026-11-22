@@ -477,6 +477,27 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   )}
                   <span className="truncate">Hub</span>
                 </Link>
+                {(role === "teacher" ||
+                  role === "student" ||
+                  role === "superadmin") && (
+                  <Link
+                    href="/textbooks"
+                    className={cn(
+                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+                      pathname.startsWith("/textbooks")
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    {pathname.startsWith("/textbooks") ? (
+                      <TextbooksFillIcon className="size-4 shrink-0" />
+                    ) : (
+                      <TextbooksIcon className="size-4 shrink-0" />
+                    )}
+                    <span className="truncate">Buku Teks</span>
+                  </Link>
+                )}
+
                 {(role === "teacher" || role === "student") && (
                   <Link
                     href="/community"
@@ -547,24 +568,6 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                       <LibraryBooksIcon className="size-4 shrink-0" />
                     )}
                     <span className="truncate">Sources</span>
-                  </Link>
-                )}
-                {(role === "teacher" || role === "student") && (
-                  <Link
-                    href="/textbooks"
-                    className={cn(
-                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                      pathname.startsWith("/textbooks")
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    {pathname.startsWith("/textbooks") ? (
-                      <TextbooksFillIcon className="size-4 shrink-0" />
-                    ) : (
-                      <TextbooksIcon className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">Buku Teks</span>
                   </Link>
                 )}
                 <Link
