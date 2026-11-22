@@ -10,6 +10,7 @@ import {
   MessagePrimitive,
   QueueItemPrimitive,
   ThreadPrimitive,
+  type ToolCallMessagePartProps,
   useAui,
   useAuiState,
 } from "@assistant-ui/react";
@@ -27,6 +28,13 @@ import {
   PencilRuler,
   PlusIcon,
   RefreshCwIcon,
+  BrainIcon,
+  CircleHelpIcon,
+  FileTextIcon,
+  ListChecksIcon,
+  SearchIcon,
+  SparklesIcon,
+  WandSparklesIcon,
   ScheduleIcon,
   Telescope,
   ThumbsDown,
@@ -35,6 +43,7 @@ import {
 } from "@/components/icons";
 import { HubMark as HubIcon } from "@/components/brand-icons";
 import {
+  type ComponentType,
   type FC,
   type PropsWithChildren,
   useEffect,
@@ -76,19 +85,80 @@ const messageGroupBy = groupPartByType({
 
 type GroupPart = MessagePrimitive.GroupedParts.GroupPart;
 
-/** Non-technical status for whatever the agent is doing right now. */
-const workingKeyFor = (toolName: string): TranslationKey => {
+type WorkKind =
+  | "web"
+  | "bash"
+  | "file"
+  | "recall"
+  | "skill"
+  | "plan"
+  | "ask"
+  | "generic";
+
+/** Non-technical bucket for a tool the agent is running. */
+const workKindFor = (toolName: string): WorkKind => {
   const name = toolName.toLowerCase();
-  if (/(web|search|fetch|browse|url)/.test(name)) return "chat.working.web";
-  if (/(recall|memory)/.test(name)) return "chat.working.recall";
-  if (/skill/.test(name)) return "chat.working.skill";
-  if (/(task|todo|plan)/.test(name)) return "chat.working.plan";
-  if (/(share|file|upload|download|save)/.test(name))
-    return "chat.working.file";
-  if (/ask_user/.test(name)) return "chat.working.ask";
-  if (/(bash|computer|shell|exec|terminal)/.test(name))
-    return "chat.working.bash";
-  return "chat.working.generic";
+  if (/(web|search|fetch|browse|url)/.test(name)) return "web";
+  if (/(recall|memory)/.test(name)) return "recall";
+  if (/skill/.test(name)) return "skill";
+  if (/(task|todo|plan)/.test(name)) return "plan";
+  if (/(share|file|upload|download|save)/.test(name)) return "file";
+  if (/ask_user/.test(name)) return "ask";
+  if (/(bash|computer|shell|exec|terminal)/.test(name)) return "bash";
+  return "generic";
+};
+
+const WORKING_KEYS: Record<WorkKind, TranslationKey> = {
+  web: "chat.working.web",
+  bash: "chat.working.bash",
+  file: "chat.working.file",
+  recall: "chat.working.recall",
+  skill: "chat.working.skill",
+  plan: "chat.working.plan",
+  ask: "chat.working.ask",
+  generic: "chat.working.generic",
+};
+
+const DONE_KEYS: Record<WorkKind, TranslationKey> = {
+  web: "chat.did.web",
+  bash: "chat.did.bash",
+  file: "chat.did.file",
+  recall: "chat.did.recall",
+  skill: "chat.did.skill",
+  plan: "chat.did.plan",
+  ask: "chat.did.ask",
+  generic: "chat.did.generic",
+};
+
+const WORK_ICONS: Record<WorkKind, ComponentType<{ className?: string }>> = {
+  web: SearchIcon,
+  bash: SparklesIcon,
+  file: FileTextIcon,
+  recall: BrainIcon,
+  skill: WandSparklesIcon,
+  plan: ListChecksIcon,
+  ask: CircleHelpIcon,
+  generic: SparklesIcon,
+};
+
+const workingKeyFor = (toolName: string): TranslationKey =>
+  WORKING_KEYS[workKindFor(toolName)];
+
+/** One friendly line per tool in the expanded "Worked for Xs" group. */
+const ToolStep: FC<{ part: ToolCallMessagePartProps }> = ({ part }) => {
+  const t = useT();
+  const kind = workKindFor(part.toolName);
+  const Icon = WORK_ICONS[kind];
+  const running = part.status.type === "running";
+  const failed = part.status.type === "incomplete";
+  return (
+    <div className="text-muted-foreground flex items-center gap-2 py-0.5 text-sm">
+      <Icon className="size-4 shrink-0" />
+      <span className={failed ? "text-destructive" : undefined}>
+        {t(running ? WORKING_KEYS[kind] : DONE_KEYS[kind])}
+      </span>
+    </div>
+  );
 };
 
 const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
@@ -98,6 +168,46 @@ const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
   const [open, setOpen] = useState(false);
   const t = useT();
   const active = group.status.type === "running";
+  // Total work time: summed tool durations (history carries `ms` per tool),
+  // or the measured wall-clock when this session watched the run live.
+  const totalMs = useAuiState((s) =>
+    group.indices.reduce((sum, index) => {
+      const part = s.message.parts[index] as
+        | {
+            type?: string;
+            result?: { ms?: unknown };
+            output?: { ms?: unknown };
+          }
+        | undefined;
+      if (
+        part &&
+        (part.type === "tool-call" || part.type === "dynamic-tool")
+      ) {
+        const ms = part.result?.ms ?? part.output?.ms;
+        if (typeof ms === "number") return sum + ms;
+      }
+      return sum;
+    }, 0),
+  );
+  const startRef = useRef<number | null>(null);
+  const [measured, setMeasured] = useState<number | null>(null);
+  useEffect(() => {
+    if (active) {
+      startRef.current = Date.now();
+      setMeasured(null);
+      return;
+    }
+    if (startRef.current !== null) {
+      setMeasured(
+        Math.max(1, Math.round((Date.now() - startRef.current) / 1000)),
+      );
+      startRef.current = null;
+    }
+  }, [active]);
+  const seconds = active
+    ? null
+    : (measured ??
+      (totalMs >= 500 ? Math.max(1, Math.round(totalMs / 1000)) : null));
   const runningTool = useAuiState((s) => {
     if (s.message.status?.type !== "running") return null;
     for (let index = s.message.parts.length - 1; index >= 0; index -= 1) {
@@ -124,7 +234,9 @@ const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
                   ? workingKeyFor(runningTool)
                   : "chat.working.generic",
               )
-            : t("chat.steps", { n: group.indices.length })
+            : seconds
+              ? t("chat.workedFor", { n: seconds })
+              : t("chat.worked")
         }
       />
       <ToolGroupContent>{children}</ToolGroupContent>
@@ -637,7 +749,10 @@ const ChatMessage: FC = () => {
                         />
                       );
                     }
-                    return part.toolUI ?? <ToolFallback {...part} />;
+                    if ((part as { approval?: unknown }).approval) {
+                      return <ToolFallback {...part} />;
+                    }
+                    return part.toolUI ?? <ToolStep part={part} />;
                   case "data":
                     return part.dataRendererUI;
                   case "indicator":
