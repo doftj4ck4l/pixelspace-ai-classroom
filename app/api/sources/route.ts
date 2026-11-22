@@ -35,7 +35,9 @@ export async function GET() {
           createdAt: row.createdAt.toISOString(),
           url: youtube
             ? `https://www.youtube.com/watch?v=${row.path}`
-            : `/api/sources/${row.id}/file`,
+            : row.ext === "link"
+              ? row.path
+              : `/api/sources/${row.id}/file`,
           ...(youtube
             ? { thumb: `https://i.ytimg.com/vi/${row.path}/hqdefault.jpg` }
             : {}),
@@ -66,6 +68,7 @@ export async function POST(req: Request) {
   }
 
   const uploaded: string[] = [];
+  const ids: string[] = [];
   for (const file of files) {
     const ext = (file.name.split(".").pop() ?? "").toLowerCase();
     if (!(SOURCE_EXTS as readonly string[]).includes(ext)) {
@@ -92,7 +95,8 @@ export async function POST(req: Request) {
       path: saved.path,
     });
     uploaded.push(file.name);
+    ids.push(saved.id);
   }
 
-  return NextResponse.json({ uploaded });
+  return NextResponse.json({ uploaded, ids });
 }

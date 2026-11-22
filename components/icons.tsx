@@ -72,6 +72,7 @@ export {
   Lightbulb as LightbulbIcon,
   Checklist as ListChecksIcon,
   LibraryBooks as LibraryBooksIcon,
+  Link as LinkIcon,
   LibraryBooksFill as LibraryBooksFillIcon,
   List as ListIcon,
   ProgressActivity as Loader2Icon,
