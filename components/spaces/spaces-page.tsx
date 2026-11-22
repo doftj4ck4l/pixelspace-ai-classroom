@@ -39,6 +39,7 @@ import {
 import { FilterSelect } from "@/components/ui/filter-select";
 import { SpaceSources } from "@/components/spaces/space-sources";
 import { useT } from "@/lib/i18n";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type SpaceRow = {
@@ -88,6 +89,7 @@ const ACCENT_DOT: Record<string, string> = {
 export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   const isTeacher = role === "teacher";
   const t = useT();
+  const router = useRouter();
   const [rows, setRows] = useState<SpaceRow[] | null>(null);
   const [school, setSchool] = useState<{ name: string; type: string } | null>(
     null,
@@ -322,11 +324,11 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
               return (
                 <div
                   key={row.id}
-                  onClick={isTeacher ? () => openEdit(row) : undefined}
+                  onClick={() => router.push(`/community/${row.id}`)}
                   className={cn(
                     "group relative overflow-hidden rounded-3xl border border-white/60 p-2.5 transition-shadow hover:shadow-lg dark:border-white/10",
                     theme.cover,
-                    isTeacher && "cursor-pointer",
+                    "cursor-pointer",
                   )}
                 >
                   <div className="relative z-10 flex items-center gap-1.5">

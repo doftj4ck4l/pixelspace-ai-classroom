@@ -28,10 +28,11 @@ type Textbook = {
 
 type Upload = { id: string; title: string; ext: string };
 
-export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
-  spaceId,
-  level,
-}) => {
+export const SpaceSources: FC<{
+  spaceId: string;
+  level: string;
+  readOnly?: boolean;
+}> = ({ spaceId, level, readOnly = false }) => {
   const t = useT();
   const [rows, setRows] = useState<SourceRow[] | null>(null);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
@@ -172,15 +173,17 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
                   count: group.refIds.length,
                 })}
               </span>
-              <button
-                type="button"
-                aria-label={`Buang ${group.subject}`}
-                disabled={busy}
-                onClick={() => void removeRefIds(group.refIds)}
-                className="hover:text-foreground text-muted-foreground -me-1 rounded p-0.5 transition-colors"
-              >
-                <XIcon className="size-3.5" />
-              </button>
+              {!readOnly ? (
+                <button
+                  type="button"
+                  aria-label={`Buang ${group.subject}`}
+                  disabled={busy}
+                  onClick={() => void removeRefIds(group.refIds)}
+                  className="hover:text-foreground text-muted-foreground -me-1 rounded p-0.5 transition-colors"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              ) : null}
             </span>
           ))}
           {uploadRows.map((row) => (
@@ -189,15 +192,17 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
               className="bg-background border-border/60 flex items-center gap-2 rounded-full border px-3 py-1 text-xs"
             >
               <span className="min-w-0 flex-1 truncate">{row.title}</span>
-              <button
-                type="button"
-                aria-label={`Buang ${row.title}`}
-                disabled={busy}
-                onClick={() => void removeRefIds([row.refId])}
-                className="hover:text-foreground text-muted-foreground -me-1 rounded p-0.5 transition-colors"
-              >
-                <XIcon className="size-3.5" />
-              </button>
+              {!readOnly ? (
+                <button
+                  type="button"
+                  aria-label={`Buang ${row.title}`}
+                  disabled={busy}
+                  onClick={() => void removeRefIds([row.refId])}
+                  className="hover:text-foreground text-muted-foreground -me-1 rounded p-0.5 transition-colors"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              ) : null}
             </span>
           ))}
           {!textbookGroups.length && !uploadRows.length ? (
@@ -208,80 +213,84 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-7 gap-1 rounded-full px-2.5 text-xs"
-          onClick={() => void openTextbookPicker()}
-          disabled={busy || levelOrder === null}
-        >
-          <PlusIcon className="size-3.5" />
-          {t("spaceSources.addTextbook")}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-7 gap-1 rounded-full px-2.5 text-xs"
-          onClick={() => void openUploadPicker()}
-          disabled={busy}
-        >
-          <PlusIcon className="size-3.5" />
-          {t("spaceSources.addOwn")}
-        </Button>
-      </div>
+      {!readOnly ? (
+        <>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1 rounded-full px-2.5 text-xs"
+              onClick={() => void openTextbookPicker()}
+              disabled={busy || levelOrder === null}
+            >
+              <PlusIcon className="size-3.5" />
+              {t("spaceSources.addTextbook")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1 rounded-full px-2.5 text-xs"
+              onClick={() => void openUploadPicker()}
+              disabled={busy}
+            >
+              <PlusIcon className="size-3.5" />
+              {t("spaceSources.addOwn")}
+            </Button>
+          </div>
 
-      {picker === "textbook" ? (
-        <div className="border-border/60 bg-background max-h-44 overflow-y-auto rounded-xl border p-1.5">
-          {pickableSubjects.length === 0 ? (
-            <p className="text-muted-foreground px-2 py-2 text-xs">
-              {t("spaceSources.noSubjects")}
-            </p>
-          ) : (
-            pickableSubjects.map(({ subject, count }) => (
-              <button
-                key={subject}
-                type="button"
-                disabled={busy}
-                onClick={() => void attachSubject(subject)}
-                className="hover:bg-muted/60 flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors"
-              >
-                <span className="truncate">{subject}</span>
-                <span className="text-muted-foreground shrink-0">
-                  {t("spaceSources.chapters", { count })} ·{" "}
-                  {t("spaceSources.add")}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      ) : null}
+          {picker === "textbook" ? (
+            <div className="border-border/60 bg-background max-h-44 overflow-y-auto rounded-xl border p-1.5">
+              {pickableSubjects.length === 0 ? (
+                <p className="text-muted-foreground px-2 py-2 text-xs">
+                  {t("spaceSources.noSubjects")}
+                </p>
+              ) : (
+                pickableSubjects.map(({ subject, count }) => (
+                  <button
+                    key={subject}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void attachSubject(subject)}
+                    className="hover:bg-muted/60 flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors"
+                  >
+                    <span className="truncate">{subject}</span>
+                    <span className="text-muted-foreground shrink-0">
+                      {t("spaceSources.chapters", { count })} ·{" "}
+                      {t("spaceSources.add")}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          ) : null}
 
-      {picker === "upload" ? (
-        <div className="border-border/60 bg-background max-h-44 overflow-y-auto rounded-xl border p-1.5">
-          {uploads.length === 0 ? (
-            <p className="text-muted-foreground px-2 py-2 text-xs">
-              {t("spaceSources.noUploads")}
-            </p>
-          ) : (
-            uploads.map((upload) => (
-              <button
-                key={upload.id}
-                type="button"
-                disabled={busy}
-                onClick={() => void attachUpload(upload.id)}
-                className="hover:bg-muted/60 flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors"
-              >
-                <span className="truncate">{upload.title}</span>
-                <span className="text-muted-foreground shrink-0">
-                  {t("spaceSources.add")}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
+          {picker === "upload" ? (
+            <div className="border-border/60 bg-background max-h-44 overflow-y-auto rounded-xl border p-1.5">
+              {uploads.length === 0 ? (
+                <p className="text-muted-foreground px-2 py-2 text-xs">
+                  {t("spaceSources.noUploads")}
+                </p>
+              ) : (
+                uploads.map((upload) => (
+                  <button
+                    key={upload.id}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void attachUpload(upload.id)}
+                    className="hover:bg-muted/60 flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors"
+                  >
+                    <span className="truncate">{upload.title}</span>
+                    <span className="text-muted-foreground shrink-0">
+                      {t("spaceSources.add")}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

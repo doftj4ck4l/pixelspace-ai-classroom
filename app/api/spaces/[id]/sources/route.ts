@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { sources, spaceSources, spaces } from "@/lib/db/schema";
+import { sources, spaceMembers, spaceSources, spaces } from "@/lib/db/schema";
 import { requireApiUser } from "@/lib/auth-session";
 import {
   attachTextbookSubject,
@@ -32,8 +32,20 @@ export async function GET(
   if (!user) return response;
 
   const { id } = await params;
-  const space = await ownedSpace(user.id, id);
+  const [space] = await db.select().from(spaces).where(eq(spaces.id, id));
   if (!space) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (space.userId !== user.id) {
+    // Members may read the space's sources; only the owner may change them.
+    const [member] = await db
+      .select({ id: spaceMembers.id })
+      .from(spaceMembers)
+      .where(
+        and(eq(spaceMembers.spaceId, id), eq(spaceMembers.userId, user.id)),
+      );
+    if (!member) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+  }
 
   const rows = await db
     .select()

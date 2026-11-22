@@ -293,6 +293,23 @@ const en = {
   "landing.heroEyebrow": "Pixelspace AI Classroom",
   "landing.heroTitle1": "Learn smarter,",
   "landing.heroTitle2": "with AI.",
+
+  "spaceDetail.back": "Back to Spaces",
+  "spaceDetail.tab.sources": "Sources",
+  "spaceDetail.tab.students": "Students",
+  "spaceDetail.tab.analytics": "Analytics",
+  "spaceDetail.joined": "Joined",
+  "spaceDetail.chats": "Chats",
+  "spaceDetail.quizzes": "Quizzes",
+  "spaceDetail.lastActive": "Last active",
+  "spaceDetail.never": "Not active yet",
+  "spaceDetail.noStudents":
+    "No students have joined yet. Share the subject code to invite them.",
+  "spaceDetail.activeWeek": "Active this week",
+  "spaceDetail.engagement": "Engagement",
+  "spaceDetail.summary.students": "Students",
+  "spaceDetail.summary.chats": "Total chats",
+  "spaceDetail.summary.quizzes": "Quiz attempts",
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -571,6 +588,23 @@ const ms: Record<TranslationKey, string> = {
   "landing.heroEyebrow": "Pixelspace AI Classroom",
   "landing.heroTitle1": "Belajar lebih pintar,",
   "landing.heroTitle2": "bersama AI.",
+
+  "spaceDetail.back": "Kembali ke Spaces",
+  "spaceDetail.tab.sources": "Sumber",
+  "spaceDetail.tab.students": "Pelajar",
+  "spaceDetail.tab.analytics": "Analitik",
+  "spaceDetail.joined": "Menyertai",
+  "spaceDetail.chats": "Sembang",
+  "spaceDetail.quizzes": "Kuiz",
+  "spaceDetail.lastActive": "Aktif terakhir",
+  "spaceDetail.never": "Belum aktif",
+  "spaceDetail.noStudents":
+    "Belum ada pelajar menyertai. Kongsi kod subjek untuk menjemput mereka.",
+  "spaceDetail.activeWeek": "Aktif 7 hari",
+  "spaceDetail.engagement": "Penglibatan",
+  "spaceDetail.summary.students": "Pelajar",
+  "spaceDetail.summary.chats": "Jumlah sembang",
+  "spaceDetail.summary.quizzes": "Kuiz dicuba",
 };
 
 const dictionaries: Record<Language, Record<TranslationKey, string>> = {
