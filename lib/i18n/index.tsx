@@ -140,6 +140,9 @@ const en = {
   "spaces.joinTitle": "Join subject",
   "spaces.joinHint": "Enter the subject code from your teacher to join.",
   "spaces.join": "Join",
+  "spaces.textbookMatch": "Matched textbook",
+  "spaces.noTextbookMatch":
+    "No matching textbook found — you can add one later in Sources.",
   "spaces.students": "{n} students",
   "spaces.free": "Any level",
   "spaces.general": "General",
@@ -314,7 +317,12 @@ const en = {
   "spaceDetail.summary.chats": "Total chats",
   "spaceDetail.summary.quizzes": "Quiz attempts",
 
-  "spaceDetail.shareCode": "Share code",
+  "spaceDetail.shareCode": "Show code",
+  "spaceDetail.codeBody":
+    "Show this code to your students — they can key it in to join.",
+  "spaceDetail.copy": "Copy",
+  "spaceDetail.copied": "Copied",
+  "spaceDetail.joinWithCode": "Join a class with a code",
   "spaceDetail.moreActions": "More actions",
   "spaceDetail.sourcesSubtitle":
     "Add and manage learning materials for this subject.",
@@ -471,6 +479,9 @@ const ms: Record<TranslationKey, string> = {
   "spaces.joinTitle": "Sertai subjek",
   "spaces.joinHint": "Masukkan kod subjek daripada guru anda untuk menyertai.",
   "spaces.join": "Sertai",
+  "spaces.textbookMatch": "Buku teks dipadankan",
+  "spaces.noTextbookMatch":
+    "Tiada buku teks sepadan — anda boleh menambahnya kemudian di Sumber.",
   "spaces.students": "{n} pelajar",
   "spaces.free": "Tahap bebas",
   "spaces.general": "Umum",
@@ -646,7 +657,12 @@ const ms: Record<TranslationKey, string> = {
   "spaceDetail.summary.chats": "Jumlah sembang",
   "spaceDetail.summary.quizzes": "Kuiz dicuba",
 
-  "spaceDetail.shareCode": "Kongsi kod",
+  "spaceDetail.shareCode": "Tunjuk kod",
+  "spaceDetail.codeBody":
+    "Tunjukkan kod ini kepada pelajar — mereka boleh memasukkan kod untuk menyertai.",
+  "spaceDetail.copy": "Salin",
+  "spaceDetail.copied": "Disalin",
+  "spaceDetail.joinWithCode": "Sertai kelas dengan kod",
   "spaceDetail.moreActions": "Tindakan lain",
   "spaceDetail.sourcesSubtitle":
     "Tambah dan urus bahan pembelajaran untuk subjek ini.",

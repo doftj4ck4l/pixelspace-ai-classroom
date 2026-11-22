@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type FC } from "react";
 import {
   AddIcon,
+  BookOpenIcon,
   CopyIcon,
   EditIcon,
   GroupIcon,
@@ -106,6 +107,10 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<SpaceRow | null>(null);
   const [joinOpen, setJoinOpen] = useState(false);
+  const [predicted, setPredicted] = useState<{
+    subject: string;
+    title: string | null;
+  } | null>(null);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joining, setJoining] = useState(false);
@@ -129,6 +134,32 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   };
 
   useEffect(load, []);
+
+  useEffect(() => {
+    if (!dialogOpen || editing || name.trim().length < 2) {
+      setPredicted(null);
+      return;
+    }
+    const id = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/textbooks/match?name=${encodeURIComponent(name.trim())}&level=${encodeURIComponent(level)}`,
+        );
+        const data = (await res.json().catch(() => null)) as {
+          subject?: string | null;
+          title?: string | null;
+        } | null;
+        setPredicted(
+          data?.subject
+            ? { subject: data.subject, title: data.title ?? null }
+            : null,
+        );
+      } catch {
+        setPredicted(null);
+      }
+    }, 400);
+    return () => clearTimeout(id);
+  }, [dialogOpen, editing, name, level]);
 
   const openCreate = () => {
     setEditing(null);
@@ -533,6 +564,21 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 rounded-xl border px-3 text-sm outline-none focus-visible:ring-2"
               />
             </label>
+            {!editing && name.trim().length >= 2 ? (
+              predicted ? (
+                <p className="text-muted-foreground -mt-1 flex items-center gap-1.5 text-xs">
+                  <BookOpenIcon className="size-3.5 shrink-0 text-emerald-600" />
+                  {t("spaces.textbookMatch")}:{" "}
+                  <span className="text-foreground font-medium">
+                    {predicted.title ?? predicted.subject}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-muted-foreground -mt-1 text-xs">
+                  {t("spaces.noTextbookMatch")}
+                </p>
+              )
+            ) : null}
             <label className="grid gap-1.5 text-sm">
               <span className="font-medium">{t("spaces.level")}</span>
               <FilterSelect

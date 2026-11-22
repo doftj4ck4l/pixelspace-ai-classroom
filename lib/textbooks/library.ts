@@ -137,7 +137,136 @@ export const attachTextbookSubject = async (
   return fresh.length;
 };
 
-/** The subject of a level that best matches a space name (plain variant first). */
+/** Common shorthands and alternate names -> the subject used in the library. */
+const SUBJECT_ALIASES: Record<string, string> = {
+  bm: "bahasa melayu",
+  "bahasa malaysia": "bahasa melayu",
+  malaysia: "melayu",
+  maths: "matematik",
+  math: "matematik",
+  mathematics: "matematik",
+  addmaths: "matematik tambahan",
+  "add maths": "matematik tambahan",
+  "add math": "matematik tambahan",
+  "additional mathematics": "matematik tambahan",
+  sci: "sains",
+  science: "sains",
+  bi: "bahasa inggeris",
+  english: "bahasa inggeris",
+  inggeris: "bahasa inggeris",
+  history: "sejarah",
+  geography: "geografi",
+  geo: "geografi",
+  moral: "pendidikan moral",
+  pi: "pendidikan islam",
+  islam: "pendidikan islam",
+  rbt: "reka bentuk dan teknologi",
+  ask: "asas sains komputer",
+  komputer: "sains komputer",
+  pjk: "pendidikan jasmani dan kesihatan",
+  "pendidikan jasmani": "pendidikan jasmani dan kesihatan",
+  seni: "pendidikan seni visual",
+  psv: "pendidikan seni visual",
+  muzik: "pendidikan muzik",
+  kadazan: "bahasa kadazandusun",
+  dusun: "bahasa kadazandusun",
+  tamil: "bahasa tamil",
+  cina: "bahasa cina",
+  arab: "bahasa arab",
+  iban: "bahasa iban",
+  semai: "bahasa semai",
+  jepun: "bahasa jepun",
+  jepang: "bahasa jepun",
+  bio: "biologi",
+  biology: "biologi",
+  chem: "kimia",
+  chemistry: "kimia",
+  phys: "fizik",
+  physics: "fizik",
+  eko: "ekonomi",
+  econ: "ekonomi",
+  economics: "ekonomi",
+  akaun: "prinsip perakaunan",
+  accounting: "prinsip perakaunan",
+  perakaunan: "prinsip perakaunan",
+  ict: "teknologi maklumat dan komunikasi",
+  tm: "teknologi maklumat dan komunikasi",
+  tasawwur: "tasawwur islam",
+};
+
+/** Words that carry no subject signal (class names, levels, glue words). */
+const SUBJECT_STOPWORDS = new Set([
+  "kelas",
+  "class",
+  "tahun",
+  "tingkatan",
+  "form",
+  "standard",
+  "darjah",
+  "dan",
+  "and",
+  "the",
+  "of",
+  "untuk",
+  "for",
+]);
+
+const levenshtein = (a: string, b: string): number => {
+  const m = a.length;
+  const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i += 1) {
+    const curr = new Array<number>(n + 1);
+    curr[0] = i;
+    for (let j = 1; j <= n; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = curr;
+  }
+  return prev[n];
+};
+
+/** 0..1 similarity for one token pair; tolerant of small typos ("bahsa"). */
+const tokenSimilarity = (a: string, b: string): number => {
+  if (a === b) return 1;
+  if (a.length < 3 || b.length < 3) return 0;
+  const ratio = 1 - levenshtein(a, b) / Math.max(a.length, b.length);
+  return ratio >= 0.75 ? ratio : 0;
+};
+
+const expandTokens = (value: string): string[] =>
+  value
+    .split(" ")
+    .flatMap((token) => (SUBJECT_ALIASES[token] ?? token).split(" "))
+    .filter(
+      (token) => token && !SUBJECT_STOPWORDS.has(token) && !/^\d+$/.test(token),
+    );
+
+/** How much of `from` is covered by tokens of `against` (0..1). */
+const tokenCoverage = (from: string[], against: string[]): number => {
+  if (!from.length || !against.length) return 0;
+  let total = 0;
+  for (const token of from) {
+    let best = 0;
+    for (const other of against) {
+      best = Math.max(best, tokenSimilarity(token, other));
+      if (best === 1) break;
+    }
+    total += best;
+  }
+  return total / from.length;
+};
+
+/**
+ * The subject of a level that best matches a space name, iOS-style: aliases
+ * ("BM", "Bahasa Malaysia", "add maths") and small typos ("bahsa") resolve to
+ * the library's subject ("Bahasa Melayu"), and class-name noise ("Kelas 4
+ * Cekap") is ignored. Returns null when nothing scores high enough, so a space
+ * never silently attaches the wrong textbook.
+ */
 export const matchSubject = async (
   levelOrder: number,
   name: string,
@@ -146,30 +275,31 @@ export const matchSubject = async (
     `select distinct subject from books where level_order = $1`,
     [levelOrder],
   );
-  const wanted = normalizeSubject(name);
-  if (!wanted) return null;
+  const normalized = normalizeSubject(name);
+  if (!normalized) return null;
+  const aliased = SUBJECT_ALIASES[normalized] ?? normalized;
+  const inputTokens = expandTokens(aliased);
+  if (!inputTokens.length) return null;
   let best: { subject: string; score: number } | null = null;
   for (const row of rows) {
     const plain = normalizeSubject(row.subject);
     if (!plain) continue;
-    let score = 0;
-    if (plain === wanted) {
-      score = 3;
-    } else if (wanted.includes(plain) || plain.includes(wanted)) {
-      score = 2;
-    } else {
-      const a = new Set(plain.split(" "));
-      const b = new Set(wanted.split(" "));
-      const overlap = [...a].filter((token) => b.has(token)).length;
-      if (overlap) score = 1 + overlap / Math.max(a.size, b.size);
-    }
+    const subjectTokens = expandTokens(plain);
+    const inputCoverage = tokenCoverage(inputTokens, subjectTokens);
+    const subjectCoverage = tokenCoverage(subjectTokens, inputTokens);
+    let score =
+      inputCoverage + subjectCoverage === 0
+        ? 0
+        : (2 * inputCoverage * subjectCoverage) /
+          (inputCoverage + subjectCoverage);
+    if (plain === aliased) score = 1;
     // Prefer the plain/SK variant over (English)/(SJKC)/... editions.
-    if (score > 0 && !row.subject.includes("(")) score += 0.5;
+    if (score >= 0.6 && !row.subject.includes("(")) score += 0.05;
     if (score > 0 && (!best || score > best.score)) {
       best = { subject: row.subject, score };
     }
   }
-  return best && best.score >= 1 ? best.subject : null;
+  return best && best.score >= 0.6 ? best.subject : null;
 };
 
 /** Embed a query the same way the ingest did: 4096 dims -> first 2000, renormalised. */

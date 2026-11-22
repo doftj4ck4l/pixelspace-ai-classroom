@@ -10,6 +10,8 @@ import {
   CopyIcon,
   EditIcon,
   GroupIcon,
+  KeyIcon,
+  LoginIcon,
   BracesIcon,
   LayersIcon,
   Loader2Icon,
@@ -99,6 +101,10 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
   const [copied, setCopied] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const [editName, setEditName] = useState(space.name);
   const [editDescription, setEditDescription] = useState(space.description);
   const [editAccent, setEditAccent] = useState(space.accent);
@@ -160,6 +166,35 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // clipboard unavailable — the code is on screen anyway
+    }
+  };
+
+  const joinByCode = async () => {
+    const code = joinCode.trim().toUpperCase();
+    if (!code || joining) return;
+    setJoining(true);
+    setJoinError(null);
+    try {
+      const res = await fetch("/api/spaces/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        setJoinError(data?.error ?? t("spaces.joinError"));
+        return;
+      }
+      const data = (await res.json()) as { id?: string };
+      setCodeOpen(false);
+      setJoinCode("");
+      if (data.id) router.push(`/community/${data.id}`);
+    } catch {
+      setJoinError(t("spaces.joinError"));
+    } finally {
+      setJoining(false);
     }
   };
 
@@ -274,13 +309,13 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
                   <Button
                     variant="outline"
                     className={s.share}
-                    onClick={() => void copyCode()}
+                    onClick={() => {
+                      setJoinCode("");
+                      setJoinError(null);
+                      setCodeOpen(true);
+                    }}
                   >
-                    {copied ? (
-                      <CheckIcon className="size-4 text-emerald-600" />
-                    ) : (
-                      <UserIcon className="size-4" />
-                    )}
+                    <KeyIcon className="size-4" />
                     {t("spaceDetail.shareCode")}
                   </Button>
                   <DropdownMenu>
@@ -595,6 +630,55 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
               {t("spaces.deleteTitle")}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={codeOpen} onOpenChange={setCodeOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("spaceDetail.shareCode")}</DialogTitle>
+            <DialogDescription>{t("spaceDetail.codeBody")}</DialogDescription>
+          </DialogHeader>
+          <div className="border-border/60 flex items-center justify-between gap-3 rounded-xl border border-dashed px-4 py-3">
+            <span className="font-mono text-2xl font-semibold tracking-[0.3em]">
+              {space.code}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => void copyCode()}>
+              {copied ? (
+                <CheckIcon className="size-4 text-emerald-600" />
+              ) : (
+                <CopyIcon className="size-4" />
+              )}
+              {copied ? t("spaceDetail.copied") : t("spaceDetail.copy")}
+            </Button>
+          </div>
+          <div className="border-border/60 grid gap-2 border-t pt-3">
+            <p className="text-sm font-medium">
+              {t("spaceDetail.joinWithCode")}
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                value={joinCode}
+                onChange={(event) =>
+                  setJoinCode(event.target.value.toUpperCase())
+                }
+                placeholder="cth. MT4X7K"
+                maxLength={8}
+                className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 min-w-0 flex-1 rounded-xl border px-3 text-center font-mono text-sm tracking-[0.3em] uppercase outline-none focus-visible:ring-2"
+              />
+              <Button
+                onClick={() => void joinByCode()}
+                disabled={joining || joinCode.trim().length < 4}
+                className="shrink-0 gap-2"
+              >
+                <LoginIcon className="size-4" />
+                {t("spaces.join")}
+              </Button>
+            </div>
+            {joinError ? (
+              <p className="text-destructive text-xs">{joinError}</p>
+            ) : null}
+          </div>
         </DialogContent>
       </Dialog>
     </main>
