@@ -1,12 +1,12 @@
 .page {
-  --space-ink: #141329;
-  --space-muted: #494777;
-  --space-line: #e9e5fa;
+  --space-ink: #0e2b28;
+  --space-muted: #3f6a64;
+  --space-line: #d8ece7;
   height: 100%;
   overflow-y: auto;
   color: var(--space-ink);
   background:
-    radial-gradient(ellipse at 85% 0, #e9edff9c, transparent 50%), #fdfcff;
+    radial-gradient(ellipse at 85% 0, #e2f4f09c, transparent 50%), #fbfefd;
 }
 .hero {
   position: relative;
@@ -38,7 +38,7 @@
   color: var(--space-muted);
 }
 .back svg {
-  color: #7c3cff;
+  color: #1b8a7f;
 }
 .header {
   position: relative;
@@ -49,7 +49,7 @@
   min-height: 85px;
 }
 .subjectIcon {
-  color: #141329;
+  color: #0e2b28;
   display: flex;
   width: 85px;
   height: 85px;
@@ -94,11 +94,11 @@
   background: #ffffffb3;
   padding: 3px 8px;
   font-weight: 500;
-  box-shadow: 0 2px 8px #8170c909;
+  box-shadow: 0 2px 8px #1b8a7f09;
 }
 .metadata > span:first-child {
-  color: #6223d4;
-  background: #ede5ff;
+  color: #00786a;
+  background: #ddf2ee;
 }
 .metadata svg {
   width: 14px;
@@ -131,7 +131,7 @@
   height: 36px;
   border: 1px solid #fff;
   background: #ffffffdb;
-  box-shadow: 0 3px 5px #6738df14;
+  box-shadow: 0 3px 5px #0e8a8014;
   color: var(--space-ink);
   border-radius: 99px;
 }
@@ -170,12 +170,12 @@
     box-shadow 0.15s;
 }
 .tab:hover {
-  background: #ede7fb;
+  background: #e3f4f1;
 }
 .tab[aria-selected="true"] {
-  background: linear-gradient(180deg, #8439f2, #4a1bc7);
+  background: linear-gradient(180deg, #1aa79a, #0c8175);
   color: white;
-  box-shadow: 0 3px 7px #7733df18;
+  box-shadow: 0 3px 7px #0c817518;
 }
 .tab[aria-selected="true"]::after {
   position: absolute;
@@ -183,7 +183,7 @@
   bottom: -20px;
   left: 0;
   right: 0;
-  background: #b6a0ff;
+  background: #7fd4c8;
   content: "";
 }
 .tab svg {
@@ -221,8 +221,8 @@
   width: 37px;
   height: 37px;
   border-radius: 50%;
-  background: #f1ecff;
-  color: #6224d7;
+  background: #e6f5f2;
+  color: #00786a;
 }
 .sectionIcon svg {
   width: 21px;
@@ -274,7 +274,7 @@
   overflow: hidden;
   height: 7px;
   border-radius: 99px;
-  background: #ebe8f7;
+  background: #e3f2ef;
 }
 .meter > div {
   height: 100%;
@@ -291,12 +291,12 @@
   gap: 8px;
   border-radius: 99px;
   padding-inline: 17px;
-  background: linear-gradient(180deg, #8439f2, #4a1bc7);
+  background: linear-gradient(180deg, #1aa79a, #0c8175);
   color: #fff;
   font-size: 12px;
 }
 .addButton:hover {
-  background: linear-gradient(180deg, #7430df, #4316b7);
+  background: linear-gradient(180deg, #0e8d80, #0a6c61);
 }
 .toolbar {
   display: flex;
@@ -331,12 +331,12 @@
   padding-inline: 17px;
 }
 .filter:hover {
-  background: #f0ebfb;
+  background: #e8f5f2;
 }
 .filter svg {
   width: 15px;
   height: 15px;
-  color: #34316b;
+  color: #1c4a44;
 }
 .filter:first-child svg {
   display: none;
@@ -348,7 +348,7 @@
   min-width: 20px;
   height: 20px;
   border-radius: 99px;
-  background: #eeeaf8;
+  background: #e6f3f0;
   font-size: 10px;
 }
 .filter[aria-pressed="true"] .filterCount {
@@ -371,12 +371,12 @@
   border-radius: 99px;
   padding-inline: 12px;
   background: #ffffff60;
-  box-shadow: 0 2px 4px #6959a607;
+  box-shadow: 0 2px 4px #0e6b6107;
 }
 .search svg {
   width: 16px;
   height: 16px;
-  color: #514a85;
+  color: #3f6a64;
   flex-shrink: 0;
 }
 .search input {
@@ -387,10 +387,10 @@
   font-size: 11px;
 }
 .search input::placeholder {
-  color: #77709d;
+  color: #5d8f88;
 }
 .search:focus-within {
-  outline: 2px solid #a98aeb;
+  outline: 2px solid #2bc8bd;
   outline-offset: 2px;
 }
 .viewSwitch {
@@ -399,7 +399,7 @@
   align-items: center;
   border-radius: 99px;
   padding: 3px;
-  background: #f0edf8;
+  background: #e8f5f2;
 }
 .viewSwitch button {
   display: flex;
@@ -408,12 +408,12 @@
   width: 36px;
   height: 31px;
   border-radius: 99px;
-  color: #514a85;
+  color: #3f6a64;
 }
 .viewSwitch button[aria-pressed="true"] {
   background: white;
-  color: #5420c2;
-  box-shadow: 0 2px 5px #6959a60d;
+  color: #00655a;
+  box-shadow: 0 2px 5px #0e6b610d;
 }
 .viewSwitch svg {
   width: 17px;
@@ -433,13 +433,13 @@
   border: 1px solid var(--edge);
   border-radius: 20px;
   background: linear-gradient(135deg, white, var(--tint));
-  box-shadow: 0 2px 4px #39306a0b;
+  box-shadow: 0 2px 4px #0e2b280b;
   transition:
     box-shadow 0.18s,
     transform 0.18s;
 }
 .card:hover {
-  box-shadow: 0 5px 16px #39306a16;
+  box-shadow: 0 5px 16px #0e2b2816;
   transform: translateY(-2px);
 }
 .card[data-category="slides"] {
@@ -530,7 +530,7 @@
   justify-content: center;
   border-radius: 99px;
   background: #fffffff0;
-  box-shadow: 0 2px 4px #39306a09;
+  box-shadow: 0 2px 4px #0e2b2809;
 }
 .cardMenu svg {
   width: 17px;
@@ -567,7 +567,7 @@
   letter-spacing: -0.4px;
 }
 .cardTitle:hover {
-  color: #662cc7;
+  color: #0e8a80;
 }
 .cardMeta {
   display: flex;
@@ -622,11 +622,11 @@
   font-size: 12px;
 }
 :global(.dark) .page {
-  --space-ink: #f1edff;
-  --space-muted: #b8b2d2;
-  --space-line: #39314c;
+  --space-ink: #e2f5f1;
+  --space-muted: #a5cec7;
+  --space-line: #2a4d47;
   background:
-    radial-gradient(ellipse at 90% 0, #28223d, transparent 60%), #17141e;
+    radial-gradient(ellipse at 90% 0, #173430, transparent 60%), #0f231f;
 }
 :global(.dark) .waves {
   opacity: 0.08;
@@ -635,14 +635,14 @@
 :global(.dark) .metadata > button,
 :global(.dark) .share,
 :global(.dark) .more {
-  background: #2f293d;
-  border-color: #40364f;
-  color: #dfd4f7;
+  background: #16332e;
+  border-color: #29514a;
+  color: #d6f1ec;
 }
 :global(.dark) .card {
-  --tint: #241f2d;
-  --edge: #423750;
-  color: #f2edff;
+  --tint: #122b27;
+  --edge: #2a5049;
+  color: #e2f5f1;
   background: var(--tint);
 }
 :global(.dark) .cardCover {
@@ -650,10 +650,10 @@
 }
 :global(.dark) .categoryChip,
 :global(.dark) .cardMenu {
-  color: #141329;
+  color: #0e2b28;
 }
 :global(.dark) .filter {
-  color: #e9e0fd;
+  color: #dcf2ee;
 }
 :global(.dark) .filter[aria-pressed="true"] {
   color: #b8f4e5;
@@ -661,17 +661,17 @@
 }
 :global(.dark) .filterCount,
 :global(.dark) .viewSwitch {
-  background: #332a42;
+  background: #1c403a;
 }
 :global(.dark) .viewSwitch button[aria-pressed="true"] {
-  background: #4a3763;
-  color: #e5d9ff;
+  background: #205c52;
+  color: #c9f2e9;
 }
 :global(.dark) .filter svg {
-  color: #c7bae3;
+  color: #a5cec7;
 }
 :global(.dark) .search {
-  background: #262130;
+  background: #152e2a;
 }
 @media (max-width: 1450px) {
   .heroArt {
@@ -883,7 +883,7 @@
 
 .page button:focus-visible,
 .back:focus-visible {
-  outline: 2px solid #a17be7;
+  outline: 2px solid #2bc8bd;
   outline-offset: 3px;
 }
 @media (max-width: 430px) {

@@ -1,13 +1,13 @@
 .shell {
-  --teacher-ink: #17132f;
-  --teacher-muted: #484177;
-  --teacher-active: #eee6ff;
-  --teacher-line: #e9e3fa;
+  --teacher-ink: #0e2b28;
+  --teacher-muted: #3f6a64;
+  --teacher-active: #dcf1ec;
+  --teacher-line: #d8ece7;
 }
 .sidebar {
   position: relative;
   color: var(--teacher-ink);
-  background: linear-gradient(160deg, #fbf9ff, #fbfaff 65%, #f7f3ff);
+  background: linear-gradient(160deg, #f9fdfc, #fbfefd 65%, #f3faf8);
   border-color: var(--teacher-line);
 }
 .sidebar::before,
@@ -21,7 +21,7 @@
   bottom: 64px;
   border-radius: 45%;
   transform: rotate(17deg);
-  background: linear-gradient(120deg, #d7f3ff9c, #e8deff7d);
+  background: linear-gradient(120deg, #d3f0f19c, #d9f2e97d);
 }
 .sidebar::after {
   bottom: 110px;
@@ -47,7 +47,7 @@
   width: 38px;
   height: 38px;
   flex-shrink: 0;
-  color: #9252ff;
+  color: #177e89;
 }
 .brandWords {
   display: flex;
@@ -65,7 +65,7 @@
   line-height: 1.2;
   font-weight: 600;
   letter-spacing: 0.45px;
-  color: #8774c0;
+  color: #5d8f88;
   white-space: nowrap;
 }
 .sidebar .brandHeader button {
@@ -83,14 +83,14 @@
 }
 .newChat {
   background: var(--teacher-active);
-  color: #34109c;
+  color: #00574a;
   font-weight: 650;
   height: 40px;
   gap: 11px;
   padding-inline: 20px;
 }
 .newChat:hover {
-  background: #e5d8ff;
+  background: #ccebe4;
 }
 .newChat svg {
   width: 20px;
@@ -112,12 +112,12 @@
   height: 20px;
 }
 .navigation a[aria-current="page"] {
-  background: #e9dfff;
-  color: #4520b7;
+  background: #d5efe9;
+  color: #00695c;
   font-weight: 650;
 }
 .navigation a:hover {
-  background: #f0eaff;
+  background: #e9f6f3;
 }
 .sidebar .recents {
   margin: 24px 0 0;
@@ -183,11 +183,11 @@
   background: var(--teacher-active);
 }
 .mobileSheet {
-  --teacher-ink: #17132f;
-  --teacher-muted: #484177;
-  --teacher-active: #eee6ff;
-  --teacher-line: #e9e3fa;
-  background: #fbf9ff;
+  --teacher-ink: #0e2b28;
+  --teacher-muted: #3f6a64;
+  --teacher-active: #dcf1ec;
+  --teacher-line: #d8ece7;
+  background: #f9fdfc;
   color: var(--teacher-ink);
 }
 .mobileSheet .navigation {
@@ -198,30 +198,30 @@
 }
 :global(.dark) .shell,
 :global(.dark) .mobileSheet {
-  --teacher-ink: #ede4ff;
-  --teacher-muted: #beb1db;
-  --teacher-active: #3d2d59;
-  --teacher-line: #3f3155;
+  --teacher-ink: #dcf2ee;
+  --teacher-muted: #a3ccc5;
+  --teacher-active: #1c4a43;
+  --teacher-line: #29514a;
 }
 :global(.dark) .sidebar,
 :global(.dark) .mobileSheet {
-  background: #201a2a;
+  background: #122b27;
 }
 :global(.dark) .sidebar::before,
 :global(.dark) .sidebar::after {
   opacity: 0.08;
 }
 :global(.dark) .account {
-  background: #251e31;
+  background: #16332e;
 }
 :global(.dark) .navigation a[aria-current="page"],
 :global(.dark) .newChat {
   background: var(--teacher-active);
-  color: #e1cdff;
+  color: #8fd9c8;
 }
 :global(.dark) .navigation a:hover,
 :global(.dark) .settings:hover {
-  background: #3d2d59;
+  background: #1c4a43;
 }
 @media (prefers-reduced-motion: reduce) {
   .shell aside,

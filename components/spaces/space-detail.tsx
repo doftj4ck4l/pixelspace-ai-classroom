@@ -203,7 +203,7 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
           />
           <path
             d="M790 0 C720 160 1080 94 1050 188 C1160 150 1230 230 1300 205 V0Z"
-            fill="#eee6ff"
+            fill="#d9f2ee"
             fillOpacity=".65"
           />
         </svg>
