@@ -10,6 +10,7 @@ import {
   MessagePrimitive,
   QueueItemPrimitive,
   ThreadPrimitive,
+  useAui,
   useAuiState,
 } from "@assistant-ui/react";
 import {
@@ -32,7 +33,15 @@ import {
   ThumbsUp,
   XIcon,
 } from "@/components/icons";
-import { type FC, type PropsWithChildren, useState, useMemo } from "react";
+import { HubMark as HubIcon } from "@/components/brand-icons";
+import {
+  type FC,
+  type PropsWithChildren,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useAttachmentSrc } from "@/hooks/use-attachment-src";
 import { MarkdownText } from "@/components/assistant-ui/elements/markdown-text";
 import { AskUserDataUI } from "@/components/assistant-ui/ask-user";
@@ -162,6 +171,117 @@ const SECTION_PLACEHOLDER_KEYS: Record<
   notes: "chat.placeholder.notes",
 };
 
+const MentionInput: FC<{ placeholder: string }> = ({ placeholder }) => {
+  const t = useT();
+  const aui = useAui();
+  const text = useAuiState((s) => s.composer.text);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const skipRef = useRef(false);
+  const [spaces, setSpaces] = useState<
+    { id: string; name: string; level: string }[] | null
+  >(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (skipRef.current) {
+      skipRef.current = false;
+      setOpen(false);
+      return;
+    }
+    const el = inputRef.current;
+    const caret = el?.selectionStart ?? text.length;
+    const before = text.slice(0, caret);
+    const at = before.lastIndexOf("@");
+    if (at === -1) {
+      setOpen(false);
+      return;
+    }
+    const charBefore = at > 0 ? before[at - 1] : " ";
+    if (charBefore && !/\s/.test(charBefore)) {
+      setOpen(false);
+      return;
+    }
+    const raw = before.slice(at + 1);
+    if (raw.length > 40 || raw.includes("\n")) {
+      setOpen(false);
+      return;
+    }
+    setQuery(raw);
+    setOpen(true);
+  }, [text]);
+
+  useEffect(() => {
+    if (!open || spaces !== null) return;
+    fetch("/api/spaces")
+      .then((res) => (res.ok ? res.json() : { spaces: [] }))
+      .then(
+        (data: { spaces?: { id: string; name: string; level: string }[] }) =>
+          setSpaces(data.spaces ?? []),
+      )
+      .catch(() => setSpaces([]));
+  }, [open, spaces]);
+
+  const suggestions = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return (spaces ?? [])
+      .filter((space) => !needle || space.name.toLowerCase().includes(needle))
+      .slice(0, 6);
+  }, [spaces, query]);
+
+  const insert = (name: string) => {
+    const el = inputRef.current;
+    const caret = el?.selectionStart ?? text.length;
+    const before = text.slice(0, caret);
+    const at = before.lastIndexOf("@");
+    if (at === -1) return;
+    const after = text.slice(caret);
+    skipRef.current = true;
+    aui.composer.setText(`${text.slice(0, at)}@${name} ${after}`);
+    setOpen(false);
+    requestAnimationFrame(() => {
+      el?.focus();
+      const pos = at + name.length + 2;
+      el?.setSelectionRange(pos, pos);
+    });
+  };
+
+  return (
+    <div className="relative min-w-0 flex-1">
+      {open && suggestions.length > 0 ? (
+        <div className="absolute bottom-full left-0 z-50 mb-2 w-80 overflow-hidden rounded-2xl border border-black/10 bg-white shadow-xl dark:border-white/10 dark:bg-[#1e1f20]">
+          <p className="text-muted-foreground px-3 pt-2.5 pb-1 text-xs font-medium">
+            {t("chat.mentionSpaces")}
+          </p>
+          {suggestions.map((space) => (
+            <button
+              key={space.id}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => insert(space.name)}
+              className="hover:bg-muted/60 flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm"
+            >
+              <HubIcon className="size-4 shrink-0 text-[#177e89]" />
+              <span className="min-w-0 flex-1 truncate font-medium">
+                {space.name}
+              </span>
+              <span className="text-muted-foreground shrink-0 text-xs">
+                {space.level}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <ComposerPrimitive.Input
+        ref={inputRef}
+        rows={1}
+        placeholder={placeholder}
+        className="max-h-40 w-full resize-none bg-transparent px-2 py-1.5 text-[17px] leading-6 text-[#1f1f1f] outline-none placeholder:text-[#575b5f] dark:text-[#e3e3e3] dark:placeholder:text-[#9aa0a6]"
+      />
+    </div>
+  );
+};
+
 const Composer: FC = () => {
   const { section } = useSidebarNav();
   const t = useT();
@@ -204,11 +324,7 @@ const Composer: FC = () => {
 
       <div className="flex items-end gap-1">
         <GeminiPlusMenu />
-        <ComposerPrimitive.Input
-          rows={1}
-          placeholder={placeholder}
-          className="max-h-40 flex-1 resize-none bg-transparent px-2 py-1.5 text-[17px] leading-6 text-[#1f1f1f] outline-none placeholder:text-[#575b5f] dark:text-[#e3e3e3] dark:placeholder:text-[#9aa0a6]"
-        />
+        <MentionInput placeholder={placeholder} />
         <GeminiModelPicker />
         <button
           type="button"

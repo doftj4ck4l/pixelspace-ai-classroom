@@ -71,6 +71,7 @@ const en = {
 
   "chat.greeting": "How can I help you today?",
   "chat.ask": "Ask Pixelspace AI Classroom",
+  "chat.mentionSpaces": "Your spaces",
   "chat.placeholder.flashcards": "What flashcards do you want to create?",
   "chat.placeholder.quizzes": "What quiz do you want to generate?",
   "chat.placeholder.mindmaps": "What mind map do you want to generate?",
@@ -422,6 +423,7 @@ const ms: Record<TranslationKey, string> = {
 
   "chat.greeting": "Apa yang boleh saya bantu hari ini?",
   "chat.ask": "Tanya Pixelspace AI Classroom",
+  "chat.mentionSpaces": "Ruang anda",
   "chat.placeholder.flashcards": "Kad imbas apa yang anda mahu hasilkan?",
   "chat.placeholder.quizzes": "Kuiz apa yang anda mahu jana?",
   "chat.placeholder.mindmaps": "Peta minda apa yang anda mahu jana?",
