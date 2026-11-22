@@ -18,7 +18,7 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
 
-  const artifact = await artifactRegistry.get(user.id, id);
+  const artifact = await artifactRegistry.getViewable(user.id, id);
   const renderable =
     artifact &&
     typeof artifact.url === "string" &&

@@ -16,6 +16,7 @@ type ArtifactJson = {
   kind?: "file" | "spec";
   spec?: unknown;
   updatedAt?: string;
+  owner?: boolean;
 };
 
 /** /spaces/quizzes/<artifactId> — a shared quiz as its own page. */
@@ -25,6 +26,7 @@ const QuizPage: FC = () => {
   const [spec, setSpec] = useState<QuizSpec | null>(null);
   const [version, setVersion] = useState(0);
   const [missing, setMissing] = useState(false);
+  const [owner, setOwner] = useState(true);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPrefill, setAiPrefill] = useState<{
     text: string;
@@ -44,6 +46,7 @@ const QuizPage: FC = () => {
           return;
         }
         setMissing(false);
+        setOwner(data.owner !== false);
         setSpec(data.spec as QuizSpec);
         setVersion((value) => value + 1);
       })
@@ -91,9 +94,9 @@ const QuizPage: FC = () => {
         initialIndex={focusedQuestion ?? 0}
         onClose={() => router.push("/spaces/quizzes")}
         onQuestionChange={setFocusedQuestion}
-        onImproveQuestion={improveQuestion}
+        onImproveQuestion={owner ? improveQuestion : undefined}
       />
-      {artifactId && (
+      {artifactId && owner && (
         <ArtifactAiPanel
           artifactId={artifactId}
           kind="quizzes"

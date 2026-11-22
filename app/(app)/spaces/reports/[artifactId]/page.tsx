@@ -11,6 +11,7 @@ type ArtifactJson = {
   kind?: "file" | "spec";
   url?: string;
   updatedAt?: string;
+  owner?: boolean;
 };
 
 /** /spaces/reports/<artifactId> — a shared report as its own page. */
@@ -20,6 +21,7 @@ const ReportPage: FC = () => {
   const [artifact, setArtifact] = useState<ArtifactJson | null>(null);
   const [version, setVersion] = useState(0);
   const [missing, setMissing] = useState(false);
+  const [owner, setOwner] = useState(true);
 
   const artifactId = params?.artifactId;
 
@@ -33,6 +35,7 @@ const ReportPage: FC = () => {
           return;
         }
         setMissing(false);
+        setOwner(data.owner !== false);
         setArtifact(data);
         setVersion((value) => value + 1);
       })
@@ -67,6 +70,7 @@ const ReportPage: FC = () => {
     <DocumentPreview
       key={version}
       artifactId={artifactId}
+      editable={owner}
       title={artifact.title}
       downloads={
         artifact.url ? [{ name: artifact.title, url: artifact.url }] : []

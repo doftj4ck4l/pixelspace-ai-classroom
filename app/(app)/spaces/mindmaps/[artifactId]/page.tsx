@@ -16,6 +16,7 @@ type ArtifactJson = {
   kind?: "file" | "spec";
   spec?: unknown;
   updatedAt?: string;
+  owner?: boolean;
 };
 
 /** /spaces/mindmaps/<artifactId> — a learning map as its own page. */
@@ -25,6 +26,7 @@ const MindMapPage: FC = () => {
   const [spec, setSpec] = useState<MindMapSpec | null>(null);
   const [version, setVersion] = useState(0);
   const [missing, setMissing] = useState(false);
+  const [owner, setOwner] = useState(true);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPrefill, setAiPrefill] = useState<{
     text: string;
@@ -44,6 +46,7 @@ const MindMapPage: FC = () => {
           return;
         }
         setMissing(false);
+        setOwner(data.owner !== false);
         setSpec(data.spec as MindMapSpec);
         setVersion((value) => value + 1);
       })
@@ -91,9 +94,9 @@ const MindMapPage: FC = () => {
         initialIndex={focusedNode ?? undefined}
         onClose={() => router.push("/spaces/mindmaps")}
         onNodeChange={setFocusedNode}
-        onImproveNode={improveNode}
+        onImproveNode={owner ? improveNode : undefined}
       />
-      {artifactId && (
+      {artifactId && owner && (
         <ArtifactAiPanel
           artifactId={artifactId}
           kind="mindmaps"

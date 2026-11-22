@@ -379,7 +379,9 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
           />
         ) : null}
 
-        {tab === "hub" ? <SpaceHubPanel spaceId={space.id} /> : null}
+        {tab === "hub" ? (
+          <SpaceHubPanel spaceId={space.id} canCreate={isOwner} />
+        ) : null}
 
         {tab === "students" ? (
           <section className="flex flex-col gap-3">

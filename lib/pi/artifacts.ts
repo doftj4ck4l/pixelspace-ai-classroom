@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { artifacts } from "@/lib/db/schema";
+import { artifacts, spaceMembers, spaces, threads } from "@/lib/db/schema";
 
 /**
  * Artifact registry in Postgres: files the agent shared (`share_file`) and
@@ -9,6 +9,7 @@ import { artifacts } from "@/lib/db/schema";
 
 export type PiArtifact = {
   id: string;
+  userId: string;
   threadId: string;
   title: string;
   type: string;
@@ -27,6 +28,7 @@ type ArtifactRow = typeof artifacts.$inferSelect;
 
 const toPiArtifact = (row: ArtifactRow): PiArtifact => ({
   id: row.id,
+  userId: row.userId,
   threadId: row.threadId ?? "",
   title: row.title,
   type: row.type,
@@ -88,6 +90,42 @@ export const artifactRegistry = {
       .from(artifacts)
       .where(and(eq(artifacts.id, id), eq(artifacts.userId, userId)));
     return row ? toPiArtifact(row) : undefined;
+  },
+
+  /**
+   * Read access for the artifact viewers: the owner, the space owner, or a
+   * member of the space the artifact's thread belongs to. Mutations keep
+   * using `get`, so shared space artifacts stay read-only for members.
+   */
+  async getViewable(
+    userId: string,
+    id: string,
+  ): Promise<PiArtifact | undefined> {
+    const [row] = await db.select().from(artifacts).where(eq(artifacts.id, id));
+    if (!row) return undefined;
+    if (row.userId === userId) return toPiArtifact(row);
+    if (!row.threadId) return undefined;
+    const [thread] = await db
+      .select({ spaceId: threads.spaceId })
+      .from(threads)
+      .where(eq(threads.id, row.threadId));
+    if (!thread?.spaceId) return undefined;
+    const [space] = await db
+      .select({ id: spaces.id, userId: spaces.userId })
+      .from(spaces)
+      .where(eq(spaces.id, thread.spaceId));
+    if (!space) return undefined;
+    if (space.userId === userId) return toPiArtifact(row);
+    const [member] = await db
+      .select({ id: spaceMembers.id })
+      .from(spaceMembers)
+      .where(
+        and(
+          eq(spaceMembers.spaceId, space.id),
+          eq(spaceMembers.userId, userId),
+        ),
+      );
+    return member ? toPiArtifact(row) : undefined;
   },
 
   async add(

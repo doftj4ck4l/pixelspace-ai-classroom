@@ -16,6 +16,7 @@ type ArtifactJson = {
   kind?: "file" | "spec";
   spec?: unknown;
   updatedAt?: string;
+  owner?: boolean;
 };
 
 /** /spaces/flashcards/<artifactId> — a shared deck as its own page. */
@@ -25,6 +26,7 @@ const DeckPage: FC = () => {
   const [spec, setSpec] = useState<FlashcardSpec | null>(null);
   const [version, setVersion] = useState(0);
   const [missing, setMissing] = useState(false);
+  const [owner, setOwner] = useState(true);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPrefill, setAiPrefill] = useState<{
     text: string;
@@ -44,6 +46,7 @@ const DeckPage: FC = () => {
           return;
         }
         setMissing(false);
+        setOwner(data.owner !== false);
         setSpec(data.spec as FlashcardSpec);
         setVersion((value) => value + 1);
       })
@@ -91,9 +94,9 @@ const DeckPage: FC = () => {
         initialIndex={focusedCard ?? 0}
         onClose={() => router.push("/spaces/flashcards")}
         onCardChange={setFocusedCard}
-        onImproveCard={improveCard}
+        onImproveCard={owner ? improveCard : undefined}
       />
-      {artifactId && (
+      {artifactId && owner && (
         <ArtifactAiPanel
           artifactId={artifactId}
           kind="flashcards"

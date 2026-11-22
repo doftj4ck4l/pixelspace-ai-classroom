@@ -117,7 +117,11 @@ const HUB_TABS = [ALL_TAB, ...HUB_TYPES];
  * the sources tab uses, plus a Create button that starts a space-grounded
  * chat so whatever it builds belongs to this space.
  */
-export const SpaceHubPanel: FC<{ spaceId: string }> = ({ spaceId }) => {
+export const SpaceHubPanel: FC<{
+  spaceId: string;
+  /** Only the space owner may create new modules inside the space. */
+  canCreate?: boolean;
+}> = ({ spaceId, canCreate = false }) => {
   const { t } = useI18n();
   const router = useRouter();
   const aui = useAui();
@@ -209,25 +213,27 @@ export const SpaceHubPanel: FC<{ spaceId: string }> = ({ spaceId }) => {
           </div>
         </div>
         <div className={s.sourceActions}>
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button className={s.addButton} />}>
-              <AddIcon className="size-4" />
-              {t("spaceHub.create")}
-              <ChevronDownIcon className="size-3.5 opacity-70" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              {HUB_TYPES.map((tab) => (
-                <DropdownMenuItem
-                  key={tab.id}
-                  onClick={() => void startCreate(tab.id)}
-                  className="gap-2"
-                >
-                  <tab.Icon className="size-4" />
-                  {t(tab.labelKey)}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canCreate ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button className={s.addButton} />}>
+                <AddIcon className="size-4" />
+                {t("spaceHub.create")}
+                <ChevronDownIcon className="size-3.5 opacity-70" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                {HUB_TYPES.map((tab) => (
+                  <DropdownMenuItem
+                    key={tab.id}
+                    onClick={() => void startCreate(tab.id)}
+                    className="gap-2"
+                  >
+                    <tab.Icon className="size-4" />
+                    {t(tab.labelKey)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
       </div>
 
@@ -322,6 +328,7 @@ export const SpaceHubPanel: FC<{ spaceId: string }> = ({ spaceId }) => {
           artifactId={preview.id}
           title={preview.title}
           downloads={[]}
+          editable={canCreate}
           onClose={() => setPreview(null)}
         />
       ) : null}

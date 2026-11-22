@@ -16,6 +16,7 @@ type ArtifactJson = {
   kind?: "file" | "spec";
   spec?: unknown;
   updatedAt?: string;
+  owner?: boolean;
 };
 
 /** /spaces/notes/<artifactId> — structured study notes as their own page. */
@@ -25,6 +26,7 @@ const NotesPage: FC = () => {
   const [spec, setSpec] = useState<NotesSpec | null>(null);
   const [version, setVersion] = useState(0);
   const [missing, setMissing] = useState(false);
+  const [owner, setOwner] = useState(true);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPrefill, setAiPrefill] = useState<{
     text: string;
@@ -44,6 +46,7 @@ const NotesPage: FC = () => {
           return;
         }
         setMissing(false);
+        setOwner(data.owner !== false);
         setSpec(data.spec as NotesSpec);
         setVersion((value) => value + 1);
       })
@@ -92,9 +95,9 @@ const NotesPage: FC = () => {
         initialIndex={focusedSection ?? undefined}
         onClose={() => router.push("/spaces/notes")}
         onSectionChange={setFocusedSection}
-        onImproveSection={improveSection}
+        onImproveSection={owner ? improveSection : undefined}
       />
-      {artifactId && (
+      {artifactId && owner && (
         <ArtifactAiPanel
           artifactId={artifactId}
           kind="notes"

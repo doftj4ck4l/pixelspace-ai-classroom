@@ -36,7 +36,7 @@ export async function GET(
   if (!user) return response;
 
   const { id } = await params;
-  const artifact = await artifactRegistry.get(user.id, id);
+  const artifact = await artifactRegistry.getViewable(user.id, id);
   if (
     !artifact ||
     artifact.type !== "slides" ||

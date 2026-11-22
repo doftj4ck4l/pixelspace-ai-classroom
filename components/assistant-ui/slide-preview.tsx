@@ -29,7 +29,9 @@ export const SlidePreview: FC<{
   title: string;
   downloads: { name: string; url: string }[];
   onClose: () => void;
-}> = ({ artifactId, title, downloads, onClose }) => {
+  /** Hide the AI edit panel when the viewer does not own the artifact. */
+  editable?: boolean;
+}> = ({ artifactId, title, downloads, onClose, editable = true }) => {
   const [pages, setPages] = useState<number | null>(null);
   const [version, setVersion] = useState(0);
   const [page, setPage] = useState(1);
@@ -337,14 +339,16 @@ export const SlidePreview: FC<{
         </div>
       )}
 
-      <ArtifactAiPanel
-        artifactId={artifactId}
-        kind="slides"
-        open={aiOpen}
-        onOpenChange={setAiOpen}
-        focusedIndex={page - 1}
-        onDeckUpdated={load}
-      />
+      {editable ? (
+        <ArtifactAiPanel
+          artifactId={artifactId}
+          kind="slides"
+          open={aiOpen}
+          onOpenChange={setAiOpen}
+          focusedIndex={page - 1}
+          onDeckUpdated={load}
+        />
+      ) : null}
     </div>
   );
 };
