@@ -95,13 +95,16 @@ function ToolGroupRoot({
 function ToolGroupTrigger({
   count,
   active = false,
+  label,
   className,
   ...props
 }: React.ComponentProps<typeof CollapsibleTrigger> & {
   count: number;
   active?: boolean;
+  /** Friendly status shown instead of the count while running. */
+  label?: string;
 }) {
-  const label = `${count} tool ${count === 1 ? "call" : "calls"}`;
+  const countLabel = `${count} tool ${count === 1 ? "call" : "calls"}`;
 
   return (
     <CollapsibleTrigger
@@ -128,10 +131,11 @@ function ToolGroupTrigger({
           "group-data-[variant=ghost]/tool-group-root:font-normal",
           "group-data-[variant=outline]/tool-group-root:grow",
           "group-data-[variant=muted]/tool-group-root:grow",
-          active && "shimmer motion-reduce:animate-none",
+          active &&
+            "shimmer [--shimmer-duration:1400] motion-reduce:animate-none",
         )}
       >
-        {label}
+        {label ?? countLabel}
       </span>
       <ChevronDownIcon
         data-slot="tool-group-trigger-chevron"

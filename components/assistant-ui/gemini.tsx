@@ -54,6 +54,7 @@ import {
   ToolGroupTrigger,
 } from "@/components/assistant-ui/elements/tool-group.aui";
 import { useSidebarNav } from "@/components/assistant-ui/clone-thread-shell";
+import type { TranslationKey } from "@/lib/i18n";
 import { useT } from "@/lib/i18n";
 import { WelcomeGreeting } from "@/components/assistant-ui/welcome-greeting";
 import {
@@ -75,11 +76,38 @@ const messageGroupBy = groupPartByType({
 
 type GroupPart = MessagePrimitive.GroupedParts.GroupPart;
 
+/** Non-technical status for whatever the agent is doing right now. */
+const workingKeyFor = (toolName: string): TranslationKey => {
+  const name = toolName.toLowerCase();
+  if (/(web|search|fetch|browse|url)/.test(name)) return "chat.working.web";
+  if (/(recall|memory)/.test(name)) return "chat.working.recall";
+  if (/skill/.test(name)) return "chat.working.skill";
+  if (/(task|todo|plan)/.test(name)) return "chat.working.plan";
+  if (/(share|file|upload|download|save)/.test(name))
+    return "chat.working.file";
+  if (/ask_user/.test(name)) return "chat.working.ask";
+  if (/(bash|computer|shell|exec|terminal)/.test(name))
+    return "chat.working.bash";
+  return "chat.working.generic";
+};
+
 const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
   group,
   children,
 }) => {
   const [open, setOpen] = useState(false);
+  const t = useT();
+  const active = group.status.type === "running";
+  const runningTool = useAuiState((s) => {
+    if (s.message.status?.type !== "running") return null;
+    for (let index = s.message.parts.length - 1; index >= 0; index -= 1) {
+      const part = s.message.parts[index];
+      if (part.type === "tool-call" && part.status.type === "running") {
+        return part.toolName;
+      }
+    }
+    return null;
+  });
   return (
     <ToolGroupRoot
       variant="ghost"
@@ -88,7 +116,16 @@ const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
     >
       <ToolGroupTrigger
         count={group.indices.length}
-        active={group.status.type === "running"}
+        active={active}
+        label={
+          active
+            ? t(
+                runningTool
+                  ? workingKeyFor(runningTool)
+                  : "chat.working.generic",
+              )
+            : undefined
+        }
       />
       <ToolGroupContent>{children}</ToolGroupContent>
     </ToolGroupRoot>

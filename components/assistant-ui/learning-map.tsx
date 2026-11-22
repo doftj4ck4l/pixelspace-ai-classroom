@@ -342,7 +342,6 @@ export const LearningMap: FC<{
         source: edge.from,
         target: edge.to,
         type: "smoothstep",
-        animated: true,
         label: edge.label,
         style: { strokeDasharray: "6 4", stroke: "var(--muted-foreground)" },
         labelStyle: { fontSize: 10, fill: "var(--muted-foreground)" },
