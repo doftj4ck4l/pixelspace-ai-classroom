@@ -6,9 +6,12 @@ import {
   Logout as LogOut,
   Person as User,
   Settings,
+  DarkMode,
+  LightMode,
 } from "@material-symbols-svg/react/rounded";
 import { type FC } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { signOut, useSession } from "@/lib/auth-client";
 import {
   DropdownMenu,
@@ -47,8 +50,11 @@ const MENU_LINKS: {
   { id: "help", key: "profile.help", Icon: CircleHelp, href: "/help" },
 ];
 
-export const ProfileMenu: FC = () => {
+export const ProfileMenu: FC<{ showAppearance?: boolean }> = ({
+  showAppearance = false,
+}) => {
   const router = useRouter();
+  const { resolvedTheme, setTheme } = useTheme();
   const { data: session } = useSession();
   const { language, setLanguage, t } = useI18n();
 
@@ -88,6 +94,22 @@ export const ProfileMenu: FC = () => {
             {t(key)}
           </DropdownMenuItem>
         ))}
+
+        {showAppearance ? (
+          <DropdownMenuItem
+            className="gap-2"
+            onClick={() =>
+              setTheme(resolvedTheme === "dark" ? "light" : "dark")
+            }
+          >
+            {resolvedTheme === "dark" ? (
+              <LightMode className="size-4" />
+            ) : (
+              <DarkMode className="size-4" />
+            )}
+            {t(resolvedTheme === "dark" ? "shell.lightMode" : "shell.darkMode")}
+          </DropdownMenuItem>
+        ) : null}
 
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="gap-2">

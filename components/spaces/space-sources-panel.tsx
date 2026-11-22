@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type FC } from "react";
 import {
   AddIcon,
+  BookOpenIcon,
+  LayersIcon,
   ChevronDownIcon,
   FileTextIcon,
   LayoutGridIcon,
@@ -17,6 +19,9 @@ import {
   Trash2Icon,
   UploadFileIcon,
 } from "@/components/icons";
+import { Storage as StorageIcon } from "@material-symbols-svg/react/rounded";
+import { SpaceArtwork } from "./space-artwork";
+import s from "./space-study.module.css";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -69,7 +74,14 @@ type Textbook = {
   fileUrl: string;
 };
 
-type Category = "all" | "textbook" | "slides" | "video" | "link" | "other";
+type Category =
+  | "all"
+  | "textbook"
+  | "slides"
+  | "note"
+  | "video"
+  | "link"
+  | "other";
 
 type Card = {
   key: string;
@@ -98,6 +110,10 @@ const CATEGORY_STYLE: Record<
       "bg-gradient-to-br from-[#e3d9fb] via-[#ece5fd] to-[#f6f1ff] dark:from-[#2c2347] dark:via-[#332a52] dark:to-[#241d3b]",
     chip: "bg-[#ece5fd] text-[#6b4fce] dark:bg-[#332a52] dark:text-[#c9b8f5]",
   },
+  note: {
+    cover: "bg-amber-50 dark:bg-amber-950",
+    chip: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-200",
+  },
   video: {
     cover:
       "bg-gradient-to-br from-[#fbdcdf] via-[#fde8ea] to-[#fef3f4] dark:from-[#4a2129] dark:via-[#572831] dark:to-[#3a1b22]",
@@ -120,7 +136,7 @@ const CategoryGlyph: FC<{ category: Exclude<Category, "all"> }> = ({
 }) => {
   const common = "size-10 drop-shadow-sm";
   if (category === "textbook")
-    return <PresentationIcon className={cn(common, "text-[#1b8a7f]")} />;
+    return <BookOpenIcon className={cn(common, "text-[#1b8a7f]")} />;
   if (category === "slides")
     return <PresentationIcon className={cn(common, "text-[#6b4fce]")} />;
   if (category === "video")
@@ -134,6 +150,8 @@ const categoryForUpload = (ext: string): Exclude<Category, "all"> => {
   if (ext === "youtube") return "video";
   if (ext === "link") return "link";
   if (ext === "ppt" || ext === "pptx") return "slides";
+  if (["pdf", "doc", "docx", "txt", "md", "rtf"].includes(ext.toLowerCase()))
+    return "note";
   return "other";
 };
 
@@ -154,7 +172,7 @@ export const SpaceSourcesPanel: FC<{
   spaceId: string;
   level: string;
   readOnly?: boolean;
-}> = ({ spaceId, level, readOnly = false }) => {
+}> = ({ spaceId, readOnly = false }) => {
   const { t } = useI18n();
   const [rows, setRows] = useState<SourceRow[] | null>(null);
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -185,9 +203,13 @@ export const SpaceSourcesPanel: FC<{
           .then((res) => (res.ok ? res.json() : null))
           .catch(() => null),
       ]);
-      setRows((spaceSources as { sources?: SourceRow[] } | null)?.sources ?? []);
+      setRows(
+        (spaceSources as { sources?: SourceRow[] } | null)?.sources ?? [],
+      );
       setUploads((allSources as { sources?: Upload[] } | null)?.sources ?? []);
-      setBooks((allBooks as { textbooks?: Textbook[] } | null)?.textbooks ?? []);
+      setBooks(
+        (allBooks as { textbooks?: Textbook[] } | null)?.textbooks ?? [],
+      );
     } catch {
       setRows([]);
     }
@@ -268,6 +290,7 @@ export const SpaceSourcesPanel: FC<{
       all: cards.length,
       textbook: 0,
       slides: 0,
+      note: 0,
       video: 0,
       link: 0,
       other: 0,
@@ -406,46 +429,51 @@ export const SpaceSourcesPanel: FC<{
     {
       id: "textbook",
       label: t("spaceDetail.cat.textbook"),
-      Icon: PresentationIcon,
+      Icon: BookOpenIcon,
     },
     {
       id: "slides",
       label: t("spaceDetail.cat.slides"),
       Icon: PresentationIcon,
     },
+    { id: "note", label: t("spaceDetail.cat.note"), Icon: FileTextIcon },
     { id: "video", label: t("spaceDetail.cat.video"), Icon: SmartDisplayIcon },
     { id: "link", label: t("spaceDetail.cat.link"), Icon: LinkIcon },
     { id: "other", label: t("spaceDetail.cat.other"), Icon: FileTextIcon },
   ];
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">
-            {t("sources.title")}
-          </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {t("spaceDetail.sourcesSubtitle")}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="min-w-40">
-            <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
-              <UploadFileIcon className="size-3.5" />
-              {t("spaceDetail.storage", {
-                used: formatSize(usedBytes),
-                quota: formatSize(QUOTA_BYTES),
-              })}
+    <section className={s.sources}>
+      <div className={s.sourceHeader}>
+        <div className={s.sourceHeading}>
+          <span className={s.sectionIcon}>
+            <LayersIcon />
+          </span>
+          <div>
+            <h2>{t("sources.title")}</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {t("spaceDetail.sourcesSubtitle")}
             </p>
-            <div className="mt-1 flex items-center gap-2">
-              <div className="bg-muted h-1.5 w-36 overflow-hidden rounded-full">
-                <div
-                  className="h-full rounded-full bg-[#1b8a7f]"
-                  style={{ width: `${Math.max(2, percent)}%` }}
-                />
+          </div>
+        </div>
+        <div className={s.sourceActions}>
+          <div className={s.storage}>
+            <StorageIcon />
+            <div className={s.storageBody}>
+              <p>
+                {t("spaceDetail.storage", {
+                  used: formatSize(usedBytes),
+                  quota: formatSize(QUOTA_BYTES),
+                })}
+              </p>
+              <div className={s.meterRow}>
+                <div className={s.meter}>
+                  <div style={{ width: `${percent}%` }} />
+                </div>
+                <span className="text-muted-foreground text-xs">
+                  {percent}%
+                </span>
               </div>
-              <span className="text-muted-foreground text-xs">{percent}%</span>
             </div>
           </div>
           {!readOnly ? (
@@ -459,12 +487,7 @@ export const SpaceSourcesPanel: FC<{
               />
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  render={
-                    <Button
-                      className="h-10 gap-2 rounded-full bg-black px-4 text-white hover:bg-black/85"
-                      disabled={busy}
-                    />
-                  }
+                  render={<Button className={s.addButton} disabled={busy} />}
                 >
                   {busy ? (
                     <Loader2Icon className="size-4 animate-spin" />
@@ -505,56 +528,39 @@ export const SpaceSourcesPanel: FC<{
 
       {error ? <p className="text-destructive text-sm">{error}</p> : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="scrollbar-subtle -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1">
+      <div className={s.toolbar}>
+        <div className={s.filters}>
           {categoryTabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setCategory(tab.id)}
-              className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                category === tab.id
-                  ? "border-[#bfeae0] bg-[#d8f3ec] text-[#0f6f63] dark:border-[#1c5a52] dark:bg-[#12312e] dark:text-[#8fd9c8]"
-                  : "text-muted-foreground hover:text-foreground border-border",
-              )}
+              aria-pressed={category === tab.id}
+              className={s.filter}
             >
               <tab.Icon className="size-3.5" />
               {tab.label}
-              <span
-                className={cn(
-                  "rounded-full px-1.5 text-[10px]",
-                  category === tab.id
-                    ? "bg-white/70 text-[#0f6f63] dark:bg-black/30 dark:text-[#8fd9c8]"
-                    : "bg-muted/70",
-                )}
-              >
-                {counts[tab.id]}
-              </span>
+              <span className={s.filterCount}>{counts[tab.id]}</span>
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <label className="border-border/60 bg-background focus-within:ring-ring/40 flex h-9 min-w-48 items-center gap-2 rounded-full border px-3 focus-within:ring-2">
+        <div className={s.viewTools}>
+          <label className={s.search}>
             <SearchIcon className="text-muted-foreground size-4 shrink-0" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              aria-label={t("spaceDetail.search")}
               placeholder={t("spaceDetail.search")}
               className="min-w-0 flex-1 bg-transparent text-sm outline-none"
             />
           </label>
-          <div className="border-border/60 flex h-9 items-center rounded-full border p-0.5">
+          <div className={s.viewSwitch}>
             <button
               type="button"
               aria-label={t("spaceDetail.grid")}
               onClick={() => setView("grid")}
-              className={cn(
-                "flex size-8 items-center justify-center rounded-full transition-colors",
-                view === "grid"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              aria-pressed={view === "grid"}
             >
               <LayoutGridIcon className="size-4" />
             </button>
@@ -562,12 +568,7 @@ export const SpaceSourcesPanel: FC<{
               type="button"
               aria-label={t("spaceDetail.list")}
               onClick={() => setView("list")}
-              className={cn(
-                "flex size-8 items-center justify-center rounded-full transition-colors",
-                view === "list"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
+              aria-pressed={view === "list"}
             >
               <ListIcon className="size-4" />
             </button>
@@ -581,34 +582,45 @@ export const SpaceSourcesPanel: FC<{
           {t("common.loading")}
         </div>
       ) : visible.length === 0 ? (
-        <div className="border-border/60 text-muted-foreground rounded-2xl border border-dashed px-4 py-12 text-center text-sm">
+        <div className={s.empty}>
           {cards.length === 0
             ? t("spaceDetail.empty")
             : t("spaceDetail.emptyFilter")}
         </div>
       ) : view === "grid" ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className={s.grid}>
           {visible.map((card) => {
-            const style = CATEGORY_STYLE[card.category];
+            const Glyph =
+              categoryTabs.find((tab) => tab.id === card.category)?.Icon ??
+              FileTextIcon;
             return (
               <article
                 key={card.key}
-                className="border-border/60 bg-card group overflow-hidden rounded-2xl border transition-shadow hover:shadow-md"
+                className={s.card}
+                data-category={card.category}
               >
-                <div className={cn("relative", style.cover)}>
-                  <div className="flex items-center justify-between px-3 pt-3">
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                        style.chip,
-                      )}
-                    >
+                <div className={s.cardCover}>
+                  <button
+                    type="button"
+                    className={s.coverLink}
+                    aria-label={`${t("common.open")}: ${card.title}`}
+                    disabled={!card.href}
+                    onClick={() =>
+                      card.href &&
+                      window.open(card.href, "_blank", "noopener,noreferrer")
+                    }
+                  >
+                    <SpaceArtwork kind={card.category} />
+                  </button>
+                  <div className={s.cardTop}>
+                    <span className={s.categoryChip}>
+                      <Glyph />
                       {t(`spaceDetail.cat.${card.category}` as const)}
                     </span>
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         aria-label={t("spaceDetail.moreActions")}
-                        className="text-foreground/70 flex size-7 items-center justify-center rounded-full transition-colors hover:bg-white/60 dark:hover:bg-black/30"
+                        className={s.cardMenu}
                       >
                         <MoreHorizontalIcon className="size-4" />
                       </DropdownMenuTrigger>
@@ -638,42 +650,20 @@ export const SpaceSourcesPanel: FC<{
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  <div className="flex h-32 items-center justify-center px-3 pb-3">
-                    {card.cover ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={card.cover}
-                        alt=""
-                        loading="lazy"
-                        className="h-28 w-20 rounded-lg object-cover shadow-md"
-                      />
-                    ) : card.thumb ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={card.thumb}
-                        alt=""
-                        loading="lazy"
-                        className="h-24 w-36 rounded-lg object-cover shadow-md"
-                      />
-                    ) : (
-                      <span className="flex size-16 items-center justify-center rounded-2xl bg-white/60 shadow-sm dark:bg-black/25">
-                        <CategoryGlyph category={card.category} />
-                      </span>
-                    )}
-                  </div>
                 </div>
-                <div className="flex min-h-24 flex-col gap-1 px-3.5 py-3">
+                <div className={s.cardBody}>
                   <button
                     type="button"
                     onClick={() =>
                       card.href && window.open(card.href, "_blank")
                     }
-                    className="line-clamp-2 text-left text-sm font-semibold hover:underline"
+                    className={s.cardTitle}
                   >
                     {card.title}
                   </button>
-                  <span className="text-muted-foreground mt-auto text-xs">
-                    {card.meta}
+                  <span className={s.cardMeta}>
+                    <Glyph />
+                    <span>{card.meta}</span>
                   </span>
                 </div>
               </article>

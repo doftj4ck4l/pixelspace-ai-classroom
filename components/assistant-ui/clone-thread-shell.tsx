@@ -5,6 +5,8 @@ import {
   ThreadListItems,
   ThreadListRoot,
 } from "@/components/assistant-ui/elements/thread-list.aui";
+import teacherStyles from "./teacher-sidebar.module.css";
+import { SpaceArtwork } from "@/components/spaces/space-artwork";
 import { SearchDialog } from "@/components/assistant-ui/search-dialog";
 import { useSession } from "@/lib/auth-client";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
@@ -46,6 +48,8 @@ import {
   Schedule as ScheduleIcon,
   ScheduleFill as ScheduleFillIcon,
   Search as SearchIcon,
+  SchoolFill as SchoolIcon,
+  Settings as SettingsIcon,
 } from "@material-symbols-svg/react/rounded/w300";
 import { useT } from "@/lib/i18n";
 import {
@@ -145,6 +149,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const router = useRouter();
   const { data: session } = useSession();
   const t = useT();
+  const isTeacher = role === "teacher";
 
   // Navigation is the URL now: /chat*, /spaces/<section>, /scheduled.
   const inSpace = pathname.startsWith("/spaces");
@@ -196,7 +201,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
     if (!(event.target instanceof Element)) return;
     if (
       event.target.closest(
-        '[data-slot="aui_thread-list-item-trigger"], [data-slot="aui_thread-list-new"]',
+        '[data-slot="aui_thread-list-item-trigger"], [data-slot="aui_thread-list-new"], a[href]',
       )
     ) {
       setMobileOpen(false);
@@ -213,16 +218,221 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
         router.push("/chat");
         setMobileOpen(false);
       }}
-      className="bg-muted hover:bg-muted/80 flex h-10 min-h-10 w-full items-center gap-2.5 rounded-full px-4 text-sm font-medium transition-colors"
+      className={cn(
+        "bg-muted hover:bg-muted/80 flex h-10 min-h-10 w-full items-center gap-2.5 rounded-full px-4 text-sm font-medium transition-colors",
+        isTeacher && teacherStyles.newChat,
+      )}
     >
       <NewChatIcon className="size-4 shrink-0" />
       <span className="whitespace-nowrap">{t("shell.newChat")}</span>
     </button>
   );
 
+  const navigation = (
+    <nav
+      className={cn(
+        "mt-2 flex flex-col gap-0.5",
+        isTeacher && teacherStyles.navigation,
+      )}
+    >
+      {role === "student" && (
+        <Link
+          href="/student"
+          aria-current={pathname.startsWith("/student") ? "page" : undefined}
+          className={cn(
+            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+            pathname.startsWith("/student")
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          )}
+        >
+          {pathname.startsWith("/student") ? (
+            <HomeFillIcon className="size-4 shrink-0" />
+          ) : (
+            <HomeIcon className="size-4 shrink-0" />
+          )}
+          <span className="truncate">{t("shell.rumah")}</span>
+        </Link>
+      )}
+      {role === "kpm" && (
+        <Link
+          href="/kpm"
+          aria-current={pathname.startsWith("/kpm") ? "page" : undefined}
+          className={cn(
+            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+            pathname.startsWith("/kpm")
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          )}
+        >
+          {pathname.startsWith("/kpm") ? (
+            <KpmFillIcon className="size-4 shrink-0" />
+          ) : (
+            <KpmIcon className="size-4 shrink-0" />
+          )}
+          <span className="truncate">{t("shell.kpm")}</span>
+        </Link>
+      )}
+      {role === "superadmin" && (
+        <Link
+          href="/admin"
+          aria-current={pathname.startsWith("/admin") ? "page" : undefined}
+          className={cn(
+            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+            pathname.startsWith("/admin")
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          )}
+        >
+          {pathname.startsWith("/admin") ? (
+            <AdminFillIcon className="size-4 shrink-0" />
+          ) : (
+            <AdminIcon className="size-4 shrink-0" />
+          )}
+          <span className="truncate">{t("shell.admin")}</span>
+        </Link>
+      )}
+      <Link
+        href="/spaces/all"
+        aria-current={view === "space" ? "page" : undefined}
+        className={cn(
+          "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+          view === "space"
+            ? "bg-muted text-foreground"
+            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        )}
+      >
+        {view === "space" ? (
+          <HubFillIcon className="size-4 shrink-0" />
+        ) : (
+          <HubIcon className="size-4 shrink-0" />
+        )}
+        <span className="truncate">{t("shell.hub")}</span>
+      </Link>
+      {(role === "teacher" || role === "student" || role === "superadmin") && (
+        <Link
+          href="/textbooks"
+          aria-current={pathname.startsWith("/textbooks") ? "page" : undefined}
+          className={cn(
+            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+            pathname.startsWith("/textbooks")
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          )}
+        >
+          {pathname.startsWith("/textbooks") ? (
+            <TextbooksFillIcon className="size-4 shrink-0" />
+          ) : (
+            <TextbooksIcon className="size-4 shrink-0" />
+          )}
+          <span className="truncate">{t("shell.textbooks")}</span>
+        </Link>
+      )}
+
+      {(role === "teacher" || role === "student") && (
+        <Link
+          href="/community"
+          aria-current={pathname.startsWith("/community") ? "page" : undefined}
+          className={cn(
+            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+            pathname.startsWith("/community")
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          )}
+        >
+          {pathname.startsWith("/community") ? (
+            <SpacesFillIcon className="size-4 shrink-0" />
+          ) : (
+            <SpacesIcon className="size-4 shrink-0" />
+          )}
+          <span className="truncate">{t("shell.spaces")}</span>
+        </Link>
+      )}
+      {role === "student" && (
+        <Link
+          href="/buddy"
+          aria-current={pathname.startsWith("/buddy") ? "page" : undefined}
+          className={cn(
+            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+            pathname.startsWith("/buddy")
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          )}
+        >
+          {pathname.startsWith("/buddy") ? (
+            <BuddyFillIcon className="size-4 shrink-0" />
+          ) : (
+            <BuddyIcon className="size-4 shrink-0" />
+          )}
+          <span className="truncate">{t("shell.buddy")}</span>
+        </Link>
+      )}
+      {role === "teacher" && (
+        <Link
+          href="/duties"
+          aria-current={pathname.startsWith("/duties") ? "page" : undefined}
+          className={cn(
+            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+            pathname.startsWith("/duties")
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          )}
+        >
+          {pathname.startsWith("/duties") ? (
+            <DutiesFillIcon className="size-4 shrink-0" />
+          ) : (
+            <DutiesIcon className="size-4 shrink-0" />
+          )}
+          <span className="truncate">{t("shell.duties")}</span>
+        </Link>
+      )}
+      {role === "teacher" && (
+        <Link
+          href="/sources"
+          aria-current={pathname.startsWith("/sources") ? "page" : undefined}
+          className={cn(
+            "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+            pathname.startsWith("/sources")
+              ? "bg-muted text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          )}
+        >
+          {pathname.startsWith("/sources") ? (
+            <LibraryBooksFillIcon className="size-4 shrink-0" />
+          ) : (
+            <LibraryBooksIcon className="size-4 shrink-0" />
+          )}
+          <span className="truncate">{t("shell.sources")}</span>
+        </Link>
+      )}
+      <Link
+        href="/scheduled"
+        aria-current={view === "scheduled" ? "page" : undefined}
+        className={cn(
+          "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+          view === "scheduled"
+            ? "bg-muted text-foreground"
+            : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        )}
+      >
+        {view === "scheduled" ? (
+          <ScheduleFillIcon className="size-4 shrink-0" />
+        ) : (
+          <ScheduleIcon className="size-4 shrink-0" />
+        )}
+        <span className="truncate">{t("shell.scheduled")}</span>
+      </Link>
+    </nav>
+  );
+
   return (
     <SidebarNavContext.Provider value={nav}>
-      <div className="relative flex h-full w-full overflow-hidden">
+      <div
+        className={cn(
+          "relative flex h-full w-full overflow-hidden",
+          isTeacher && teacherStyles.shell,
+        )}
+      >
         <div
           data-slot="aui-app-rail"
           className={cn(
@@ -341,7 +551,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           )}
           <div className="mt-auto flex flex-col items-center gap-1">
             <ThemeToggle />
-            <ProfileMenu />
+            <ProfileMenu showAppearance={isTeacher} />
           </div>
         </div>
 
@@ -351,19 +561,37 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           className={cn(
             "bg-muted/30 hidden h-full shrink-0 flex-col overflow-hidden transition-[width] duration-200 md:flex",
             railClassName,
-            sidebarCollapsed ? "w-0" : "w-65 border-r",
+            sidebarCollapsed
+              ? "w-0"
+              : isTeacher
+                ? "w-[294px] border-r"
+                : "w-65 border-r",
+            isTeacher && teacherStyles.sidebar,
           )}
         >
-          <div className="flex h-12 shrink-0 items-center gap-0.5 overflow-hidden px-2">
+          <div
+            className={cn(
+              "flex h-12 shrink-0 items-center gap-0.5 overflow-hidden px-2",
+              isTeacher && teacherStyles.brandHeader,
+            )}
+          >
             {headerContent !== undefined ? (
               headerContent
+            ) : isTeacher ? (
+              <Link href="/community" className={teacherStyles.brand}>
+                <SchoolIcon />
+                <span className={teacherStyles.brandWords}>
+                  <strong>Pixelspace</strong>
+                  <small>AI CLASSROOM</small>
+                </span>
+              </Link>
             ) : (
               <span className="flex min-w-0 flex-1 items-center gap-2 ps-2 text-sm font-semibold">
                 <span className="size-5 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
                 <span className="truncate">Pixelspace</span>
               </span>
             )}
-            {showSearch && hasThreads && (
+            {showSearch && (hasThreads || isTeacher) && (
               <TooltipIconButton
                 variant="ghost"
                 size="icon"
@@ -393,6 +621,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             className={cn(
               "relative flex min-h-0 flex-1 flex-col transition-[padding,width] duration-200",
               sidebarCollapsed ? "w-12 overflow-hidden px-2 pt-1" : "w-65 p-2",
+              isTeacher && teacherStyles.threadRoot,
             )}
           >
             <div className="shrink-0">
@@ -411,190 +640,15 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 newThread
               )}
 
-              <nav className="mt-2 flex flex-col gap-0.5">
-                {role === "student" && (
-                  <Link
-                    href="/student"
-                    className={cn(
-                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                      pathname.startsWith("/student")
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    {pathname.startsWith("/student") ? (
-                      <HomeFillIcon className="size-4 shrink-0" />
-                    ) : (
-                      <HomeIcon className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{t("shell.rumah")}</span>
-                  </Link>
-                )}
-                {role === "kpm" && (
-                  <Link
-                    href="/kpm"
-                    className={cn(
-                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                      pathname.startsWith("/kpm")
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    {pathname.startsWith("/kpm") ? (
-                      <KpmFillIcon className="size-4 shrink-0" />
-                    ) : (
-                      <KpmIcon className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{t("shell.kpm")}</span>
-                  </Link>
-                )}
-                {role === "superadmin" && (
-                  <Link
-                    href="/admin"
-                    className={cn(
-                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                      pathname.startsWith("/admin")
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    {pathname.startsWith("/admin") ? (
-                      <AdminFillIcon className="size-4 shrink-0" />
-                    ) : (
-                      <AdminIcon className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{t("shell.admin")}</span>
-                  </Link>
-                )}
-                <Link
-                  href="/spaces/all"
-                  className={cn(
-                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                    view === "space"
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                  )}
-                >
-                  {view === "space" ? (
-                    <HubFillIcon className="size-4 shrink-0" />
-                  ) : (
-                    <HubIcon className="size-4 shrink-0" />
-                  )}
-                  <span className="truncate">{t("shell.hub")}</span>
-                </Link>
-                {(role === "teacher" ||
-                  role === "student" ||
-                  role === "superadmin") && (
-                  <Link
-                    href="/textbooks"
-                    className={cn(
-                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                      pathname.startsWith("/textbooks")
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    {pathname.startsWith("/textbooks") ? (
-                      <TextbooksFillIcon className="size-4 shrink-0" />
-                    ) : (
-                      <TextbooksIcon className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{t("shell.textbooks")}</span>
-                  </Link>
-                )}
-
-                {(role === "teacher" || role === "student") && (
-                  <Link
-                    href="/community"
-                    className={cn(
-                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                      pathname.startsWith("/community")
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    {pathname.startsWith("/community") ? (
-                      <SpacesFillIcon className="size-4 shrink-0" />
-                    ) : (
-                      <SpacesIcon className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{t("shell.spaces")}</span>
-                  </Link>
-                )}
-                {role === "student" && (
-                  <Link
-                    href="/buddy"
-                    className={cn(
-                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                      pathname.startsWith("/buddy")
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    {pathname.startsWith("/buddy") ? (
-                      <BuddyFillIcon className="size-4 shrink-0" />
-                    ) : (
-                      <BuddyIcon className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{t("shell.buddy")}</span>
-                  </Link>
-                )}
-                {role === "teacher" && (
-                  <Link
-                    href="/duties"
-                    className={cn(
-                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                      pathname.startsWith("/duties")
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    {pathname.startsWith("/duties") ? (
-                      <DutiesFillIcon className="size-4 shrink-0" />
-                    ) : (
-                      <DutiesIcon className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{t("shell.duties")}</span>
-                  </Link>
-                )}
-                {role === "teacher" && (
-                  <Link
-                    href="/sources"
-                    className={cn(
-                      "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                      pathname.startsWith("/sources")
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                    )}
-                  >
-                    {pathname.startsWith("/sources") ? (
-                      <LibraryBooksFillIcon className="size-4 shrink-0" />
-                    ) : (
-                      <LibraryBooksIcon className="size-4 shrink-0" />
-                    )}
-                    <span className="truncate">{t("shell.sources")}</span>
-                  </Link>
-                )}
-                <Link
-                  href="/scheduled"
-                  className={cn(
-                    "flex h-10 items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
-                    view === "scheduled"
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                  )}
-                >
-                  {view === "scheduled" ? (
-                    <ScheduleFillIcon className="size-4 shrink-0" />
-                  ) : (
-                    <ScheduleIcon className="size-4 shrink-0" />
-                  )}
-                  <span className="truncate">{t("shell.scheduled")}</span>
-                </Link>
-              </nav>
+              {navigation}
             </div>
 
-            <div className="scrollbar-subtle -mx-1 mt-1 min-h-0 flex-1 overflow-y-auto px-1">
+            <div
+              className={cn(
+                "scrollbar-subtle -mx-1 mt-1 min-h-0 flex-1 overflow-y-auto px-1",
+                isTeacher && teacherStyles.recents,
+              )}
+            >
               {hasThreads && (
                 <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
                   {t("shell.recents")}
@@ -615,8 +669,14 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             </div>
           </ThreadListRoot>
 
-          <div className="border-border/60 mt-auto flex shrink-0 items-center gap-2 border-t px-3 py-2.5">
-            <ProfileMenu />
+          {isTeacher && <SpaceArtwork className={teacherStyles.sidebarArt} />}
+          <div
+            className={cn(
+              "border-border/60 mt-auto flex shrink-0 items-center gap-2 border-t px-3 py-2.5",
+              isTeacher && teacherStyles.account,
+            )}
+          >
+            <ProfileMenu showAppearance={isTeacher} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">
                 {session?.user?.name ?? "Account"}
@@ -625,7 +685,17 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 {session?.user?.email ?? ""}
               </p>
             </div>
-            <ThemeToggle />
+            {isTeacher ? (
+              <Link
+                href="/settings"
+                aria-label={t("profile.settings")}
+                className={teacherStyles.settings}
+              >
+                <SettingsIcon />
+              </Link>
+            ) : (
+              <ThemeToggle />
+            )}
           </div>
         </aside>
 
@@ -646,16 +716,63 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               />
             </div>
           )}
-          <SheetContent side="left" className="flex flex-col p-0">
+          <SheetContent
+            side="left"
+            className={cn(
+              "flex flex-col p-0",
+              isTeacher && teacherStyles.mobileSheet,
+            )}
+          >
             <SheetTitle className="flex h-12 shrink-0 items-center px-4 text-sm font-medium">
-              {sheetTitle ?? "Pixelspace AI Classroom"}
+              {sheetTitle ??
+                (isTeacher ? (
+                  <span className={teacherStyles.brand}>
+                    <SchoolIcon />
+                    <span className={teacherStyles.brandWords}>
+                      <strong>Pixelspace</strong>
+                      <small>AI CLASSROOM</small>
+                    </span>
+                  </span>
+                ) : (
+                  "Pixelspace AI Classroom"
+                ))}
             </SheetTitle>
             <div
               className="relative flex-1 overflow-y-auto p-3"
               onClick={closeMobileSidebarAfterNavigation}
             >
-              <ThreadList />
+              {isTeacher ? (
+                <ThreadListRoot>
+                  {newThread}
+                  {navigation}
+                  <ThreadListItems searchQuery="" />
+                </ThreadListRoot>
+              ) : (
+                <ThreadList />
+              )}
             </div>
+            {isTeacher ? (
+              <div
+                className={cn(
+                  "flex shrink-0 items-center gap-3 border-t px-5 py-4",
+                  teacherStyles.account,
+                )}
+              >
+                <ProfileMenu showAppearance />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate">{session?.user?.name ?? "Account"}</p>
+                  <p className="truncate">{session?.user?.email ?? ""}</p>
+                </div>
+                <Link
+                  href="/settings"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label={t("profile.settings")}
+                  className={teacherStyles.settings}
+                >
+                  <SettingsIcon />
+                </Link>
+              </div>
+            ) : null}
           </SheetContent>
         </Sheet>
 

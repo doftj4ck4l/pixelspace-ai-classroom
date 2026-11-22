@@ -1,0 +1,238 @@
+.shell {
+  --teacher-ink: #17132f;
+  --teacher-muted: #484177;
+  --teacher-active: #eee6ff;
+  --teacher-line: #e9e3fa;
+}
+.sidebar {
+  position: relative;
+  color: var(--teacher-ink);
+  background: linear-gradient(160deg, #fbf9ff, #fbfaff 65%, #f7f3ff);
+  border-color: var(--teacher-line);
+}
+.sidebar::before,
+.sidebar::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+  width: 430px;
+  height: 210px;
+  left: -65px;
+  bottom: 64px;
+  border-radius: 45%;
+  transform: rotate(17deg);
+  background: linear-gradient(120deg, #d7f3ff9c, #e8deff7d);
+}
+.sidebar::after {
+  bottom: 110px;
+  left: -180px;
+  transform: rotate(-17deg);
+  opacity: 0.45;
+}
+.sidebar .brandHeader {
+  position: relative;
+  z-index: 1;
+  height: 88px;
+  padding-inline: 24px 18px;
+  gap: 6px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.brand > svg {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  color: #9252ff;
+}
+.brandWords {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.brandWords strong {
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+.brandWords small {
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.45px;
+  color: #8774c0;
+  white-space: nowrap;
+}
+.sidebar .brandHeader button {
+  width: 30px;
+  height: 32px;
+}
+.sidebar .brandHeader button svg {
+  width: 21px;
+  height: 21px;
+}
+.sidebar .threadRoot {
+  width: 294px;
+  padding: 0 18px;
+  z-index: 1;
+}
+.newChat {
+  background: var(--teacher-active);
+  color: #34109c;
+  font-weight: 650;
+  height: 43px;
+  gap: 12px;
+  padding-inline: 22px;
+}
+.newChat:hover {
+  background: #e5d8ff;
+}
+.newChat svg {
+  width: 20px;
+  height: 20px;
+}
+.navigation {
+  margin-top: 12px;
+  gap: 4px;
+}
+.navigation a {
+  height: 42px;
+  padding-inline: 22px;
+  gap: 13px;
+  color: var(--teacher-muted);
+  font-weight: 500;
+}
+.navigation a svg {
+  width: 20px;
+  height: 20px;
+}
+.navigation a[aria-current="page"] {
+  background: #e9dfff;
+  color: #4520b7;
+  font-weight: 650;
+}
+.navigation a:hover {
+  background: #f0eaff;
+}
+.sidebar .recents {
+  margin: 24px 0 0;
+  padding-inline: 4px;
+  position: relative;
+  z-index: 1;
+}
+.sidebar .recents > span {
+  display: block;
+  padding-inline: 12px;
+  padding-block: 4px 8px;
+  color: var(--teacher-muted);
+  font-size: 13px;
+}
+.sidebar .recents :global([data-slot="aui_thread-list-item-trigger"]) {
+  color: var(--teacher-ink);
+  font-size: 14px;
+}
+.sidebar .sidebarArt {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  bottom: 142px;
+  right: 24px;
+  z-index: 0;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.sidebar .account {
+  position: relative;
+  z-index: 1;
+  height: 85px;
+  padding: 15px 24px;
+  border-color: var(--teacher-line);
+  background: #ffffff68;
+  gap: 12px;
+}
+.account > button {
+  width: 38px;
+  height: 38px;
+}
+.account p:first-child {
+  font-weight: 650;
+  font-size: 14px;
+}
+.account p:last-child {
+  color: var(--teacher-muted);
+  font-size: 12px;
+}
+.settings {
+  display: flex;
+  width: 24px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+.settings svg {
+  width: 22px;
+  height: 22px;
+}
+.settings:hover {
+  background: var(--teacher-active);
+}
+.mobileSheet {
+  --teacher-ink: #17132f;
+  --teacher-muted: #484177;
+  --teacher-active: #eee6ff;
+  --teacher-line: #e9e3fa;
+  background: #fbf9ff;
+  color: var(--teacher-ink);
+}
+.mobileSheet .navigation {
+  margin-bottom: 24px;
+}
+.mobileSheet .brand {
+  margin-inline: 20px;
+}
+:global(.dark) .shell,
+:global(.dark) .mobileSheet {
+  --teacher-ink: #ede4ff;
+  --teacher-muted: #beb1db;
+  --teacher-active: #3d2d59;
+  --teacher-line: #3f3155;
+}
+:global(.dark) .sidebar,
+:global(.dark) .mobileSheet {
+  background: #201a2a;
+}
+:global(.dark) .sidebar::before,
+:global(.dark) .sidebar::after {
+  opacity: 0.08;
+}
+:global(.dark) .account {
+  background: #251e31;
+}
+:global(.dark) .navigation a[aria-current="page"],
+:global(.dark) .newChat {
+  background: var(--teacher-active);
+  color: #e1cdff;
+}
+:global(.dark) .navigation a:hover,
+:global(.dark) .settings:hover {
+  background: #3d2d59;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell aside,
+  .threadRoot {
+    transition: none !important;
+  }
+}
+.mobileSheet > h2 {
+  min-height: 80px;
+  padding-inline: 0;
+}
+.mobileSheet .account {
+  border-color: var(--teacher-line);
+}

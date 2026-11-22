@@ -10,7 +10,7 @@ import {
   CopyIcon,
   EditIcon,
   GroupIcon,
-  KeyIcon,
+  BracesIcon,
   LayersIcon,
   Loader2Icon,
   MoreHorizontalIcon,
@@ -21,6 +21,8 @@ import {
   accentTheme,
   coverEmoji,
 } from "@/components/assistant-ui/flashcard-deck";
+import { SpaceArtwork } from "@/components/spaces/space-artwork";
+import s from "./space-study.module.css";
 import { SpaceSourcesPanel } from "@/components/spaces/space-sources-panel";
 import { Button } from "@/components/ui/button";
 import {
@@ -84,76 +86,6 @@ const ACCENT_DOT: Record<string, string> = {
   rose: "bg-rose-300",
   emerald: "bg-emerald-300",
 };
-
-/** The little 3D book + set square, drawn inline so it travels with the app. */
-const SpaceIllustration: FC = () => (
-  <svg viewBox="0 0 280 170" className="h-36 w-auto" aria-hidden="true">
-    <defs>
-      <linearGradient id="spaceBook" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#5ed0b8" />
-        <stop offset="1" stopColor="#1b8a7f" />
-      </linearGradient>
-      <linearGradient id="spaceTri" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#c9b8f5" />
-        <stop offset="1" stopColor="#7a5cd6" />
-      </linearGradient>
-    </defs>
-    <ellipse cx="150" cy="154" rx="96" ry="11" fill="#0f6f63" opacity="0.08" />
-    <g transform="rotate(-5 130 96)">
-      <rect
-        x="58"
-        y="48"
-        width="140"
-        height="96"
-        rx="12"
-        fill="url(#spaceBook)"
-      />
-      <rect
-        x="72"
-        y="56"
-        width="112"
-        height="80"
-        rx="8"
-        fill="#ffffff"
-        opacity="0.92"
-      />
-      <rect x="72" y="56" width="112" height="14" rx="7" fill="#d8f3ec" />
-      <rect x="86" y="82" width="70" height="6" rx="3" fill="#8fd9c8" />
-      <rect x="86" y="96" width="84" height="6" rx="3" fill="#cdeee8" />
-      <rect x="86" y="110" width="56" height="6" rx="3" fill="#cdeee8" />
-      <rect x="170" y="40" width="16" height="34" rx="4" fill="#ffd166" />
-    </g>
-    <g transform="translate(178 76)">
-      <path d="M0 70 L76 70 L76 0 Z" fill="url(#spaceTri)" opacity="0.92" />
-      <path
-        d="M0 70 L76 70 L76 0 Z"
-        fill="none"
-        stroke="#ffffff"
-        strokeOpacity="0.45"
-        strokeWidth="2"
-      />
-      <circle cx="58" cy="34" r="6" fill="#ffffff" opacity="0.85" />
-      <line
-        x1="12"
-        y1="62"
-        x2="28"
-        y2="62"
-        stroke="#ffffff"
-        strokeOpacity="0.6"
-        strokeWidth="2"
-      />
-      <line
-        x1="20"
-        y1="50"
-        x2="32"
-        y2="50"
-        stroke="#ffffff"
-        strokeOpacity="0.6"
-        strokeWidth="2"
-      />
-    </g>
-  </svg>
-);
 
 /** A space's inner page: sources, enrolled students and engagement. */
 export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
@@ -256,62 +188,44 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
   };
 
   return (
-    <main className="scrollbar-subtle h-full overflow-y-auto">
-      <div className="relative overflow-hidden">
+    <main className={cn("scrollbar-subtle", s.page)}>
+      <div className={s.hero}>
         <svg
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          viewBox="0 0 1200 300"
+          className={s.waves}
+          viewBox="0 0 1300 270"
           preserveAspectRatio="none"
           aria-hidden="true"
         >
-          <defs>
-            <linearGradient id="spaceWave1" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#d9f6ef" stopOpacity="0.95" />
-              <stop offset="1" stopColor="#eefaf6" stopOpacity="0.15" />
-            </linearGradient>
-            <linearGradient id="spaceWave2" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor="#e8f7f2" stopOpacity="0.7" />
-              <stop offset="1" stopColor="#f4fbf8" stopOpacity="0" />
-            </linearGradient>
-          </defs>
           <path
-            d="M0 0 H1200 V140 C1000 84 760 226 480 176 C260 138 90 196 0 156 Z"
-            fill="url(#spaceWave1)"
+            d="M590 270 C740 230 650 145 810 112 C930 88 870 -20 1070 30 C1180 65 1200 -30 1300 0 V270Z"
+            fill="#dff3ff"
+            fillOpacity=".8"
           />
           <path
-            d="M0 0 H1200 V84 C980 36 720 166 430 118 C230 84 80 128 0 98 Z"
-            fill="url(#spaceWave2)"
+            d="M790 0 C720 160 1080 94 1050 188 C1160 150 1230 230 1300 205 V0Z"
+            fill="#eee6ff"
+            fillOpacity=".65"
           />
         </svg>
-
-        <div className="relative mx-auto w-full max-w-5xl px-4 pt-6 pb-3 md:px-8">
-          <Link
-            href="/community"
-            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
-          >
+        <div className={s.workspace}>
+          <Link href="/community" className={s.back}>
             <ArrowLeftIcon className="size-4" />
             {t("spaceDetail.back")}
           </Link>
 
-          <header className="mt-4 flex flex-wrap items-start gap-4">
-            <div
-              className={cn(
-                "flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl shadow-sm",
-                theme.cover,
-              )}
-            >
-              <span className="text-4xl drop-shadow-sm select-none">
-                {coverEmoji(space.name, space.level)}
+          <header className={s.header}>
+            <div className={cn(s.subjectIcon, theme.cover)}>
+              <span className="select-none">
+                {coverEmoji(space.name, space.level) === "➗"
+                  ? "÷"
+                  : coverEmoji(space.name, space.level)}
               </span>
             </div>
 
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-3xl font-bold tracking-tight">
-                {space.name}
-              </h1>
-              <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-2 text-xs">
+            <div className={s.subjectInfo}>
+              <h1 className={s.title}>{space.name}</h1>
+              <div className={s.metadata}>
                 <span className="flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 font-medium backdrop-blur dark:bg-black/30">
-                  <LayersIcon className="size-3.5" />
                   {space.level}
                 </span>
                 {isOwner ? (
@@ -321,7 +235,7 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
                     title={t("spaces.copyCode")}
                     className="hover:text-foreground flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 font-medium backdrop-blur transition-colors dark:bg-black/30"
                   >
-                    <KeyIcon className="size-3.5" />
+                    <BracesIcon className="size-3.5" />
                     {t("spaces.code")}: {space.code}
                     {copied ? (
                       <span className="text-emerald-600">
@@ -346,18 +260,20 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
                 ) : null}
               </div>
               {space.description ? (
-                <p className="text-muted-foreground mt-2 text-sm">
-                  {space.description}
-                </p>
+                <p className={s.description}>{space.description}</p>
               ) : null}
             </div>
 
-            <div className="ml-auto hidden items-center gap-2 lg:flex">
+            <div className={s.heroArt}>
+              <SpaceArtwork />
+            </div>
+
+            <div className={s.actions}>
               {isOwner ? (
                 <>
                   <Button
                     variant="outline"
-                    className="h-10 gap-2 rounded-full border-white/70 bg-white/70 px-4 backdrop-blur dark:border-white/10 dark:bg-black/30"
+                    className={s.share}
                     onClick={() => void copyCode()}
                   >
                     {copied ? (
@@ -370,7 +286,7 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       aria-label={t("spaceDetail.moreActions")}
-                      className="flex size-10 items-center justify-center rounded-full border border-white/70 bg-white/70 backdrop-blur transition-colors hover:bg-white dark:border-white/10 dark:bg-black/30"
+                      className={s.more}
                     >
                       <MoreHorizontalIcon className="size-4" />
                     </DropdownMenuTrigger>
@@ -396,24 +312,39 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
                 </>
               ) : null}
             </div>
-
-            <div className="ml-auto hidden xl:block">
-              <SpaceIllustration />
-            </div>
           </header>
 
-          <div className="mt-4 flex items-center gap-1.5">
+          <div className={s.tabs} role="tablist" aria-label={space.name}>
             {tabs.map((item) => (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setTab(item.id)}
-                className={cn(
-                  "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                  tab === item.id
-                    ? "bg-[#d8f3ec] text-[#0f6f63] shadow-sm dark:bg-[#12312e] dark:text-[#8fd9c8]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-white/60 dark:hover:bg-black/20",
-                )}
+                role="tab"
+                id={`space-tab-${item.id}`}
+                aria-selected={tab === item.id}
+                tabIndex={tab === item.id ? 0 : -1}
+                aria-controls={`space-panel-${item.id}`}
+                onKeyDown={(event) => {
+                  const index = tabs.findIndex((entry) => entry.id === item.id);
+                  const next =
+                    event.key === "ArrowRight"
+                      ? (index + 1) % tabs.length
+                      : event.key === "ArrowLeft"
+                        ? (index + tabs.length - 1) % tabs.length
+                        : event.key === "Home"
+                          ? 0
+                          : event.key === "End"
+                            ? tabs.length - 1
+                            : -1;
+                  if (next < 0) return;
+                  event.preventDefault();
+                  setTab(tabs[next].id);
+                  document
+                    .getElementById(`space-tab-${tabs[next].id}`)
+                    ?.focus();
+                }}
+                className={s.tab}
               >
                 <item.Icon className="size-4" />
                 {item.label}
@@ -423,7 +354,12 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-5xl px-4 pt-2 pb-10 md:px-8">
+      <div
+        className={cn(s.workspace, s.content)}
+        role="tabpanel"
+        id={`space-panel-${tab}`}
+        aria-labelledby={`space-tab-${tab}`}
+      >
         {tab === "sources" ? (
           <SpaceSourcesPanel
             spaceId={space.id}
