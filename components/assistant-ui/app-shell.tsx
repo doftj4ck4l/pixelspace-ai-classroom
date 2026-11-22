@@ -290,9 +290,11 @@ export const AppShell = ({
         onThreadIdChange: (id) => {
           const target = id ? `/chat/${id}` : "/chat";
           const current = pathnameRef.current;
-          const onChat = current.startsWith("/chat");
-          if (!onChat) return;
-          if (current !== target) router.replace(target);
+          if (current === target) return;
+          // Clicking a session from any page opens it: replace in place on
+          // /chat, push from everywhere else so Back returns to that page.
+          if (current.startsWith("/chat")) router.replace(target);
+          else router.push(target);
         },
       }),
     adapter: threadListAdapter,

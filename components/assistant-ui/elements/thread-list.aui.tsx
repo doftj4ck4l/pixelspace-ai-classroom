@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
+import { usePathname, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -338,6 +339,9 @@ export const ThreadListItem: FC = () => {
   );
   const running = isRunning || serverRunning;
   const t = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const remoteId = useAuiState((s) => s.threadListItem.remoteId);
   const [isRenaming, setIsRenaming] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const restoreFocusRef = useRef(false);
@@ -364,6 +368,13 @@ export const ThreadListItem: FC = () => {
         <ThreadListItemPrimitive.Trigger
           ref={triggerRef}
           data-slot="aui_thread-list-item-trigger"
+          onClick={() => {
+            // From any other page, open the session; on /chat the runtime
+            // switch (and the URL sync) already handles it.
+            if (!pathname.startsWith("/chat") && remoteId) {
+              router.push(`/chat/${remoteId}`);
+            }
+          }}
           className="focus-visible:ring-ring/50 flex h-full min-w-0 flex-1 items-center rounded-lg px-3 text-start text-sm outline-none group-hover:pe-9 group-has-focus-visible:pe-9 group-has-data-[state=open]:pe-9 group-data-active:pe-9 focus-visible:ring-1"
         >
           {running && (
