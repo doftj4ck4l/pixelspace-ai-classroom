@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type FC } from "react";
 import { BookOpenIcon, Loader2Icon, PlusIcon, XIcon } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
 import { levelOrderFor } from "@/lib/textbooks/levels";
 
 /**
@@ -31,6 +32,7 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
   spaceId,
   level,
 }) => {
+  const t = useT();
   const [rows, setRows] = useState<SourceRow[] | null>(null);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -140,21 +142,21 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
   return (
     <div className="border-border/60 bg-muted/20 grid gap-3 rounded-2xl border p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium">Sumber</span>
+        <span className="text-sm font-medium">{t("spaceSources.title")}</span>
         <a
           href={`/chat?space=${spaceId}`}
           target="_blank"
           rel="noreferrer"
           className="text-xs font-medium underline underline-offset-2"
         >
-          Hasilkan bahan ↗
+          {t("spaceSources.generate")}
         </a>
       </div>
 
       {rows === null ? (
         <span className="text-muted-foreground flex items-center gap-2 text-xs">
           <Loader2Icon className="size-3.5 animate-spin" />
-          Memuatkan…
+          {t("common.loading")}
         </span>
       ) : (
         <div className="grid gap-1.5">
@@ -165,7 +167,10 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
             >
               <BookOpenIcon className="size-3.5 shrink-0" />
               <span className="min-w-0 flex-1 truncate">
-                Buku teks: {group.subject} · {group.refIds.length} bab
+                {t("spaceSources.group", {
+                  subject: group.subject,
+                  count: group.refIds.length,
+                })}
               </span>
               <button
                 type="button"
@@ -197,7 +202,7 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
           ))}
           {!textbookGroups.length && !uploadRows.length ? (
             <span className="text-muted-foreground text-xs">
-              Belum ada sumber.
+              {t("spaceSources.empty")}
             </span>
           ) : null}
         </div>
@@ -213,7 +218,7 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
           disabled={busy || levelOrder === null}
         >
           <PlusIcon className="size-3.5" />
-          Buku teks
+          {t("spaceSources.addTextbook")}
         </Button>
         <Button
           type="button"
@@ -224,7 +229,7 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
           disabled={busy}
         >
           <PlusIcon className="size-3.5" />
-          Bahan saya
+          {t("spaceSources.addOwn")}
         </Button>
       </div>
 
@@ -232,7 +237,7 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
         <div className="border-border/60 bg-background max-h-44 overflow-y-auto rounded-xl border p-1.5">
           {pickableSubjects.length === 0 ? (
             <p className="text-muted-foreground px-2 py-2 text-xs">
-              Tiada subjek lain untuk tahap ini.
+              {t("spaceSources.noSubjects")}
             </p>
           ) : (
             pickableSubjects.map(({ subject, count }) => (
@@ -245,7 +250,8 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
               >
                 <span className="truncate">{subject}</span>
                 <span className="text-muted-foreground shrink-0">
-                  {count} bab · Tambah
+                  {t("spaceSources.chapters", { count })} ·{" "}
+                  {t("spaceSources.add")}
                 </span>
               </button>
             ))
@@ -257,7 +263,7 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
         <div className="border-border/60 bg-background max-h-44 overflow-y-auto rounded-xl border p-1.5">
           {uploads.length === 0 ? (
             <p className="text-muted-foreground px-2 py-2 text-xs">
-              Tiada bahan dimuat naik lagi (lihat menu Sumber).
+              {t("spaceSources.noUploads")}
             </p>
           ) : (
             uploads.map((upload) => (
@@ -269,7 +275,9 @@ export const SpaceSources: FC<{ spaceId: string; level: string }> = ({
                 className="hover:bg-muted/60 flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors"
               >
                 <span className="truncate">{upload.title}</span>
-                <span className="text-muted-foreground shrink-0">Tambah</span>
+                <span className="text-muted-foreground shrink-0">
+                  {t("spaceSources.add")}
+                </span>
               </button>
             ))
           )}

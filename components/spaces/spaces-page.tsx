@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { SpaceSources } from "@/components/spaces/space-sources";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type SpaceRow = {
@@ -86,6 +87,7 @@ const ACCENT_DOT: Record<string, string> = {
 
 export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   const isTeacher = role === "teacher";
+  const t = useT();
   const [rows, setRows] = useState<SpaceRow[] | null>(null);
   const [school, setSchool] = useState<{ name: string; type: string } | null>(
     null,
@@ -245,11 +247,13 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
               <GroupIcon className="size-6" />
             </span>
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold sm:text-3xl">Spaces</h1>
+              <h1 className="text-2xl font-semibold sm:text-3xl">
+                {t("spaces.title")}
+              </h1>
               <p className="text-muted-foreground mt-1 text-sm">
                 {isTeacher
-                  ? "Tambah subjek yang anda ajar dan kongsi kod kepada pelajar anda."
-                  : "Subjek yang anda sertai dengan kod daripada guru anda."}
+                  ? t("spaces.subtitle.teacher")
+                  : t("spaces.subtitle.student")}
               </p>
             </div>
           </div>
@@ -260,8 +264,8 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search subjects..."
-                aria-label="Search"
+                placeholder={t("spaces.searchPlaceholder")}
+                aria-label={t("common.search")}
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
               />
             </div>
@@ -271,7 +275,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                 className="h-9 gap-2 rounded-full px-4 text-sm"
               >
                 <AddIcon className="size-4" />
-                Tambah subjek
+                {t("spaces.add")}
               </Button>
             ) : (
               <Button
@@ -282,7 +286,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                 className="h-9 gap-2 rounded-full px-4 text-sm"
               >
                 <LoginIcon className="size-4" />
-                Sertai subjek
+                {t("spaces.joinTitle")}
               </Button>
             )}
           </div>
@@ -337,7 +341,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                       >
                         <DropdownMenu>
                           <DropdownMenuTrigger
-                            aria-label="Pilihan subjek"
+                            aria-label={t("spaces.menuAria")}
                             className="text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
                           >
                             <MoreHorizontalIcon className="size-4" />
@@ -365,7 +369,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                       >
                         <DropdownMenu>
                           <DropdownMenuTrigger
-                            aria-label="Pilihan subjek"
+                            aria-label={t("spaces.menuAria")}
                             className="text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
                           >
                             <MoreHorizontalIcon className="size-4" />
@@ -415,7 +419,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                           copyCode(row);
                         }}
                         className="text-muted-foreground hover:bg-muted/60 hover:text-foreground mt-2 flex h-7 w-full items-center justify-between gap-2 rounded-lg px-2 text-[11px] font-medium transition-colors"
-                        title="Salin kod"
+                        title={t("spaces.copyCode")}
                       >
                         <span className="flex items-center gap-1.5">
                           <KeyIcon className="size-3.5" />
@@ -424,7 +428,9 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
                         <span className="flex items-center gap-1.5">
                           {row.members ?? 0} pelajar
                           {copied === row.id ? (
-                            <span className="text-emerald-600">Disalin!</span>
+                            <span className="text-emerald-600">
+                              {t("spaces.copied")}
+                            </span>
                           ) : (
                             <CopyIcon className="size-3.5" />
                           )}
@@ -475,13 +481,13 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
       <Dialog open={joinOpen} onOpenChange={setJoinOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Sertai subjek</DialogTitle>
+            <DialogTitle>{t("spaces.joinTitle")}</DialogTitle>
             <DialogDescription>
               Masukkan kod 6 aksara daripada guru anda.
             </DialogDescription>
           </DialogHeader>
           <label className="grid gap-1.5 text-sm">
-            <span className="font-medium">Kod subjek</span>
+            <span className="font-medium">{t("spaces.code")}</span>
             <input
               value={joinCode}
               onChange={(event) =>
@@ -503,7 +509,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
               className="gap-2"
             >
               <LoginIcon className="size-4" />
-              Sertai
+              {t("spaces.join")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -513,7 +519,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Sunting subjek" : "Tambah subjek"}
+              {editing ? t("spaces.edit") : t("spaces.add")}
             </DialogTitle>
             <DialogDescription>
               Subjek ini akan kelihatan kepada pelajar di sekolah anda.
@@ -521,16 +527,16 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
           </DialogHeader>
           <div className="grid gap-3">
             <label className="grid gap-1.5 text-sm">
-              <span className="font-medium">Nama subjek</span>
+              <span className="font-medium">{t("spaces.name")}</span>
               <input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="cth. Matematik Tambahan"
+                placeholder={t("spaces.namePlaceholder")}
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 rounded-xl border px-3 text-sm outline-none focus-visible:ring-2"
               />
             </label>
             <label className="grid gap-1.5 text-sm">
-              <span className="font-medium">Tahap</span>
+              <span className="font-medium">{t("spaces.level")}</span>
               <FilterSelect
                 value={level}
                 onValueChange={setLevel}
@@ -556,18 +562,20 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
             </label>
             <label className="grid gap-1.5 text-sm">
               <span className="font-medium">
-                Keterangan{" "}
-                <span className="text-muted-foreground">(pilihan)</span>
+                {t("spaces.description")}{" "}
+                <span className="text-muted-foreground">
+                  {t("spaces.optional")}
+                </span>
               </span>
               <input
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
-                placeholder="cth. Bab 1–5, KSSM"
+                placeholder={t("spaces.descriptionPlaceholder")}
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 rounded-xl border px-3 text-sm outline-none focus-visible:ring-2"
               />
             </label>
             <div className="grid gap-1.5 text-sm">
-              <span className="font-medium">Warna</span>
+              <span className="font-medium">{t("spaces.color")}</span>
               <div className="flex items-center gap-2">
                 {Object.keys(ACCENT_DOT).map((color) => (
                   <button
@@ -594,13 +602,13 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Batal
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => void save()}
               disabled={saving || !name.trim()}
             >
-              {editing ? "Simpan" : "Tambah"}
+              {editing ? t("common.save") : t("common.add")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -614,7 +622,7 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Padam subjek?</DialogTitle>
+            <DialogTitle>{t("spaces.deleteTitle")}</DialogTitle>
             <DialogDescription>
               &ldquo;{pendingDelete?.name}&rdquo; akan dipadam dan tidak lagi
               kelihatan kepada pelajar.

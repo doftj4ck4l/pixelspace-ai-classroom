@@ -36,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 type SourceKind =
   | "pdf"
@@ -115,16 +116,23 @@ const KIND_THEME: Record<
 
 const TABS: {
   id: "all" | SourceKind;
-  label: string;
+  labelKey:
+    | "sources.tab.all"
+    | "sources.tab.pdf"
+    | "sources.tab.doc"
+    | "sources.tab.slides"
+    | "sources.tab.sheets"
+    | "sources.tab.images"
+    | "sources.tab.youtube";
   Icon: typeof DraftIcon;
 }[] = [
-  { id: "all", label: "Semua", Icon: LibraryBooksIcon },
-  { id: "pdf", label: "PDF", Icon: PictureAsPdfIcon },
-  { id: "doc", label: "Dokumen", Icon: FileTextIcon },
-  { id: "slides", label: "Slaid", Icon: PresentationIcon },
-  { id: "sheets", label: "Hamparan", Icon: TableIcon },
-  { id: "images", label: "Imej", Icon: ImageIcon },
-  { id: "youtube", label: "YouTube", Icon: SmartDisplayIcon },
+  { id: "all", labelKey: "sources.tab.all", Icon: LibraryBooksIcon },
+  { id: "pdf", labelKey: "sources.tab.pdf", Icon: PictureAsPdfIcon },
+  { id: "doc", labelKey: "sources.tab.doc", Icon: FileTextIcon },
+  { id: "slides", labelKey: "sources.tab.slides", Icon: PresentationIcon },
+  { id: "sheets", labelKey: "sources.tab.sheets", Icon: TableIcon },
+  { id: "images", labelKey: "sources.tab.images", Icon: ImageIcon },
+  { id: "youtube", labelKey: "sources.tab.youtube", Icon: SmartDisplayIcon },
 ];
 
 const ACCEPT =
@@ -143,6 +151,7 @@ const formatDate = (value: string) =>
   }).format(new Date(value));
 
 export const SourcesPage: FC = () => {
+  const t = useT();
   const [rows, setRows] = useState<SourceRow[] | null>(null);
   const [tab, setTab] = useState<"all" | SourceKind>("all");
   const [query, setQuery] = useState("");
@@ -242,7 +251,9 @@ export const SourcesPage: FC = () => {
               <LibraryBooksIcon className="size-6" />
             </span>
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold sm:text-3xl">Sources</h1>
+              <h1 className="text-2xl font-semibold sm:text-3xl">
+                {t("sources.title")}
+              </h1>
               <p className="text-muted-foreground mt-1 text-sm">
                 Sumber pengajaran anda — muat naik PDF, dokumen, slaid, hamparan
                 dan imej untuk digunakan dengan AI.
@@ -256,7 +267,7 @@ export const SourcesPage: FC = () => {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search sources..."
+                placeholder={t("sources.searchPlaceholder")}
                 aria-label="Search"
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
               />
@@ -280,7 +291,7 @@ export const SourcesPage: FC = () => {
                 ) : (
                   <UploadFileIcon className="size-4" />
                 )}
-                {uploading ? "Memuat naik…" : "Muat naik"}
+                {uploading ? t("sources.uploading") : t("sources.upload")}
               </Button>
             )}
           </div>
@@ -316,7 +327,7 @@ export const SourcesPage: FC = () => {
                 )}
               >
                 <item.Icon className="size-3.5 shrink-0" />
-                <span className="whitespace-nowrap">{item.label}</span>
+                <span className="whitespace-nowrap">{t(item.labelKey)}</span>
               </button>
             ))}
           </div>
@@ -340,9 +351,7 @@ export const SourcesPage: FC = () => {
               {query ? "Tiada sumber sepadan" : "Belum ada sumber"}
             </p>
             <p className="text-muted-foreground max-w-md text-sm">
-              {query
-                ? "Cuba kata kunci lain."
-                : "Muat naik bahan sumber anda di sini untuk digunakan semasa menghasilkan bahan pengajaran dengan AI."}
+              {query ? "Cuba kata kunci lain." : t("sources.subtitle")}
             </p>
           </div>
         ) : (
@@ -459,7 +468,7 @@ export const SourcesPage: FC = () => {
                 <PlusIcon className="size-5" />
               </span>
               <span className="text-sm font-semibold">
-                {tab === "youtube" ? "Tambah video YouTube" : "Tambah sumber"}
+                {tab === "youtube" ? t("sources.addVideo") : t("sources.add")}
               </span>
               <span className="text-muted-foreground max-w-44 text-xs">
                 {tab === "youtube"
@@ -481,7 +490,7 @@ export const SourcesPage: FC = () => {
           </DialogHeader>
           <div className="grid gap-3">
             <label className="grid gap-1.5 text-sm">
-              <span className="font-medium">Pautan YouTube</span>
+              <span className="font-medium">{t("sources.videoUrl")}</span>
               <input
                 value={videoUrl}
                 onChange={(event) => setVideoUrl(event.target.value)}
@@ -496,7 +505,7 @@ export const SourcesPage: FC = () => {
               <input
                 value={videoTitle}
                 onChange={(event) => setVideoTitle(event.target.value)}
-                placeholder="Diambil automatik daripada YouTube"
+                placeholder={t("sources.youtubeAuto")}
                 className="border-border/60 bg-background focus-visible:ring-ring/40 h-10 rounded-xl border px-3 text-sm outline-none focus-visible:ring-2"
               />
             </label>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type FC } from "react";
 import { BookOpenIcon, Loader2Icon, SearchIcon } from "@/components/icons";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { cn } from "@/lib/utils";
-import { levelLabel } from "@/lib/textbooks/levels";
+import { useT } from "@/lib/i18n";
 
 type Textbook = {
   id: number;
@@ -20,11 +20,7 @@ type Textbook = {
   fileUrl: string;
 };
 
-const LEVEL_TABS: { value: number; label: string }[] = [
-  { value: 0, label: "Semua" },
-  ...[1, 2, 3, 4, 5, 6].map((n) => ({ value: n, label: `Tahun ${n}` })),
-  ...[7, 8, 9, 10, 11].map((n) => ({ value: n, label: `Tingkatan ${n - 6}` })),
-];
+const LEVEL_TABS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 const Cover: FC<{ book: Textbook; className?: string }> = ({
   book,
@@ -57,10 +53,16 @@ const Cover: FC<{ book: Textbook; className?: string }> = ({
 
 /** The textbook library — browse by level and subject, open any book. */
 export const TextbooksPage: FC = () => {
+  const t = useT();
   const [rows, setRows] = useState<Textbook[] | null>(null);
   const [level, setLevel] = useState(0);
   const [subject, setSubject] = useState("all");
   const [query, setQuery] = useState("");
+
+  const levelText = (order: number) =>
+    order <= 6
+      ? t("books.level.tahun", { n: order })
+      : t("books.level.tingkatan", { n: order - 6 });
 
   useEffect(() => {
     fetch("/api/textbooks")
@@ -104,31 +106,32 @@ export const TextbooksPage: FC = () => {
             <BookOpenIcon className="size-6" />
           </span>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Buku Teks</h1>
+            <h1 className="text-xl font-semibold tracking-tight">
+              {t("books.title")}
+            </h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              Koleksi buku teks KPM — sekolah rendah dan menengah. Klik
-              mana-mana buku untuk membukanya.
+              {t("books.subtitle")}
             </p>
           </div>
         </header>
 
         <div className="scrollbar-subtle -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1">
-          {LEVEL_TABS.map((tab) => (
+          {LEVEL_TABS.map((value) => (
             <button
-              key={tab.value}
+              key={value}
               type="button"
               onClick={() => {
-                setLevel(tab.value);
+                setLevel(value);
                 setSubject("all");
               }}
               className={cn(
                 "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                level === tab.value
+                level === value
                   ? "bg-foreground text-background border-transparent"
                   : "text-muted-foreground hover:text-foreground border-border",
               )}
             >
-              {tab.label}
+              {value === 0 ? t("books.all") : levelText(value)}
             </button>
           ))}
         </div>
@@ -138,7 +141,10 @@ export const TextbooksPage: FC = () => {
             value={subject}
             onValueChange={setSubject}
             ariaLabel="Subjek"
-            options={[{ value: "all", label: "Semua subjek" }, ...subjects]}
+            options={[
+              { value: "all", label: t("books.allSubjects") },
+              ...subjects,
+            ]}
             className="h-9 rounded-lg"
           />
           <label className="border-border/60 bg-background focus-within:ring-ring/40 flex h-9 min-w-56 flex-1 items-center gap-2 rounded-lg border px-3 focus-within:ring-2">
@@ -146,23 +152,23 @@ export const TextbooksPage: FC = () => {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Cari buku teks…"
+              placeholder={t("books.search")}
               className="min-w-0 flex-1 bg-transparent text-sm outline-none"
             />
           </label>
           <span className="text-muted-foreground text-xs">
-            {visible.length} buku
+            {t("books.count", { n: visible.length })}
           </span>
         </div>
 
         {rows === null ? (
           <div className="text-muted-foreground mt-10 flex items-center justify-center gap-2 text-sm">
             <Loader2Icon className="size-4 animate-spin" />
-            Memuatkan buku teks…
+            {t("books.loading")}
           </div>
         ) : visible.length === 0 ? (
           <div className="border-border/60 text-muted-foreground mt-6 rounded-2xl border border-dashed px-4 py-10 text-center text-sm">
-            Tiada buku dijumpai untuk tapisan ini.
+            {t("books.empty")}
           </div>
         ) : (
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -179,8 +185,10 @@ export const TextbooksPage: FC = () => {
                     {book.title}
                   </span>
                   <span className="text-muted-foreground mt-auto truncate text-xs">
-                    {book.subject} · {levelLabel(book.levelOrder)}
-                    {book.pages ? ` · ${book.pages} ms` : ""}
+                    {book.subject} · {levelText(book.levelOrder)}
+                    {book.pages
+                      ? ` · ${t("books.pages", { n: book.pages })}`
+                      : ""}
                   </span>
                 </div>
               </button>

@@ -7,12 +7,14 @@ import { SchoolsTab } from "./schools-tab";
 import { UsersTab } from "./users-tab";
 import { RequestsTab } from "./requests-tab";
 import { FeedbackTab } from "./feedback-tab";
+import { useT } from "@/lib/i18n";
 import type { FeedbackRow } from "./types";
 
 type Tab = "schools" | "users" | "requests" | "feedback";
 
 export const AdminConsole = () => {
   const [tab, setTab] = useState<Tab>("schools");
+  const t = useT();
   const [pendingCount, setPendingCount] = useState(0);
   const [newFeedbackCount, setNewFeedbackCount] = useState(0);
 
@@ -36,10 +38,10 @@ export const AdminConsole = () => {
   }, [refreshBadges]);
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
-    { id: "schools", label: "Sekolah" },
-    { id: "users", label: "Pengguna" },
-    { id: "requests", label: "Permintaan", badge: pendingCount },
-    { id: "feedback", label: "Maklum Balas", badge: newFeedbackCount },
+    { id: "schools", label: t("admin.tab.schools") },
+    { id: "users", label: t("admin.tab.users") },
+    { id: "requests", label: t("admin.tab.requests"), badge: pendingCount },
+    { id: "feedback", label: t("admin.tab.feedback"), badge: newFeedbackCount },
   ];
 
   return (
@@ -47,11 +49,10 @@ export const AdminConsole = () => {
       <div className="mx-auto w-full max-w-6xl px-4 py-8 md:px-8">
         <header className="mb-6">
           <h1 className="text-xl font-semibold tracking-tight">
-            Konsol Pentadbir
+            {t("admin.title")}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Urus sekolah, akaun pengguna, permintaan pendaftaran dan maklum
-            balas daripada guru serta KPM.
+            {t("admin.subtitle")}
           </p>
         </header>
 

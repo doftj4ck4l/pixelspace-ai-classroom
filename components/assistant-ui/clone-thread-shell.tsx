@@ -47,6 +47,7 @@ import {
   ScheduleFill as ScheduleFillIcon,
   Search as SearchIcon,
 } from "@material-symbols-svg/react/rounded/w300";
+import { useT } from "@/lib/i18n";
 import {
   HubMark as HubIcon,
   HubMarkFill as HubFillIcon,
@@ -101,6 +102,7 @@ type CloneThreadShellProps = {
 
 const ThemeToggle: FC = () => {
   const { resolvedTheme, setTheme } = useTheme();
+  const t = useT();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const isDark = mounted && resolvedTheme === "dark";
@@ -109,7 +111,7 @@ const ThemeToggle: FC = () => {
     <TooltipIconButton
       variant="ghost"
       size="icon"
-      tooltip={isDark ? "Light mode" : "Dark mode"}
+      tooltip={isDark ? t("shell.lightMode") : t("shell.darkMode")}
       side="right"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className="size-8"
@@ -142,6 +144,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+  const t = useT();
 
   // Navigation is the URL now: /chat*, /spaces/<section>, /scheduled.
   const inSpace = pathname.startsWith("/spaces");
@@ -213,7 +216,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
       className="bg-muted hover:bg-muted/80 flex h-10 min-h-10 w-full items-center gap-2.5 rounded-full px-4 text-sm font-medium transition-colors"
     >
       <NewChatIcon className="size-4 shrink-0" />
-      <span className="whitespace-nowrap">New chat</span>
+      <span className="whitespace-nowrap">{t("shell.newChat")}</span>
     </button>
   );
 
@@ -240,7 +243,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           <TooltipIconButton
             variant="ghost"
             size="icon"
-            tooltip="Home"
+            tooltip={t("shell.home")}
             side="right"
             onClick={() => {
               const wasCollapsed = sidebarCollapsed;
@@ -262,7 +265,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           <TooltipIconButton
             variant="ghost"
             size="icon"
-            tooltip="Hub"
+            tooltip={t("shell.hub")}
             side="right"
             onClick={() => {
               setSidebarCollapsed(false);
@@ -282,7 +285,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           <TooltipIconButton
             variant="ghost"
             size="icon"
-            tooltip="Scheduled"
+            tooltip={t("shell.scheduled")}
             side="right"
             onClick={() => {
               setSidebarCollapsed(false);
@@ -303,7 +306,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             <TooltipIconButton
               variant="ghost"
               size="icon"
-              tooltip="Admin"
+              tooltip={t("shell.admin")}
               side="right"
               onClick={() => {
                 setSidebarCollapsed(false);
@@ -325,7 +328,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             <TooltipIconButton
               variant="ghost"
               size="icon"
-              tooltip="Search chats"
+              tooltip={t("shell.searchChats")}
               side="right"
               onClick={() => {
                 setSidebarCollapsed(false);
@@ -364,7 +367,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               <TooltipIconButton
                 variant="ghost"
                 size="icon"
-                tooltip="Search"
+                tooltip={t("shell.search")}
                 side="bottom"
                 onClick={() => setSearchOpen(true)}
                 className="size-8"
@@ -376,7 +379,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               <TooltipIconButton
                 variant="ghost"
                 size="icon"
-                tooltip="Hide sidebar"
+                tooltip={t("shell.hideSidebar")}
                 side="bottom"
                 onClick={() => setSidebarCollapsed(true)}
                 className="size-8"
@@ -398,7 +401,9 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   <Tooltip>
                     <TooltipTrigger render={newThread} />
                     {sidebarCollapsed && (
-                      <TooltipContent side="right">New chat</TooltipContent>
+                      <TooltipContent side="right">
+                        {t("shell.newChat")}
+                      </TooltipContent>
                     )}
                   </Tooltip>
                 </TooltipProvider>
@@ -422,7 +427,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                     ) : (
                       <HomeIcon className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">Rumah</span>
+                    <span className="truncate">{t("shell.rumah")}</span>
                   </Link>
                 )}
                 {role === "kpm" && (
@@ -440,7 +445,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                     ) : (
                       <KpmIcon className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">KPM Dashboard</span>
+                    <span className="truncate">{t("shell.kpm")}</span>
                   </Link>
                 )}
                 {role === "superadmin" && (
@@ -458,7 +463,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                     ) : (
                       <AdminIcon className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">Admin</span>
+                    <span className="truncate">{t("shell.admin")}</span>
                   </Link>
                 )}
                 <Link
@@ -475,7 +480,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   ) : (
                     <HubIcon className="size-4 shrink-0" />
                   )}
-                  <span className="truncate">Hub</span>
+                  <span className="truncate">{t("shell.hub")}</span>
                 </Link>
                 {(role === "teacher" ||
                   role === "student" ||
@@ -494,7 +499,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                     ) : (
                       <TextbooksIcon className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">Buku Teks</span>
+                    <span className="truncate">{t("shell.textbooks")}</span>
                   </Link>
                 )}
 
@@ -513,7 +518,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                     ) : (
                       <SpacesIcon className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">Spaces</span>
+                    <span className="truncate">{t("shell.spaces")}</span>
                   </Link>
                 )}
                 {role === "student" && (
@@ -531,7 +536,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                     ) : (
                       <BuddyIcon className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">Buddy</span>
+                    <span className="truncate">{t("shell.buddy")}</span>
                   </Link>
                 )}
                 {role === "teacher" && (
@@ -549,7 +554,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                     ) : (
                       <DutiesIcon className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">Duties</span>
+                    <span className="truncate">{t("shell.duties")}</span>
                   </Link>
                 )}
                 {role === "teacher" && (
@@ -567,7 +572,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                     ) : (
                       <LibraryBooksIcon className="size-4 shrink-0" />
                     )}
-                    <span className="truncate">Sources</span>
+                    <span className="truncate">{t("shell.sources")}</span>
                   </Link>
                 )}
                 <Link
@@ -584,7 +589,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                   ) : (
                     <ScheduleIcon className="size-4 shrink-0" />
                   )}
-                  <span className="truncate">Scheduled</span>
+                  <span className="truncate">{t("shell.scheduled")}</span>
                 </Link>
               </nav>
             </div>
@@ -592,7 +597,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             <div className="scrollbar-subtle -mx-1 mt-1 min-h-0 flex-1 overflow-y-auto px-1">
               {hasThreads && (
                 <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
-                  Recents
+                  {t("shell.recents")}
                 </span>
               )}
 
@@ -635,7 +640,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                     className="bg-background/70 size-8"
                   >
                     <MenuIcon className="size-4" />
-                    <span className="sr-only">Open chat history</span>
+                    <span className="sr-only">{t("shell.openHistory")}</span>
                   </Button>
                 }
               />

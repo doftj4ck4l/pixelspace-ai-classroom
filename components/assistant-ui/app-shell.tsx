@@ -16,6 +16,7 @@ import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/ai-sdk";
 import { createAssistantStream } from "assistant-stream";
 import { CloneThreadShell } from "@/components/assistant-ui/clone-thread-shell";
 import { chatSpace } from "@/lib/chat-space";
+import { LanguageProvider } from "@/lib/i18n";
 
 /** Keeps the URL on the active thread: bare /chat becomes /chat/<remoteId>. */
 const ThreadUrlSync = () => {
@@ -304,12 +305,14 @@ export const AppShell = ({
   }, [threadId]);
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <div className="h-dvh w-full overflow-hidden">
-        <ThreadUrlSync />
-        <RunStatusSync />
-        <CloneThreadShell role={role}>{children}</CloneThreadShell>
-      </div>
-    </AssistantRuntimeProvider>
+    <LanguageProvider>
+      <AssistantRuntimeProvider runtime={runtime}>
+        <div className="h-dvh w-full overflow-hidden">
+          <ThreadUrlSync />
+          <RunStatusSync />
+          <CloneThreadShell role={role}>{children}</CloneThreadShell>
+        </div>
+      </AssistantRuntimeProvider>
+    </LanguageProvider>
   );
 };

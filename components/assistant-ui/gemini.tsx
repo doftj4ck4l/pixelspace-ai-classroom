@@ -45,6 +45,7 @@ import {
   ToolGroupTrigger,
 } from "@/components/assistant-ui/elements/tool-group.aui";
 import { useSidebarNav } from "@/components/assistant-ui/clone-thread-shell";
+import { useT } from "@/lib/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,6 +100,7 @@ export const ThreadView: FC = () => {
 };
 
 const ThreadContent: FC = () => {
+  const t = useT();
   return (
     <ThreadPrimitive.Root className="flex h-full flex-col overflow-hidden bg-[#fdfcfc] text-[#1f1f1f] dark:bg-[#0c0c0c] dark:text-[#e3e3e3]">
       <AuiIf condition={(s) => s.thread.messages.length === 0}>
@@ -106,7 +108,7 @@ const ThreadContent: FC = () => {
           <div className="flex grow flex-col items-center justify-center px-4">
             <div className="flex w-full max-w-3xl flex-col">
               <p className="fade-in slide-in-from-bottom-3 motion-safe:animate-in fill-mode-both relative z-10 mb-6 text-center text-4xl font-normal text-[#1f1f1f] delay-500 duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] dark:text-white">
-                How can I help you today?
+                {t("chat.greeting")}
               </p>
               <div className="relative">
                 <div
@@ -128,7 +130,7 @@ const ThreadContent: FC = () => {
           <ThreadPrimitive.ViewportFooter className="sticky bottom-0 mt-auto flex w-full flex-col items-center gap-1.5 bg-[#fdfcfc] px-4 pb-3 dark:bg-[#0c0c0c]">
             <Composer />
             <p className="text-center text-xs text-[#5e6063] dark:text-[#9aa0a6]">
-              Pixelspace AI Classroom can make mistakes, so double-check it.
+              {t("chat.disclaimer")}
             </p>
           </ThreadPrimitive.ViewportFooter>
         </ThreadPrimitive.Viewport>
@@ -140,23 +142,31 @@ const ThreadContent: FC = () => {
 const ghostBtnClass =
   "flex shrink-0 items-center justify-center rounded-full text-[#444746] transition-colors hover:bg-[#444746]/8 hover:text-[#1f1f1f] dark:text-[#c4c7c5] dark:hover:bg-[#c4c7c5]/10 dark:hover:text-[#e3e3e3]";
 
-const SECTION_PLACEHOLDERS: Record<string, string> = {
-  all: "Ask Pixelspace AI Classroom",
-  flashcards: "What flashcards do you want to create?",
-  quizzes: "What quiz do you want to generate?",
-  mindmaps: "What mind map do you want to generate?",
-  slides: "What slide do you want to generate?",
-  reports: "Ready to write a report?",
-  infographics: "What infographic do you want to generate?",
-  podcasts: "What podcast do you want to generate?",
-  notes: "What notes do you want to create?",
-  transformations: "What content do you want to transform?",
+const SECTION_PLACEHOLDER_KEYS: Record<
+  string,
+  | "chat.ask"
+  | "chat.placeholder.flashcards"
+  | "chat.placeholder.quizzes"
+  | "chat.placeholder.mindmaps"
+  | "chat.placeholder.slides"
+  | "chat.placeholder.reports"
+  | "chat.placeholder.infographics"
+  | "chat.placeholder.notes"
+> = {
+  all: "chat.ask",
+  flashcards: "chat.placeholder.flashcards",
+  quizzes: "chat.placeholder.quizzes",
+  mindmaps: "chat.placeholder.mindmaps",
+  slides: "chat.placeholder.slides",
+  reports: "chat.placeholder.reports",
+  infographics: "chat.placeholder.infographics",
+  notes: "chat.placeholder.notes",
 };
 
 const Composer: FC = () => {
   const { section } = useSidebarNav();
-  const placeholder =
-    SECTION_PLACEHOLDERS[section] ?? "Ask Pixelspace AI Classroom";
+  const t = useT();
+  const placeholder = t(SECTION_PLACEHOLDER_KEYS[section] ?? "chat.ask");
 
   return (
     <ComposerPrimitive.Root className="mx-auto flex w-full max-w-2xl flex-col rounded-4xl bg-white p-3 dark:bg-[#1e1f20]">
@@ -168,12 +178,14 @@ const Composer: FC = () => {
           >
             <ScheduleIcon className="size-3.5 shrink-0" />
             <QueueItemPrimitive.Text className="min-w-0 flex-1 truncate" />
-            <span className="shrink-0 opacity-70">Menunggu</span>
+            <span className="shrink-0 opacity-70">
+              {t("chat.queueWaiting")}
+            </span>
             <QueueItemPrimitive.Remove
               render={
                 <button
                   type="button"
-                  aria-label="Buang daripada baris gilir"
+                  aria-label={t("chat.queueRemove")}
                   className="hover:text-foreground -me-0.5 shrink-0 rounded p-0.5 transition-colors"
                 />
               }
@@ -201,7 +213,7 @@ const Composer: FC = () => {
         <GeminiModelPicker />
         <button
           type="button"
-          aria-label="Voice mode"
+          aria-label={t("chat.voiceMode")}
           className={`${ghostBtnClass} size-9`}
         >
           <Mic width={20} height={20} />
@@ -298,6 +310,7 @@ const sendBtnClass =
 
 const GeminiSendButton: FC = () => {
   const remoteId = useAuiState((s) => s.threadListItem.remoteId);
+  const t = useT();
 
   // Stopping must reach the server: aborting the fetch only stops this
   // browser reading, while the run keeps executing in the harness. Best-effort
@@ -315,7 +328,7 @@ const GeminiSendButton: FC = () => {
     <>
       <AuiIf condition={(s) => !s.thread.isRunning && !s.composer.isEmpty}>
         <ComposerPrimitive.Send
-          aria-label="Send message"
+          aria-label={t("chat.send")}
           className={`${sendBtnClass} disabled:bg-[#e8eaed] disabled:text-[#1f1f1f]/40 dark:disabled:bg-[#2b2c2e] dark:disabled:text-white/30`}
         >
           <ArrowUpIcon width={20} height={20} />
@@ -324,7 +337,7 @@ const GeminiSendButton: FC = () => {
       <AuiIf condition={(s) => s.thread.isRunning}>
         <ComposerPrimitive.Cancel
           onClick={requestStop}
-          aria-label="Stop generating"
+          aria-label={t("chat.stop")}
           className={sendBtnClass}
         >
           <span className="size-3 rounded-[3px] bg-current" />
