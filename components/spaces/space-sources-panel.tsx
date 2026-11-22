@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type FC } from "react";
 import {
   AddIcon,
   BookOpenIcon,
+  CheckIcon,
   LayersIcon,
   ChevronDownIcon,
   FileTextIcon,
@@ -39,6 +40,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/lib/i18n";
+import { FilterSelect } from "@/components/ui/filter-select";
+import { levelLabel } from "@/lib/textbooks/levels";
 import { cn } from "@/lib/utils";
 
 /**
@@ -69,7 +72,10 @@ type Upload = {
 
 type Textbook = {
   id: number;
+  title: string;
   subject: string;
+  level: string;
+  levelOrder: number;
   coverUrl: string;
   fileUrl: string;
 };
@@ -186,6 +192,10 @@ export const SpaceSourcesPanel: FC<{
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkTitle, setLinkTitle] = useState("");
+  const [bookOpen, setBookOpen] = useState(false);
+  const [bookQuery, setBookQuery] = useState("");
+  const [bookLevel, setBookLevel] = useState(0);
+  const [bookBusy, setBookBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
@@ -304,6 +314,29 @@ export const SpaceSourcesPanel: FC<{
       .filter((card) => !needle || card.title.toLowerCase().includes(needle));
   }, [cards, category, query]);
 
+  const attachedBookIds = useMemo(
+    () =>
+      new Set(
+        (rows ?? [])
+          .filter((row) => row.kind === "textbook")
+          .map((row) => row.refId),
+      ),
+    [rows],
+  );
+
+  const bookList = useMemo(() => {
+    const needle = bookQuery.trim().toLowerCase();
+    return books
+      .filter((book) => bookLevel === 0 || book.levelOrder === bookLevel)
+      .filter(
+        (book) =>
+          !needle ||
+          book.title.toLowerCase().includes(needle) ||
+          book.subject.toLowerCase().includes(needle),
+      )
+      .slice(0, 80);
+  }, [books, bookLevel, bookQuery]);
+
   const attach = async (refIds: string[]) => {
     for (const refId of refIds) {
       await fetch(`/api/spaces/${spaceId}/sources`, {
@@ -313,6 +346,20 @@ export const SpaceSourcesPanel: FC<{
       }).catch(() => {});
     }
     await load();
+  };
+
+  const addBook = async (bookId: string) => {
+    setBookBusy(bookId);
+    try {
+      await fetch(`/api/spaces/${spaceId}/sources`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "textbook", refId: bookId }),
+      });
+      await load();
+    } finally {
+      setBookBusy(null);
+    }
   };
 
   const uploadFiles = async (files: FileList | null) => {
@@ -470,6 +517,13 @@ export const SpaceSourcesPanel: FC<{
                   >
                     <UploadFileIcon className="size-4" />
                     {t("spaceDetail.uploadFile")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setBookOpen(true)}
+                    className="gap-2"
+                  >
+                    <BookOpenIcon className="size-4" />
+                    {t("spaceDetail.addTextbook")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setVideoOpen(true)}
@@ -688,6 +742,98 @@ export const SpaceSourcesPanel: FC<{
           </div>
         </div>
       )}
+
+      <Dialog open={bookOpen} onOpenChange={setBookOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("spaceDetail.addTextbook")}</DialogTitle>
+            <DialogDescription>
+              {t("spaceDetail.textbookBody")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2">
+            <label className="border-border/60 bg-background focus-within:ring-ring/40 flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border px-3 focus-within:ring-2">
+              <SearchIcon className="text-muted-foreground size-4 shrink-0" />
+              <input
+                value={bookQuery}
+                onChange={(event) => setBookQuery(event.target.value)}
+                placeholder={t("spaceDetail.textbookSearch")}
+                className="w-full min-w-0 bg-transparent text-sm outline-none"
+              />
+            </label>
+            <FilterSelect
+              value={String(bookLevel)}
+              onValueChange={(value) => setBookLevel(Number(value))}
+              ariaLabel="Tahap"
+              options={[
+                { value: "0", label: t("books.all") },
+                ...Array.from({ length: 11 }, (_, index) => ({
+                  value: String(index + 1),
+                  label: levelLabel(index + 1),
+                })),
+              ]}
+              className="h-10 rounded-xl"
+            />
+          </div>
+          <div className="max-h-80 overflow-y-auto">
+            {bookList.map((book) => {
+              const added = attachedBookIds.has(String(book.id));
+              return (
+                <div
+                  key={book.id}
+                  className="hover:bg-muted/40 flex items-center gap-3 rounded-xl px-2 py-2"
+                >
+                  <span className="bg-muted relative block h-14 w-11 shrink-0 overflow-hidden rounded-md border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={book.coverUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{book.title}</p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {book.subject} · {book.level}
+                    </p>
+                  </div>
+                  {added ? (
+                    <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-emerald-600">
+                      <CheckIcon className="size-4" />
+                      {t("spaceDetail.textbookAdded")}
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 shrink-0 rounded-full px-3 text-xs"
+                      disabled={bookBusy === String(book.id)}
+                      onClick={() => void addBook(String(book.id))}
+                    >
+                      {bookBusy === String(book.id) ? (
+                        <Loader2Icon className="size-3.5 animate-spin" />
+                      ) : (
+                        t("spaceDetail.textbookAdd")
+                      )}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+            {bookList.length === 0 ? (
+              <p className="text-muted-foreground py-6 text-center text-sm">
+                {t("spaceDetail.textbookEmpty")}
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBookOpen(false)}>
+              {t("spaceDetail.done")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={videoOpen} onOpenChange={setVideoOpen}>
         <DialogContent className="max-w-md">

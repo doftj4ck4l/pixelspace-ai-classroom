@@ -6,6 +6,7 @@ import { requireApiUser } from "@/lib/auth-session";
 import {
   attachTextbookSubject,
   booksForSpace,
+  getBook,
   levelOrderFor,
   uploadsForSpace,
 } from "@/lib/textbooks/library";
@@ -102,6 +103,35 @@ export async function POST(
   };
 
   if (body.kind === "textbook") {
+    const refId = typeof body.refId === "string" ? body.refId.trim() : "";
+    if (refId) {
+      const book = /^\d+$/.test(refId) ? await getBook(Number(refId)) : null;
+      if (!book) {
+        return NextResponse.json(
+          { error: "Buku teks tidak dijumpai." },
+          { status: 404 },
+        );
+      }
+      const [existing] = await db
+        .select({ id: spaceSources.id })
+        .from(spaceSources)
+        .where(
+          and(
+            eq(spaceSources.spaceId, id),
+            eq(spaceSources.kind, "textbook"),
+            eq(spaceSources.refId, refId),
+          ),
+        );
+      if (!existing) {
+        await db.insert(spaceSources).values({
+          id: `ss_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+          spaceId: id,
+          kind: "textbook",
+          refId,
+        });
+      }
+      return NextResponse.json({ ok: true, title: book.title });
+    }
     const subject = typeof body.subject === "string" ? body.subject.trim() : "";
     const levelOrder = levelOrderFor(space.level);
     if (!subject || levelOrder === null) {
