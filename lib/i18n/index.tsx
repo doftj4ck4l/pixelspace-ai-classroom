@@ -86,6 +86,9 @@ const en = {
     "Pixelspace AI Classroom can make mistakes, so double-check it.",
   "chat.voiceMode": "Voice mode",
 
+  "hub.title": "Hub",
+  "hub.subtitle":
+    "All your work in one place — flashcards, quizzes, slides, reports and more.",
   "books.title": "Textbooks",
   "books.subtitle":
     "The KPM textbook collection — primary and secondary school. Click any book to open it.",
@@ -407,6 +410,9 @@ const ms: Record<TranslationKey, string> = {
     "Pixelspace AI Classroom boleh tersilap — semak semula maklumatnya.",
   "chat.voiceMode": "Mod suara",
 
+  "hub.title": "Hub",
+  "hub.subtitle":
+    "Semua hasil kerja anda dalam satu tempat — kad imbas, kuiz, slaid, laporan dan banyak lagi.",
   "books.title": "Buku Teks",
   "books.subtitle":
     "Koleksi buku teks KPM — sekolah rendah dan menengah. Klik mana-mana buku untuk membukanya.",

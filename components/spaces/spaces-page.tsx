@@ -16,6 +16,7 @@ import {
   Trash2Icon,
   UserIcon,
 } from "@/components/icons";
+import { AppPageHeader } from "@/components/app-page-header";
 import {
   accentTheme,
   coverEmoji,
@@ -243,56 +244,51 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
   return (
     <div className="bg-background flex h-full flex-col overflow-y-auto">
       <div className="mx-auto w-full max-w-6xl flex-1 px-6 py-6 sm:px-8 sm:py-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-0 flex-1 items-start gap-3">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-600 dark:text-sky-300">
-              <GroupIcon className="size-6" />
-            </span>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold sm:text-3xl">
-                {t("spaces.title")}
-              </h1>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {isTeacher
-                  ? t("spaces.subtitle.teacher")
-                  : t("spaces.subtitle.student")}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 max-sm:w-full">
-            <div className="relative max-sm:w-full">
-              <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={t("spaces.searchPlaceholder")}
-                aria-label={t("common.search")}
-                className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
-              />
-            </div>
-            {isTeacher ? (
-              <Button
-                onClick={openCreate}
-                className="h-9 gap-2 rounded-full px-4 text-sm"
-              >
-                <AddIcon className="size-4" />
-                {t("spaces.add")}
-              </Button>
-            ) : (
-              <Button
-                onClick={() => {
-                  setJoinError(null);
-                  setJoinOpen(true);
-                }}
-                className="h-9 gap-2 rounded-full px-4 text-sm"
-              >
-                <LoginIcon className="size-4" />
-                {t("spaces.joinTitle")}
-              </Button>
-            )}
-          </div>
-        </div>
+        <AppPageHeader
+          icon={GroupIcon}
+          iconClassName="bg-sky-500/10 text-sky-600 dark:text-sky-300"
+          title={t("spaces.title")}
+          subtitle={
+            isTeacher
+              ? t("spaces.subtitle.teacher")
+              : t("spaces.subtitle.student")
+          }
+          actions={
+            <>
+              <div className="relative max-sm:w-full">
+                <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t("spaces.searchPlaceholder")}
+                  aria-label={t("common.search")}
+                  className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
+                />
+              </div>
+              {isTeacher ? (
+                <Button
+                  onClick={openCreate}
+                  className="h-9 gap-2 rounded-full px-4 text-sm"
+                >
+                  <AddIcon className="size-4" />
+                  {t("spaces.add")}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setJoinError(null);
+                    setJoinOpen(true);
+                  }}
+                  className="h-9 gap-2 rounded-full px-4 text-sm"
+                >
+                  <LoginIcon className="size-4" />
+                  {t("spaces.joinTitle")}
+                </Button>
+              )}
+            </>
+          }
+        />
 
         {rows === null ? (
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

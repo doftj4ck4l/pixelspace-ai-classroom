@@ -5,6 +5,7 @@ import { BookOpenIcon, Loader2Icon, SearchIcon } from "@/components/icons";
 import { FilterSelect } from "@/components/ui/filter-select";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { AppPageHeader } from "@/components/app-page-header";
 
 type Textbook = {
   id: number;
@@ -101,18 +102,12 @@ export const TextbooksPage: FC = () => {
   return (
     <main className="scrollbar-subtle h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-6xl px-4 py-8 md:px-8">
-        <header className="mb-5 flex items-start gap-3">
-          <span className="bg-muted/60 text-foreground flex size-11 shrink-0 items-center justify-center rounded-2xl">
-            <BookOpenIcon className="size-6" />
-          </span>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">
-              {t("books.title")}
-            </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {t("books.subtitle")}
-            </p>
-          </div>
+        <header className="mb-5">
+          <AppPageHeader
+            icon={BookOpenIcon}
+            title={t("books.title")}
+            subtitle={t("books.subtitle")}
+          />
         </header>
 
         <div className="scrollbar-subtle -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1">

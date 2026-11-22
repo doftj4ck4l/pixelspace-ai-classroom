@@ -10,6 +10,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AppPageHeader } from "@/components/app-page-header";
 import { useAui } from "@assistant-ui/react";
 import {
   AlignLeftIcon,
@@ -43,6 +44,7 @@ import {
   WaypointsIcon,
   type LucideIcon,
 } from "@/components/icons";
+import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -192,67 +194,6 @@ const MODULE_TITLES: Record<ModuleKind | "all", string> = {
   podcasts: "Podcasts",
   notes: "Notes",
   transformations: "Transformations",
-};
-
-/** Header block per module: glyph, tint and one-line subtitle. */
-const MODULE_HEADER: Record<
-  ModuleKind | "all",
-  { Icon: LucideIcon; color: string; subtitle: string }
-> = {
-  all: {
-    Icon: LayoutGridIcon,
-    color: "text-foreground",
-    subtitle:
-      "Semua hasil kerja anda dalam satu tempat — kad imbas, kuiz, slaid, laporan dan banyak lagi.",
-  },
-  flashcards: {
-    Icon: LayersIcon,
-    color: "text-amber-500",
-    subtitle: "Buat, ulang kaji dan kuasai topik dengan kad imbas pintar.",
-  },
-  quizzes: {
-    Icon: CircleHelpIcon,
-    color: "text-teal-600",
-    subtitle:
-      "Uji kefahaman dengan kuiz pintar — pilihan, benar/palsu, isi tempat kosong dan soalan terbuka.",
-  },
-  mindmaps: {
-    Icon: WaypointsIcon,
-    color: "text-violet-500",
-    subtitle:
-      "Peta pembelajaran interaktif — terokai setiap konsep, jawab cabaran pantas dan kuasai topik.",
-  },
-  slides: {
-    Icon: PresentationIcon,
-    color: "text-yellow-500",
-    subtitle: "Hasilkan slaid pembentangan yang kemas dengan bantuan AI.",
-  },
-  reports: {
-    Icon: FileTextIcon,
-    color: "text-purple-500",
-    subtitle: "Tulis laporan yang tersusun dan mudah difahami.",
-  },
-  infographics: {
-    Icon: ChartColumnIcon,
-    color: "text-pink-500",
-    subtitle: "Tukar idea menjadi infografik yang menarik.",
-  },
-  podcasts: {
-    Icon: PodcastIcon,
-    color: "text-red-500",
-    subtitle: "Hasilkan audio pembelajaran daripada topik anda.",
-  },
-  notes: {
-    Icon: StickyNoteIcon,
-    color: "text-green-600",
-    subtitle:
-      "Nota kajian berstruktur — ringkasan, bulet dan senarai semak yang boleh ditanda.",
-  },
-  transformations: {
-    Icon: WandSparklesIcon,
-    color: "text-blue-500",
-    subtitle: "Ubah kandungan sedia ada menjadi format baharu.",
-  },
 };
 
 const CREATE_MODULE_ITEMS: {
@@ -720,6 +661,7 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
   const { setSection, setView } = useSidebarNav();
   const aui = useAui();
   const router = useRouter();
+  const t = useT();
   const [docs, setDocs] = useState<Doc[] | null>(null);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("newest");
@@ -1229,93 +1171,65 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     if (doc.type === "slides") openDeck(doc);
   };
 
-  const header = MODULE_HEADER[mode];
-
   return (
     <div className="bg-background flex h-full flex-col overflow-y-auto">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-6 sm:px-8 sm:py-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-0 flex-1 items-start gap-3">
-            <span
-              className={cn(
-                "bg-muted/60 flex size-12 shrink-0 items-center justify-center rounded-2xl",
-                header.color,
-              )}
-            >
-              <header.Icon className="size-6" />
-            </span>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold sm:text-3xl">
-                {MODULE_TITLES[mode]}
-              </h1>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {header.subtitle}
-              </p>
-            </div>
-            <div
-              aria-hidden="true"
-              className="relative ml-auto hidden h-24 w-56 shrink-0 md:block"
-            >
-              <div className="absolute top-1/2 right-0 size-24 -translate-y-1/2 rounded-full bg-[#8fd9c8]/50 blur-2xl dark:bg-[#0f4f4a]/60" />
-              <div className="border-border/60 bg-card absolute top-1/2 right-8 h-16 w-28 -translate-y-1/2 rotate-6 rounded-xl border shadow-sm" />
-              <div className="border-border/60 bg-card absolute top-1/2 right-14 h-16 w-28 -translate-y-1/2 -rotate-3 rounded-xl border shadow-md" />
-              <div className="border-border/60 bg-card absolute top-1/2 right-12 flex h-16 w-28 -translate-y-1/2 items-center justify-center rounded-xl border text-2xl shadow-lg">
-                💡
+        <AppPageHeader
+          icon={LayoutGridIcon}
+          title={t("hub.title")}
+          subtitle={t("hub.subtitle")}
+          actions={
+            <>
+              <div className="relative max-sm:w-full">
+                <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={
+                    isQuizzes
+                      ? "Search quizzes..."
+                      : isFlashcards
+                        ? "Search flashcards..."
+                        : isMindMaps
+                          ? "Search learning maps..."
+                          : isReports
+                            ? "Search reports..."
+                            : isInfographics
+                              ? "Search infographics..."
+                              : isNotes
+                                ? "Search notes..."
+                                : "Search"
+                  }
+                  aria-label="Search"
+                  className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
+                />
               </div>
-              <SparklesIcon className="absolute top-1 right-0 size-4 text-amber-400" />
-              <SparklesIcon className="absolute right-24 bottom-0 size-3 text-amber-400" />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 max-sm:w-full">
-            <div className="relative max-sm:w-full">
-              <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={
-                  isQuizzes
-                    ? "Search quizzes..."
-                    : isFlashcards
-                      ? "Search flashcards..."
-                      : isMindMaps
-                        ? "Search learning maps..."
-                        : isReports
-                          ? "Search reports..."
-                          : isInfographics
-                            ? "Search infographics..."
-                            : isNotes
-                              ? "Search notes..."
-                              : "Search"
-                }
-                aria-label="Search"
-                className="border-border/60 bg-background focus-visible:ring-ring/40 h-9 w-56 rounded-full border pr-3 pl-9 text-sm outline-none focus-visible:ring-2 max-sm:w-full md:w-64"
-              />
-            </div>
-            {mode === "all" ? (
-              <CreateMenu
-                onStartFromTemplate={startFromTemplate}
-                onCreate={startCreateInChat}
-              />
-            ) : mode === "slides" ? (
-              <Button
-                onClick={() => setShowNewPresentation(true)}
-                className="h-9 rounded-full px-4 text-sm"
-              >
-                <PlusIcon className="size-4" />
-                New slides
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setCreateKind(mode)}
-                className="h-9 rounded-full px-4 text-sm"
-              >
-                <SparklesIcon className="size-4" />
-                New {MODULE_TITLES[mode].toLowerCase()}
-              </Button>
-            )}
-          </div>
-        </div>
+              {mode === "all" ? (
+                <CreateMenu
+                  onStartFromTemplate={startFromTemplate}
+                  onCreate={startCreateInChat}
+                />
+              ) : mode === "slides" ? (
+                <Button
+                  onClick={() => setShowNewPresentation(true)}
+                  className="h-9 rounded-full px-4 text-sm"
+                >
+                  <PlusIcon className="size-4" />
+                  New slides
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setCreateKind(mode)}
+                  className="h-9 rounded-full px-4 text-sm"
+                >
+                  <SparklesIcon className="size-4" />
+                  New {MODULE_TITLES[mode].toLowerCase()}
+                </Button>
+              )}
+            </>
+          }
+        />
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <div className="scrollbar-subtle -mx-1 flex max-w-full items-center gap-1.5 overflow-x-auto px-1 pb-1">
