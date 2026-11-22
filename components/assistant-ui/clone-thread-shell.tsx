@@ -218,7 +218,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
       }}
       className={cn(
         "bg-muted hover:bg-muted/80 flex h-10 min-h-10 w-full items-center gap-2.5 rounded-full px-4 text-sm font-medium transition-colors",
-        isTeacher && teacherStyles.newChat,
+        teacherStyles.newChat,
       )}
     >
       <NewChatIcon className="size-4 shrink-0" />
@@ -227,12 +227,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   );
 
   const navigation = (
-    <nav
-      className={cn(
-        "mt-2 flex flex-col gap-0.5",
-        isTeacher && teacherStyles.navigation,
-      )}
-    >
+    <nav className={cn("mt-2 flex flex-col gap-0.5", teacherStyles.navigation)}>
       {role === "student" && (
         <Link
           href="/student"
@@ -409,7 +404,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
       <div
         className={cn(
           "relative flex h-full w-full overflow-hidden",
-          isTeacher && teacherStyles.shell,
+          teacherStyles.shell,
         )}
       >
         <div
@@ -530,7 +525,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           )}
           <div className="mt-auto flex flex-col items-center gap-1">
             <ThemeToggle />
-            <ProfileMenu showAppearance={isTeacher} />
+            <ProfileMenu showAppearance />
           </div>
         </div>
 
@@ -540,35 +535,37 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           className={cn(
             "bg-muted/30 hidden h-full shrink-0 flex-col overflow-hidden transition-[width] duration-200 md:flex",
             railClassName,
-            sidebarCollapsed
-              ? "w-0"
-              : isTeacher
-                ? "w-[272px] border-r"
-                : "w-65 border-r",
-            isTeacher && teacherStyles.sidebar,
+            sidebarCollapsed ? "w-0" : "w-[272px] border-r",
+            teacherStyles.sidebar,
           )}
         >
           <div
             className={cn(
               "flex h-12 shrink-0 items-center gap-0.5 overflow-hidden px-2",
-              isTeacher && teacherStyles.brandHeader,
+              teacherStyles.brandHeader,
             )}
           >
             {headerContent !== undefined ? (
               headerContent
-            ) : isTeacher ? (
-              <Link href="/community" className={teacherStyles.brand}>
+            ) : (
+              <Link
+                href={
+                  role === "student"
+                    ? "/student"
+                    : role === "kpm"
+                      ? "/kpm"
+                      : role === "superadmin"
+                        ? "/admin"
+                        : "/community"
+                }
+                className={teacherStyles.brand}
+              >
                 <SchoolIcon />
                 <span className={teacherStyles.brandWords}>
                   <strong>Pixelspace</strong>
                   <small>AI CLASSROOM</small>
                 </span>
               </Link>
-            ) : (
-              <span className="flex min-w-0 flex-1 items-center gap-2 ps-2 text-sm font-semibold">
-                <span className="size-5 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
-                <span className="truncate">Pixelspace</span>
-              </span>
             )}
             {showSearch && (hasThreads || isTeacher) && (
               <TooltipIconButton
@@ -600,7 +597,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             className={cn(
               "relative flex min-h-0 flex-1 flex-col transition-[padding,width] duration-200",
               sidebarCollapsed ? "w-12 overflow-hidden px-2 pt-1" : "w-65 p-2",
-              isTeacher && teacherStyles.threadRoot,
+              teacherStyles.threadRoot,
             )}
           >
             <div className="shrink-0">
@@ -625,7 +622,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             <div
               className={cn(
                 "scrollbar-subtle -mx-1 mt-1 min-h-0 flex-1 overflow-y-auto px-1",
-                isTeacher && teacherStyles.recents,
+                teacherStyles.recents,
               )}
             >
               {hasThreads && (
@@ -648,14 +645,14 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             </div>
           </ThreadListRoot>
 
-          {isTeacher && <SpaceArtwork className={teacherStyles.sidebarArt} />}
+          <SpaceArtwork className={teacherStyles.sidebarArt} />
           <div
             className={cn(
               "border-border/60 mt-auto flex shrink-0 items-center gap-2 border-t px-3 py-2.5",
-              isTeacher && teacherStyles.account,
+              teacherStyles.account,
             )}
           >
-            <ProfileMenu showAppearance={isTeacher} />
+            <ProfileMenu showAppearance />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">
                 {session?.user?.name ?? "Account"}
@@ -664,17 +661,13 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 {session?.user?.email ?? ""}
               </p>
             </div>
-            {isTeacher ? (
-              <Link
-                href="/settings"
-                aria-label={t("profile.settings")}
-                className={teacherStyles.settings}
-              >
-                <SettingsIcon />
-              </Link>
-            ) : (
-              <ThemeToggle />
-            )}
+            <Link
+              href="/settings"
+              aria-label={t("profile.settings")}
+              className={teacherStyles.settings}
+            >
+              <SettingsIcon />
+            </Link>
           </div>
         </aside>
 
@@ -697,61 +690,49 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           )}
           <SheetContent
             side="left"
-            className={cn(
-              "flex flex-col p-0",
-              isTeacher && teacherStyles.mobileSheet,
-            )}
+            className={cn("flex flex-col p-0", teacherStyles.mobileSheet)}
           >
             <SheetTitle className="flex h-12 shrink-0 items-center px-4 text-sm font-medium">
-              {sheetTitle ??
-                (isTeacher ? (
-                  <span className={teacherStyles.brand}>
-                    <SchoolIcon />
-                    <span className={teacherStyles.brandWords}>
-                      <strong>Pixelspace</strong>
-                      <small>AI CLASSROOM</small>
-                    </span>
+              {sheetTitle ?? (
+                <span className={teacherStyles.brand}>
+                  <SchoolIcon />
+                  <span className={teacherStyles.brandWords}>
+                    <strong>Pixelspace</strong>
+                    <small>AI CLASSROOM</small>
                   </span>
-                ) : (
-                  "Pixelspace AI Classroom"
-                ))}
+                </span>
+              )}
             </SheetTitle>
             <div
               className="relative flex-1 overflow-y-auto p-3"
               onClick={closeMobileSidebarAfterNavigation}
             >
-              {isTeacher ? (
-                <ThreadListRoot>
-                  {newThread}
-                  {navigation}
-                  <ThreadListItems searchQuery="" />
-                </ThreadListRoot>
-              ) : (
-                <ThreadList />
-              )}
+              <ThreadListRoot>
+                {newThread}
+                {navigation}
+                <ThreadListItems searchQuery="" />
+              </ThreadListRoot>
             </div>
-            {isTeacher ? (
-              <div
-                className={cn(
-                  "flex shrink-0 items-center gap-3 border-t px-5 py-4",
-                  teacherStyles.account,
-                )}
-              >
-                <ProfileMenu showAppearance />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate">{session?.user?.name ?? "Account"}</p>
-                  <p className="truncate">{session?.user?.email ?? ""}</p>
-                </div>
-                <Link
-                  href="/settings"
-                  onClick={() => setMobileOpen(false)}
-                  aria-label={t("profile.settings")}
-                  className={teacherStyles.settings}
-                >
-                  <SettingsIcon />
-                </Link>
+            <div
+              className={cn(
+                "flex shrink-0 items-center gap-3 border-t px-5 py-4",
+                teacherStyles.account,
+              )}
+            >
+              <ProfileMenu showAppearance />
+              <div className="min-w-0 flex-1">
+                <p className="truncate">{session?.user?.name ?? "Account"}</p>
+                <p className="truncate">{session?.user?.email ?? ""}</p>
               </div>
-            ) : null}
+              <Link
+                href="/settings"
+                onClick={() => setMobileOpen(false)}
+                aria-label={t("profile.settings")}
+                className={teacherStyles.settings}
+              >
+                <SettingsIcon />
+              </Link>
+            </div>
           </SheetContent>
         </Sheet>
 
