@@ -147,7 +147,7 @@ export function LoginShell({
             </>
           ) : (
             <>
-              <h1 id="teacher-intro-title">
+              <h1 id="teacher-intro-title" className={s.unifiedHeadline}>
                 {t("auth.headline1")}
                 <br />
                 {t("auth.headline2")}
