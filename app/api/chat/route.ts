@@ -532,6 +532,9 @@ const captureSharedArtifacts = async (
   }
 };
 
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 /** Relay one turn through the pi harness. Returns null to fall back to the gateway. */
 const piChat = async (
   req: Request,
@@ -614,19 +617,43 @@ const piChat = async (
 
   const thread = threadId ? await registry.get(userId, threadId) : undefined;
 
+  // "@space-name" in the message resolves to one of the user's spaces: it
+  // grounds the turn in that space and ties the thread (and everything
+  // created in it) to the space.
+  let mentionSpace: { id: string; name: string } | null = null;
+  if (!body.spaceId && userText.includes("@")) {
+    const owned = await db
+      .select({ id: spaces.id, name: spaces.name })
+      .from(spaces)
+      .where(eq(spaces.userId, userId));
+    const joined = await db
+      .select({ id: spaces.id, name: spaces.name })
+      .from(spaceMembers)
+      .innerJoin(spaces, eq(spaceMembers.spaceId, spaces.id))
+      .where(eq(spaceMembers.userId, userId));
+    const lower = userText.toLowerCase();
+    for (const candidate of [...owned, ...joined]) {
+      const needle = `@${candidate.name.toLowerCase()}`;
+      if (
+        lower.includes(needle) &&
+        (!mentionSpace || candidate.name.length > mentionSpace.name.length)
+      ) {
+        mentionSpace = candidate;
+      }
+    }
+  }
+  const effectiveSpaceId =
+    (typeof body.spaceId === "string" && body.spaceId) ||
+    mentionSpace?.id ||
+    undefined;
+
   // A chat inside a space remembers its space (first turn wins), so the
   // space's Hub tab can list the artifacts created for it.
-  if (
-    threadId &&
-    thread &&
-    !thread.spaceId &&
-    typeof body.spaceId === "string" &&
-    body.spaceId
-  ) {
+  if (threadId && thread && !thread.spaceId && effectiveSpaceId) {
     const [target] = await db
       .select({ id: spaces.id, userId: spaces.userId })
       .from(spaces)
-      .where(eq(spaces.id, body.spaceId));
+      .where(eq(spaces.id, effectiveSpaceId));
     if (target) {
       const allowed =
         target.userId === userId ||
@@ -643,7 +670,7 @@ const piChat = async (
               )
           )[0],
         );
-      if (allowed) await registry.setSpace(userId, threadId, body.spaceId);
+      if (allowed) await registry.setSpace(userId, threadId, effectiveSpaceId);
     }
   }
 
@@ -660,14 +687,23 @@ const piChat = async (
 
   const piMessages = toPiMessages(body.messages);
   let turnContext: string | null = deckEditContext;
-  if (!turnContext && typeof body.spaceId === "string" && body.spaceId) {
+  if (!turnContext && effectiveSpaceId) {
     // A chat inside a space: ground the turn in the space's textbook sources.
-    turnContext = await buildSpaceContext(body.spaceId, userText);
+    turnContext = await buildSpaceContext(effectiveSpaceId, userText);
   }
-  if (turnContext) {
+  if (turnContext || mentionSpace) {
     const lastUser = [...piMessages].reverse().find((m) => m.role === "user");
     if (lastUser) {
-      lastUser.content = `${turnContext}\n\nUser request: ${lastUser.content}`;
+      let content = lastUser.content;
+      if (mentionSpace) {
+        content = content
+          .replace(new RegExp(`@${escapeRegExp(mentionSpace.name)}`, "gi"), " ")
+          .replace(/\s{2,}/g, " ")
+          .trim();
+      }
+      lastUser.content = turnContext
+        ? `${turnContext}\n\nUser request: ${content}`
+        : content;
     }
   }
 

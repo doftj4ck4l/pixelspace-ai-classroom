@@ -206,7 +206,7 @@ const CREATE_MODULE_ITEMS: {
   { type: "notes", label: "Notes", Icon: StickyNoteIcon },
 ];
 
-const CREATE_CHAT_PROMPTS: Partial<Record<DocType, string>> = {
+export const CREATE_CHAT_PROMPTS: Partial<Record<DocType, string>> = {
   flashcards:
     "Saya mahu bina kad imbas. Gunakan render_ui flashcards supaya kad boleh terus dilihat dan diacak. Sebelum membinanya, tanya saya dahulu: topik apa, dan untuk tahap atau kelas mana. Jangan bina apa-apa sebelum saya menjawab.",
   quizzes:

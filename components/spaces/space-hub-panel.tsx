@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo, useState, type FC } from "react";
 import { useRouter } from "next/navigation";
+import { useAui } from "@assistant-ui/react";
 import {
+  AddIcon,
   ChartColumnIcon,
+  ChevronDownIcon,
   CircleHelpIcon,
   FileTextIcon,
   LayersIcon,
@@ -14,7 +17,17 @@ import {
   StickyNoteIcon,
   WaypointsIcon,
 } from "@/components/icons";
+import { HubMark as HubIcon } from "@/components/brand-icons";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SlidePreview } from "@/components/assistant-ui/slide-preview";
+import { CREATE_CHAT_PROMPTS } from "@/components/assistant-ui/space-gallery";
+import { chatSpace } from "@/lib/chat-space";
 import { useI18n } from "@/lib/i18n";
 import s from "./space-study.module.css";
 
@@ -36,14 +49,7 @@ type HubType =
   | "infographics"
   | "notes";
 
-const HUB_TABS = [
-  {
-    id: "all",
-    labelKey: "spaceHub.all",
-    Icon: LayoutGridIcon,
-    emoji: "✨",
-    css: "other",
-  },
+const HUB_TYPES = [
   {
     id: "flashcards",
     labelKey: "spaceHub.flashcards",
@@ -95,14 +101,26 @@ const HUB_TABS = [
   },
 ] as const;
 
+const ALL_TAB = {
+  id: "all",
+  labelKey: "spaceHub.all",
+  Icon: LayoutGridIcon,
+  emoji: "✨",
+  css: "other",
+} as const;
+
+const HUB_TABS = [ALL_TAB, ...HUB_TYPES];
+
 /**
- * The space's Hub tab: everything the teacher (and the viewer themselves)
- * generated in this space's chats — quizzes to attempt, slides to check,
- * flashcards to review — with the same chip row the sources tab uses.
+ * The space's Hub tab: everything generated in this space's chats — quizzes
+ * to attempt, slides to check, flashcards to review — with the same chip row
+ * the sources tab uses, plus a Create button that starts a space-grounded
+ * chat so whatever it builds belongs to this space.
  */
 export const SpaceHubPanel: FC<{ spaceId: string }> = ({ spaceId }) => {
   const { t } = useI18n();
   const router = useRouter();
+  const aui = useAui();
   const [rows, setRows] = useState<SpaceArtifact[] | null>(null);
   const [category, setCategory] = useState<"all" | HubType>("all");
   const [query, setQuery] = useState("");
@@ -157,8 +175,62 @@ export const SpaceHubPanel: FC<{ spaceId: string }> = ({ spaceId }) => {
     }
   };
 
+  const startCreate = async (type: HubType) => {
+    try {
+      // Tie the new thread — and everything it creates — to this space.
+      chatSpace.id = spaceId;
+      const { id } = (await fetch("/api/pi/threads", {
+        method: "POST",
+      }).then((res) => res.json())) as { id: string };
+      await aui.threads.switchToThread(id);
+      aui.composer.setText(
+        CREATE_CHAT_PROMPTS[type] ??
+          "Saya mahu bina sesuatu yang baharu. Tanya saya dahulu apa yang saya mahu.",
+      );
+      aui.composer.send();
+      router.push(`/chat?space=${spaceId}`);
+    } catch {
+      // stay on the page; the user can retry
+    }
+  };
+
   return (
     <div className={s.sources}>
+      <div className={s.sourceHeader}>
+        <div className={s.sourceHeading}>
+          <span className={s.sectionIcon}>
+            <HubIcon />
+          </span>
+          <div>
+            <h2>{t("hub.title")}</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {t("hub.subtitle")}
+            </p>
+          </div>
+        </div>
+        <div className={s.sourceActions}>
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button className={s.addButton} />}>
+              <AddIcon className="size-4" />
+              {t("spaceHub.create")}
+              <ChevronDownIcon className="size-3.5 opacity-70" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              {HUB_TYPES.map((tab) => (
+                <DropdownMenuItem
+                  key={tab.id}
+                  onClick={() => void startCreate(tab.id)}
+                  className="gap-2"
+                >
+                  <tab.Icon className="size-4" />
+                  {t(tab.labelKey)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
       <div className={s.toolbar}>
         <div className={s.filters}>
           {HUB_TABS.map((tab) => (
@@ -183,8 +255,8 @@ export const SpaceHubPanel: FC<{ spaceId: string }> = ({ spaceId }) => {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              aria-label={t("spaceDetail.search")}
-              placeholder={t("spaceDetail.search")}
+              aria-label={t("spaceHub.search")}
+              placeholder={t("spaceHub.search")}
               className="min-w-0 flex-1 bg-transparent text-sm outline-none"
             />
           </label>
