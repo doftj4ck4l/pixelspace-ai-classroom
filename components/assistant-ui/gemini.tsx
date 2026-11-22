@@ -179,10 +179,7 @@ const ToolCallGroup: FC<PropsWithChildren<{ group: GroupPart }>> = ({
             output?: { ms?: unknown };
           }
         | undefined;
-      if (
-        part &&
-        (part.type === "tool-call" || part.type === "dynamic-tool")
-      ) {
+      if (part && (part.type === "tool-call" || part.type === "dynamic-tool")) {
         const ms = part.result?.ms ?? part.output?.ms;
         if (typeof ms === "number") return sum + ms;
       }

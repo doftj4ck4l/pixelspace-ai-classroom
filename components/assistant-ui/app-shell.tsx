@@ -291,10 +291,16 @@ export const AppShell = ({
           const target = id ? `/chat/${id}` : "/chat";
           const current = pathnameRef.current;
           if (current === target) return;
-          // Clicking a session from any page opens it: replace in place on
-          // /chat, push from everywhere else so Back returns to that page.
-          if (current.startsWith("/chat")) router.replace(target);
-          else router.push(target);
+          // Clicking a session from any page opens it: on /chat the runtime
+          // already switched the thread, so update the URL directly — a
+          // router.replace() would re-render the page and flash a refresh.
+          // From everywhere else push so Back returns to that page.
+          if (current.startsWith("/chat")) {
+            window.history.replaceState(null, "", target);
+            pathnameRef.current = target;
+          } else {
+            router.push(target);
+          }
         },
       }),
     adapter: threadListAdapter,
