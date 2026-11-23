@@ -104,6 +104,7 @@ const captureRenderUiSpec = async (
   threadId: string,
   runKey: string,
   args: Record<string, unknown> | undefined,
+  toolCallId?: string,
 ) => {
   const component = args?.component;
   if (
@@ -166,9 +167,10 @@ const captureRenderUiSpec = async (
         : fallbackTitle,
     type: component,
     spec: normalized.spec,
-    // One artifact per run+component: retries within the same turn replace
-    // the spec instead of piling up duplicate cards.
-    dedupeKey: `render_ui:${threadId}:${runKey}:${component}`,
+    // One artifact per tool call: stream retries of the same call replace the
+    // spec, while separate calls in one turn (e.g. Kuiz 1 and Kuiz 2) become
+    // separate artifacts.
+    dedupeKey: `render_ui:${threadId}:${runKey}:${component}${toolCallId ? `:${toolCallId}` : ""}`,
   });
 };
 
@@ -893,7 +895,13 @@ const piChat = async (
                   if (artifactEditTargetId) {
                     await applyArtifactEdit(userId, artifactEditTargetId, args);
                   } else {
-                    await captureRenderUiSpec(userId, threadId, runKey, args);
+                    await captureRenderUiSpec(
+                      userId,
+                      threadId,
+                      runKey,
+                      args,
+                      toolCallId,
+                    );
                   }
                 }
                 if (event.ok === false) {
