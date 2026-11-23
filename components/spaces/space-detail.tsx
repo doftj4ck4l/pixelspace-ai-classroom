@@ -380,7 +380,12 @@ export const SpaceDetail: FC<{ space: SpaceInfo; isOwner: boolean }> = ({
         ) : null}
 
         {tab === "hub" ? (
-          <SpaceHubPanel spaceId={space.id} canCreate={isOwner} />
+          <SpaceHubPanel
+            spaceId={space.id}
+            spaceName={space.name}
+            spaceLevel={space.level}
+            canCreate={isOwner}
+          />
         ) : null}
 
         {tab === "students" ? (

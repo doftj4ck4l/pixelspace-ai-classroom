@@ -26,7 +26,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SlidePreview } from "@/components/assistant-ui/slide-preview";
-import { CREATE_CHAT_PROMPTS } from "@/components/assistant-ui/space-gallery";
 import { chatSpace } from "@/lib/chat-space";
 import { useI18n } from "@/lib/i18n";
 import s from "./space-study.module.css";
@@ -109,6 +108,39 @@ const ALL_TAB = {
   css: "other",
 } as const;
 
+/**
+ * Create prompts for a space's Hub: the subject and level come from the
+ * space, so the agent only asks for the chapter/scope (like @space-name).
+ */
+const spaceCreatePrompt = (
+  type: HubType,
+  spaceName: string,
+  spaceLevel: string,
+): string => {
+  const room = `untuk ruang «${spaceName}» (${spaceLevel})`;
+  const reference = "Rujuk buku teks ruang ini";
+  const ask = (extra: string) =>
+    `Sebelum membinanya, tanya saya dahulu: bab atau tajuk mana${extra}. Jangan bina apa-apa sebelum saya menjawab.`;
+  switch (type) {
+    case "flashcards":
+      return `Saya mahu bina kad imbas ${room}. ${reference} — guna render_ui flashcards supaya kad boleh terus dilihat dan diacak. ${ask(", dan berapa banyak kad")}`;
+    case "quizzes":
+      return `Saya mahu bina kuiz ${room}. ${reference} — guna render_ui quizzes. ${ask(", dan berapa banyak soalan")}`;
+    case "mindmaps":
+      return `Saya mahu bina peta pembelajaran ${room}. ${reference} — guna render_ui mindmaps. ${ask("")}`;
+    case "slides":
+      return `Saya mahu bina slaid pembentangan (.pptx) ${room}. ${reference}. ${ask(", dan berapa banyak slaid")}`;
+    case "reports":
+      return `Saya mahu tulis laporan (PDF) ${room}. ${reference}. Sebelum menulisnya, tanya saya dahulu: bab atau tajuk mana. Jangan tulis apa-apa sebelum saya menjawab.`;
+    case "infographics":
+      return `Saya mahu bina infografik ${room}. ${reference}. ${ask("")}`;
+    case "notes":
+      return `Saya mahu bina nota kajian ${room}. ${reference} — guna render_ui notes. ${ask("")}`;
+    default:
+      return `Saya mahu bina bahan pembelajaran ${room}. ${reference}. Tanya saya dahulu apa yang saya mahu.`;
+  }
+};
+
 const HUB_TABS = [ALL_TAB, ...HUB_TYPES];
 
 /**
@@ -119,9 +151,11 @@ const HUB_TABS = [ALL_TAB, ...HUB_TYPES];
  */
 export const SpaceHubPanel: FC<{
   spaceId: string;
+  spaceName: string;
+  spaceLevel: string;
   /** Only the space owner may create new modules inside the space. */
   canCreate?: boolean;
-}> = ({ spaceId, canCreate = false }) => {
+}> = ({ spaceId, spaceName, spaceLevel, canCreate = false }) => {
   const { t } = useI18n();
   const router = useRouter();
   const aui = useAui();
@@ -187,10 +221,7 @@ export const SpaceHubPanel: FC<{
         method: "POST",
       }).then((res) => res.json())) as { id: string };
       await aui.threads.switchToThread(id);
-      aui.composer.setText(
-        CREATE_CHAT_PROMPTS[type] ??
-          "Saya mahu bina sesuatu yang baharu. Tanya saya dahulu apa yang saya mahu.",
-      );
+      aui.composer.setText(spaceCreatePrompt(type, spaceName, spaceLevel));
       aui.composer.send();
       router.push(`/chat?space=${spaceId}`);
     } catch {
