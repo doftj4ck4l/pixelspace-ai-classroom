@@ -8,6 +8,13 @@ import {
 import teacherStyles from "./teacher-sidebar.module.css";
 import { SearchDialog } from "@/components/assistant-ui/search-dialog";
 import { useSession } from "@/lib/auth-client";
+import { coverEmoji } from "@/components/assistant-ui/flashcard-deck";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
 import { ProfileMenu } from "@/components/assistant-ui/profile-menu";
 import { Button } from "@/components/ui/button";
@@ -20,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
+  Plus as PlusIcon,
   BarChart3 as KpmIcon,
   BarChart3 as KpmFillIcon,
   BookOpen as TextbooksIcon,
@@ -124,6 +132,9 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
 }) => {
   /** Second panel next to the rail (currently only the chat history). */
   const [railPanel, setRailPanel] = useState<"chat" | null>("chat");
+  const [spaceTiles, setSpaceTiles] = useState<
+    { id: string; name: string; level: string }[]
+  >([]);
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
@@ -158,6 +169,28 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   );
   const hasThreads = useAuiState((s) => s.threads.threadIds.length > 0);
   const aui = useAui();
+
+  // The rail shows the user's spaces as agent tiles (teacher: own, student:
+  // joined). Refetched on navigation so a new space shows up right away.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/spaces")
+      .then((res) => (res.ok ? res.json() : null))
+      .then(
+        (
+          data: {
+            spaces?: { id: string; name: string; level: string }[];
+          } | null,
+        ) => {
+          if (!cancelled && data?.spaces)
+            setSpaceTiles(data.spaces.slice(0, 5));
+        },
+      )
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, session?.user?.id]);
 
   // A controlled value means the caller renders the chrome that drives it, so
   // the shell omits its own trigger and forwards changes instead.
@@ -333,10 +366,40 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             "bg-muted/30 hidden h-full w-12 shrink-0 flex-col items-center gap-1 py-2 md:flex",
           )}
         >
-          <span
-            aria-hidden="true"
-            className="my-1 size-5 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]"
-          />
+          <div className="mb-1">
+            <ProfileMenu showAppearance />
+          </div>
+          {spaceTiles.map((space) => (
+            <TooltipIconButton
+              key={space.id}
+              variant="ghost"
+              size="icon"
+              tooltip={space.name}
+              side="right"
+              onClick={() => router.push(`/community/${space.id}`)}
+              className={cn(
+                "size-8",
+                pathname.startsWith(`/community/${space.id}`) &&
+                  "bg-muted text-foreground",
+              )}
+            >
+              <span className="grid size-6 place-items-center rounded-lg bg-[#d8f3ec] text-sm leading-none dark:bg-[#12312e]">
+                {coverEmoji(space.name, space.level)}
+              </span>
+            </TooltipIconButton>
+          ))}
+          {isTeacher && (
+            <TooltipIconButton
+              variant="ghost"
+              size="icon"
+              tooltip={t("spaces.add")}
+              side="right"
+              onClick={() => router.push("/community")}
+              className="size-8"
+            >
+              <PlusIcon className="size-5" />
+            </TooltipIconButton>
+          )}
           <TooltipIconButton
             variant="ghost"
             size="icon"
@@ -352,41 +415,53 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           >
             <NewChatIcon className="size-5" />
           </TooltipIconButton>
-          {navItems.map((item) => (
-            <TooltipIconButton
-              key={item.href}
-              variant="ghost"
-              size="icon"
-              tooltip={t(item.labelKey)}
-              side="right"
-              onClick={() => router.push(item.href)}
-              className={cn(
-                "size-8",
-                item.active && "bg-muted text-foreground",
-              )}
-            >
-              {item.active ? (
-                <item.FillIcon className="size-5" />
-              ) : (
-                <item.Icon className="size-5" />
-              )}
-            </TooltipIconButton>
-          ))}
-          {showSearch && (
-            <TooltipIconButton
-              variant="ghost"
-              size="icon"
-              tooltip={t("shell.searchChats")}
-              side="right"
-              onClick={() => setSearchOpen(true)}
-              className="size-8"
-            >
-              <SearchIcon className="size-5" />
-            </TooltipIconButton>
-          )}
-          <div className="mt-auto flex flex-col items-center gap-1">
-            <ThemeToggle />
-            <ProfileMenu showAppearance />
+          <div className="mt-auto">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <TooltipIconButton
+                    variant="ghost"
+                    size="icon"
+                    tooltip="Menu"
+                    side="right"
+                    className="size-8"
+                  />
+                }
+              >
+                <MenuIcon className="size-5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                side="right"
+                sideOffset={8}
+                className="max-h-[80vh] w-72 overflow-y-auto p-0"
+              >
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <span className="size-9 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {session?.user?.name ?? "Account"}
+                    </p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {session?.user?.email ?? ""}
+                    </p>
+                  </div>
+                  <ThemeToggle />
+                </div>
+                <DropdownMenuSeparator />
+                <div className="p-2">{navigation}</div>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-2">
+                  <Link
+                    href="/settings"
+                    className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-9 items-center gap-2.5 rounded-full px-4 text-sm transition-colors"
+                  >
+                    <SettingsIcon className="size-4 shrink-0" />
+                    {t("profile.settings")}
+                  </Link>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -431,14 +506,16 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             >
               <div className="shrink-0">
                 {newThread}
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(true)}
-                  className="text-muted-foreground hover:bg-muted/60 hover:text-foreground mt-1 flex h-9 w-full items-center gap-2.5 rounded-full px-4 text-sm transition-colors"
-                >
-                  <SearchIcon className="size-4 shrink-0" />
-                  {t("shell.searchChats")}
-                </button>
+                {showSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchOpen(true)}
+                    className="text-muted-foreground hover:bg-muted/60 hover:text-foreground mt-1 flex h-9 w-full items-center gap-2.5 rounded-full px-4 text-sm transition-colors"
+                  >
+                    <SearchIcon className="size-4 shrink-0" />
+                    {t("shell.searchChats")}
+                  </button>
+                )}
               </div>
 
               <div
