@@ -6,7 +6,6 @@ import {
   ThreadListRoot,
 } from "@/components/assistant-ui/elements/thread-list.aui";
 import teacherStyles from "./teacher-sidebar.module.css";
-import { SpaceArtwork } from "@/components/spaces/space-artwork";
 import { SearchDialog } from "@/components/assistant-ui/search-dialog";
 import { useSession } from "@/lib/auth-client";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
@@ -18,12 +17,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
@@ -90,15 +83,10 @@ export const useSidebarNav = () => useContext(SidebarNavContext);
 type CloneThreadShellProps = {
   children: ReactNode;
   role?: string;
-  railClassName?: string | undefined;
-  collapsed?: boolean | undefined;
-  onCollapsedChange?: ((value: boolean) => void) | undefined;
   mobileSidebarOpen?: boolean | undefined;
   onMobileSidebarOpenChange?: ((value: boolean) => void) | undefined;
-  headerContent?: ReactNode | undefined;
   sheetTitle?: ReactNode | undefined;
   showSearch?: boolean | undefined;
-  wrapNewThreadTooltip?: boolean | undefined;
 };
 
 const ThemeToggle: FC = () => {
@@ -129,18 +117,12 @@ const ThemeToggle: FC = () => {
 export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   children,
   role,
-  railClassName,
-  collapsed,
-  onCollapsedChange,
   mobileSidebarOpen,
   onMobileSidebarOpenChange,
-  headerContent,
   sheetTitle,
   showSearch = true,
-  wrapNewThreadTooltip = false,
 }) => {
-  const [internalCollapsed, setInternalCollapsed] = useState(true);
-  /** Second panel next to the collapsed rail (currently only the chat history). */
+  /** Second panel next to the rail (currently only the chat history). */
   const [railPanel, setRailPanel] = useState<"chat" | null>("chat");
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -178,17 +160,11 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const aui = useAui();
 
   // A controlled value means the caller renders the chrome that drives it, so
-  // the shell omits its own toggle / trigger and forwards changes instead.
-  const collapsedControlled = collapsed !== undefined;
+  // the shell omits its own trigger and forwards changes instead.
   const mobileControlled = mobileSidebarOpen !== undefined;
 
-  const sidebarCollapsed = collapsed ?? internalCollapsed;
   const mobileOpen = mobileSidebarOpen ?? internalMobileOpen;
 
-  const setSidebarCollapsed = (value: boolean) => {
-    if (!collapsedControlled) setInternalCollapsed(value);
-    onCollapsedChange?.(value);
-  };
   const setMobileOpen = (open: boolean) => {
     if (!mobileControlled) setInternalMobileOpen(open);
     onMobileSidebarOpenChange?.(open);
@@ -355,19 +331,12 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           data-slot="aui-app-rail"
           className={cn(
             "bg-muted/30 hidden h-full w-12 shrink-0 flex-col items-center gap-1 py-2 md:flex",
-            !sidebarCollapsed && "md:hidden",
           )}
         >
-          <TooltipIconButton
-            variant="ghost"
-            size="icon"
-            tooltip="Pixelspace"
-            side="right"
-            onClick={() => setSidebarCollapsed(false)}
-            className="size-8"
-          >
-            <span className="size-5 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
-          </TooltipIconButton>
+          <span
+            aria-hidden="true"
+            className="my-1 size-5 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]"
+          />
           <TooltipIconButton
             variant="ghost"
             size="icon"
@@ -421,7 +390,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           </div>
         </div>
 
-        {sidebarCollapsed && railPanel === "chat" ? (
+        {railPanel === "chat" ? (
           <aside
             data-slot="aui-rail-panel"
             className={cn(
@@ -488,146 +457,6 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             </ThreadListRoot>
           </aside>
         ) : null}
-
-        <aside
-          inert={sidebarCollapsed}
-          aria-hidden={sidebarCollapsed}
-          className={cn(
-            "bg-muted/30 hidden h-full shrink-0 flex-col overflow-hidden transition-[width] duration-200 md:flex",
-            railClassName,
-            sidebarCollapsed ? "w-0" : "w-[272px] border-r",
-            teacherStyles.sidebar,
-          )}
-        >
-          <div
-            className={cn(
-              "flex h-12 shrink-0 items-center gap-0.5 overflow-hidden px-2",
-              teacherStyles.brandHeader,
-            )}
-          >
-            {headerContent !== undefined ? (
-              headerContent
-            ) : (
-              <Link
-                href={
-                  role === "kpm"
-                    ? "/kpm"
-                    : role === "superadmin"
-                      ? "/admin"
-                      : "/community"
-                }
-                className={teacherStyles.brand}
-              >
-                <SchoolIcon />
-                <span className={teacherStyles.brandWords}>
-                  <strong>Pixelspace</strong>
-                  <small>AI CLASSROOM</small>
-                </span>
-              </Link>
-            )}
-            {showSearch && (hasThreads || isTeacher) && (
-              <TooltipIconButton
-                variant="ghost"
-                size="icon"
-                tooltip={t("shell.search")}
-                side="bottom"
-                onClick={() => setSearchOpen(true)}
-                className="size-8"
-              >
-                <SearchIcon className="size-4" />
-              </TooltipIconButton>
-            )}
-            {!collapsedControlled && (
-              <TooltipIconButton
-                variant="ghost"
-                size="icon"
-                tooltip={t("shell.hideSidebar")}
-                side="bottom"
-                onClick={() => setSidebarCollapsed(true)}
-                className="size-8"
-              >
-                <PanelLeftIcon className="size-4" />
-              </TooltipIconButton>
-            )}
-          </div>
-
-          <ThreadListRoot
-            className={cn(
-              "relative flex min-h-0 flex-1 flex-col transition-[padding,width] duration-200",
-              sidebarCollapsed ? "w-12 overflow-hidden px-2 pt-1" : "w-65 p-2",
-              teacherStyles.threadRoot,
-            )}
-          >
-            <div className="shrink-0">
-              {wrapNewThreadTooltip && newThread ? (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger render={newThread} />
-                    {sidebarCollapsed && (
-                      <TooltipContent side="right">
-                        {t("shell.newChat")}
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-              ) : (
-                newThread
-              )}
-
-              {navigation}
-            </div>
-
-            <div
-              className={cn(
-                "scrollbar-subtle -mx-1 mt-1 min-h-0 flex-1 overflow-y-auto px-1",
-                teacherStyles.recents,
-              )}
-            >
-              {hasThreads && (
-                <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
-                  {t("shell.recents")}
-                </span>
-              )}
-
-              <ThreadListItems
-                searchQuery=""
-                aria-hidden={sidebarCollapsed}
-                inert={sidebarCollapsed}
-                className={cn(
-                  "transition-[opacity,transform] duration-150",
-                  sidebarCollapsed
-                    ? "pointer-events-none opacity-0"
-                    : "translate-x-0 opacity-100",
-                )}
-              />
-            </div>
-          </ThreadListRoot>
-
-          <SpaceArtwork className={teacherStyles.sidebarArt} />
-          <div
-            className={cn(
-              "border-border/60 mt-auto flex shrink-0 items-center gap-2 border-t px-3 py-2.5",
-              teacherStyles.account,
-            )}
-          >
-            <ProfileMenu showAppearance />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">
-                {session?.user?.name ?? "Account"}
-              </p>
-              <p className="text-muted-foreground truncate text-xs">
-                {session?.user?.email ?? ""}
-              </p>
-            </div>
-            <Link
-              href="/settings"
-              aria-label={t("profile.settings")}
-              className={teacherStyles.settings}
-            >
-              <SettingsIcon />
-            </Link>
-          </div>
-        </aside>
 
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           {!mobileControlled && (
