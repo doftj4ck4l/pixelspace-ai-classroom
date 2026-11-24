@@ -17,6 +17,7 @@ import { createAssistantStream } from "assistant-stream";
 import { CloneThreadShell } from "@/components/assistant-ui/clone-thread-shell";
 import { chatSpace } from "@/lib/chat-space";
 import { LanguageProvider } from "@/lib/i18n";
+import { DocumentAttachmentAdapter } from "@/components/assistant-ui/document-attachment";
 
 /** Keeps the URL on the active thread: bare /chat becomes /chat/<remoteId>. */
 const ThreadUrlSync = () => {
@@ -285,6 +286,7 @@ export const AppShell = ({
           attachments: new CompositeAttachmentAdapter([
             new SimpleImageAttachmentAdapter(),
             new SimpleTextAttachmentAdapter(),
+            new DocumentAttachmentAdapter(),
           ]),
         },
         onThreadIdChange: (id) => {

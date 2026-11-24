@@ -537,6 +537,61 @@ const captureSharedArtifacts = async (
 const escapeRegExp = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+/** Upload the composer attachments of this turn to the harness and return their ids. */
+const uploadTurnAttachments = async (messages: UIMessage[]) => {
+  const imageIds: string[] = [];
+  const documentIds: string[] = [];
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  const parts = (lastUser?.parts ?? []) as {
+    type?: string;
+    url?: string;
+    mediaType?: string;
+    filename?: string;
+  }[];
+  for (const part of parts) {
+    if (
+      part.type !== "file" ||
+      typeof part.url !== "string" ||
+      !part.mediaType
+    ) {
+      continue;
+    }
+    const marker = part.url.indexOf("base64,");
+    if (marker === -1) continue;
+    try {
+      const bytes = Buffer.from(part.url.slice(marker + 7), "base64");
+      if (bytes.length === 0 || bytes.length > 20_000_000) continue;
+      const isImage = part.mediaType.startsWith("image/");
+      const form = new FormData();
+      form.append(
+        isImage ? "file" : "files",
+        new Blob([new Uint8Array(bytes)], { type: part.mediaType }),
+        part.filename ?? (isImage ? "image.png" : "document"),
+      );
+      const res = await piFetch(isImage ? "/api/images" : "/api/documents", {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) continue;
+      const data = (await res.json()) as {
+        image?: { id?: string };
+        id?: string;
+        results?: { id?: string; documentId?: string }[];
+      };
+      if (isImage) {
+        const id = data.image?.id ?? data.id;
+        if (typeof id === "string") imageIds.push(id);
+      } else {
+        const id = data.results?.[0]?.id ?? data.results?.[0]?.documentId;
+        if (typeof id === "string") documentIds.push(id);
+      }
+    } catch {
+      // attachments are best-effort; the turn still runs without them
+    }
+  }
+  return { imageIds, documentIds };
+};
+
 /** Relay one turn through the pi harness. Returns null to fall back to the gateway. */
 const piChat = async (
   req: Request,
@@ -709,6 +764,8 @@ const piChat = async (
     }
   }
 
+  const { imageIds, documentIds } = await uploadTurnAttachments(body.messages);
+
   let upstream: Response;
   try {
     upstream = await piFetch("/api/chat", {
@@ -724,6 +781,8 @@ const piChat = async (
           ? { conversationId: thread.conversationId }
           : {}),
         messages: piMessages,
+        ...(imageIds.length ? { imageIds } : {}),
+        ...(documentIds.length ? { documentIds } : {}),
       }),
       // Detached runs die only through the stop route (or the harness), never
       // because the browser navigated away or reloaded.

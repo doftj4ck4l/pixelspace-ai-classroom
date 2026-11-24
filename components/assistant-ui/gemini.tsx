@@ -62,6 +62,7 @@ import {
   ToolGroupRoot,
   ToolGroupTrigger,
 } from "@/components/assistant-ui/elements/tool-group.aui";
+import { useRouter } from "next/navigation";
 import { useSidebarNav } from "@/components/assistant-ui/clone-thread-shell";
 import type { TranslationKey } from "@/lib/i18n";
 import { useT } from "@/lib/i18n";
@@ -523,14 +524,35 @@ const Composer: FC = () => {
   );
 };
 
-const GEMINI_TOOLS = [
-  { id: "research", label: "Deep Research", Icon: Telescope },
-  { id: "canvas", label: "Canvas", Icon: PencilRuler },
-  { id: "image", label: "Create image", Icon: ImageIcon },
-  { id: "learn", label: "Guided Learning", Icon: Lightbulb },
-];
-
 const GeminiPlusMenu: FC = () => {
+  const aui = useAui();
+  const router = useRouter();
+  const imageRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const attach = (files: FileList | null) => {
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      void aui.composer.addAttachment(file);
+    }
+  };
+
+  const startImageGeneration = async () => {
+    try {
+      const { id } = (await fetch("/api/pi/threads", {
+        method: "POST",
+      }).then((res) => res.json())) as { id: string };
+      await aui.threads.switchToThread(id);
+      aui.composer.setText(
+        "Saya mahu jana imej. Sebelum menjananya, tanya saya dahulu imej apa yang saya mahu. Selepas saya menjawab, gunakan skill generate-image untuk menjananya dan kongsikan imej itu kepada saya.",
+      );
+      aui.composer.send();
+      router.push("/chat");
+    } catch {
+      // stay; the user can retry
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -540,20 +562,42 @@ const GeminiPlusMenu: FC = () => {
         <PlusIcon width={20} height={20} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="bottom" className="min-w-56">
-        <DropdownMenuItem render={<ComposerPrimitive.AddAttachment />}>
-          <span className="flex size-4 items-center justify-center">
-            <Paperclip className="size-4" />
-          </span>
-          Add photos &amp; files
+        <DropdownMenuItem onClick={() => imageRef.current?.click()}>
+          <ImageIcon className="size-4" />
+          Photos and Images
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => fileRef.current?.click()}>
+          <Paperclip className="size-4" />
+          Files
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {GEMINI_TOOLS.map(({ id, label, Icon }) => (
-          <DropdownMenuItem key={id}>
-            <Icon className="size-4" />
-            {label}
-          </DropdownMenuItem>
-        ))}
+        <DropdownMenuItem onClick={() => void startImageGeneration()}>
+          <SparklesIcon className="size-4" />
+          Generate image
+        </DropdownMenuItem>
       </DropdownMenuContent>
+      <input
+        ref={imageRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(event) => {
+          attach(event.target.files);
+          event.target.value = "";
+        }}
+      />
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.md,.rtf"
+        multiple
+        hidden
+        onChange={(event) => {
+          attach(event.target.files);
+          event.target.value = "";
+        }}
+      />
     </DropdownMenu>
   );
 };
