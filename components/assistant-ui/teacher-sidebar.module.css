@@ -15,25 +15,6 @@
   background: linear-gradient(160deg, #f9fdfc, #fbfefd 65%, #f3faf8);
   border-color: var(--teacher-line);
 }
-.sidebar::before,
-.sidebar::after {
-  position: absolute;
-  content: "";
-  pointer-events: none;
-  width: 430px;
-  height: 210px;
-  left: -65px;
-  bottom: 64px;
-  border-radius: 45%;
-  transform: rotate(17deg);
-  background: linear-gradient(120deg, #d3f0f19c, #d9f2e97d);
-}
-.sidebar::after {
-  bottom: 110px;
-  left: -180px;
-  transform: rotate(-17deg);
-  opacity: 0.45;
-}
 .sidebar .brandHeader {
   position: relative;
   z-index: 1;
@@ -211,10 +192,6 @@
 :global(.dark) .sidebar,
 :global(.dark) .mobileSheet {
   background: #122b27;
-}
-:global(.dark) .sidebar::before,
-:global(.dark) .sidebar::after {
-  opacity: 0.08;
 }
 :global(.dark) .account {
   background: #16332e;
