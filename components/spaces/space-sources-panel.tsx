@@ -20,7 +20,7 @@ import {
   Trash2Icon,
   UploadFileIcon,
 } from "@/components/icons";
-import { Storage as StorageIcon } from "@material-symbols-svg/react/rounded";
+import { Database as StorageIcon } from "lucide-react";
 import { SpaceArtwork } from "./space-artwork";
 import s from "./space-study.module.css";
 import { Button } from "@/components/ui/button";

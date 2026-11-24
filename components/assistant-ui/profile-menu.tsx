@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  Help as CircleHelp,
-  Language as Languages,
-  Logout as LogOut,
-  Person as User,
+  CircleHelp,
+  Languages,
+  LogOut,
+  Moon,
   Settings,
-  DarkMode,
-  LightMode,
-} from "@material-symbols-svg/react/rounded";
+  Sun,
+  User,
+} from "lucide-react";
 import { type FC } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -103,9 +103,9 @@ export const ProfileMenu: FC<{ showAppearance?: boolean }> = ({
             }
           >
             {resolvedTheme === "dark" ? (
-              <LightMode className="size-4" />
+              <Sun className="size-4" />
             ) : (
-              <DarkMode className="size-4" />
+              <Moon className="size-4" />
             )}
             {t(resolvedTheme === "dark" ? "shell.lightMode" : "shell.darkMode")}
           </DropdownMenuItem>
