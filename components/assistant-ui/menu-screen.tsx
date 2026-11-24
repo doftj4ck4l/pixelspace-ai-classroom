@@ -15,7 +15,9 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Bot as BotIcon,
   ClipboardList as DutiesIcon,
+  Compass as CompassIcon,
   Loader2 as Loader2Icon,
+  MessagesSquare as MessagesSquareIcon,
   Settings as SettingsIcon,
   X as XIcon,
 } from "lucide-react";
@@ -201,6 +203,21 @@ const ScheduledContent: FC = () => (
   </div>
 );
 
+const OnboardingContent: FC = () => {
+  const t = useT();
+  return (
+    <div className="flex h-full items-center justify-center px-4">
+      <div className="flex max-w-sm flex-col items-center text-center">
+        <div className="mb-4 size-11 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
+        <h1 className="text-lg font-medium">{t("menu.getStarted")}</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          {t("menu.getStartedBody")}
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const SettingsContent: FC = () => {
   const t = useT();
   return (
@@ -239,6 +256,7 @@ const MenuScreenContent: FC<{
     if (screen.startsWith("/scheduled")) return <ScheduledContent />;
     if (screen.startsWith("/buddy")) return <BuddyContent />;
     if (screen.startsWith("/settings")) return <SettingsContent />;
+    if (screen.startsWith("/onboarding")) return <OnboardingContent />;
     const section = screen.startsWith("/spaces/")
       ? (screen.split("/")[2] ?? "all")
       : "all";
@@ -276,7 +294,11 @@ export const MenuScreen: FC<{
     }
     if (openedAt.current === null) {
       openedAt.current = pathname;
-      setScreen(pathname);
+      setScreen(
+        renderable(pathname) || pathname.startsWith("/spaces/")
+          ? pathname
+          : "/spaces/all",
+      );
     } else if (pathname !== openedAt.current) {
       onClose();
     }
@@ -285,6 +307,21 @@ export const MenuScreen: FC<{
   const openSpace = useCallback((id: string) => {
     setScreen(`/community/${id}`);
   }, []);
+
+  const goChat = () => {
+    onClose();
+    if (!pathname.startsWith("/chat")) router.push("/chat");
+  };
+
+  const isActive = (href: string) => {
+    if (href === "/spaces/all") {
+      if (screen === "/spaces/all" || screen === "/spaces") return true;
+      if (!screen.startsWith("/spaces/")) return false;
+      const section = screen.split("/")[2] ?? "";
+      return section === "all" || !MODULES.has(section);
+    }
+    return screen === href || screen.startsWith(`${href}/`);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -360,24 +397,39 @@ export const MenuScreen: FC<{
             </p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto border-t p-2">
-            <p className="text-muted-foreground px-3 pt-2 pb-1 text-xs font-medium">
-              Menu
-            </p>
             <nav className="mt-2 flex flex-col gap-0.5">
+              <button
+                type="button"
+                onClick={goChat}
+                className={itemClass(false)}
+              >
+                <MessagesSquareIcon className="size-4 shrink-0" />
+                {t("menu.agentsChats")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setScreen("/onboarding")}
+                className={itemClass(screen.startsWith("/onboarding"))}
+              >
+                <CompassIcon className="size-4 shrink-0" />
+                {t("menu.getStarted")}
+              </button>
+            </nav>
+            <p className="text-muted-foreground px-3 pt-5 pb-1 text-xs font-medium">
+              {t("shell.hub")}
+            </p>
+            <nav className="flex flex-col gap-0.5">
               {navItems.map((item) => {
-                const isActive =
-                  item.href === "/spaces/all"
-                    ? screen.startsWith("/spaces")
-                    : screen.startsWith(item.href);
+                const active = isActive(item.href);
                 return (
                   <button
                     key={item.href}
                     type="button"
-                    aria-current={isActive ? "page" : undefined}
+                    aria-current={active ? "page" : undefined}
                     onClick={() => go(item.href)}
-                    className={itemClass(isActive)}
+                    className={itemClass(active)}
                   >
-                    {isActive ? (
+                    {active ? (
                       <item.FillIcon className="size-4 shrink-0" />
                     ) : (
                       <item.Icon className="size-4 shrink-0" />

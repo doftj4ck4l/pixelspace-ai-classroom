@@ -109,6 +109,9 @@ const en = {
   "hub.title": "Hub",
   "hub.subtitle":
     "All your work in one place — flashcards, quizzes, slides, reports and more.",
+  "menu.agentsChats": "Agents & chats",
+  "menu.getStarted": "Get started",
+  "menu.getStartedBody": "Onboarding steps will appear here.",
   "books.title": "Textbooks",
   "books.subtitle":
     "The KPM textbook collection — primary and secondary school. Click any book to open it.",
@@ -480,6 +483,9 @@ const ms: Record<TranslationKey, string> = {
   "hub.title": "Hub",
   "hub.subtitle":
     "Semua hasil kerja anda dalam satu tempat — kad imbas, kuiz, slaid, laporan dan banyak lagi.",
+  "menu.agentsChats": "Ejen & Sembang",
+  "menu.getStarted": "Mula di sini",
+  "menu.getStartedBody": "Langkah permulaan akan dipaparkan di sini.",
   "books.title": "Buku Teks",
   "books.subtitle":
     "Koleksi buku teks KPM — sekolah rendah dan menengah. Klik mana-mana buku untuk membukanya.",

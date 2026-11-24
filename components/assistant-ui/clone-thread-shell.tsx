@@ -24,6 +24,14 @@ import { useAui, useAuiState } from "@assistant-ui/react";
 import {
   Plus as PlusIcon,
   BarChart3 as KpmIcon,
+  ChartColumn as ChartColumnIcon,
+  CircleHelp as CircleHelpIcon,
+  FileText as FileTextIcon,
+  Layers as LayersIcon,
+  LayoutGrid as LayoutGridIcon,
+  Presentation as PresentationIcon,
+  StickyNote as StickyNoteIcon,
+  Waypoints as WaypointsIcon,
   BarChart3 as KpmFillIcon,
   BookOpen as TextbooksIcon,
   BookOpen as TextbooksFillIcon,
@@ -45,8 +53,6 @@ import {
 } from "lucide-react";
 import { useT, type TranslationKey } from "@/lib/i18n";
 import {
-  HubMark as HubIcon,
-  HubMarkFill as HubFillIcon,
   NewChatMark as NewChatIcon,
   PixiMark as BuddyIcon,
   PixiMarkFill as BuddyFillIcon,
@@ -240,36 +246,65 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
     active: boolean;
   };
 
+  const MODULE_NAV: {
+    href: string;
+    labelKey: TranslationKey;
+    Icon: ComponentType<{ className?: string }>;
+  }[] = [
+    {
+      href: "/spaces/flashcards",
+      labelKey: "spaceHub.flashcards",
+      Icon: LayersIcon,
+    },
+    {
+      href: "/spaces/quizzes",
+      labelKey: "spaceHub.quizzes",
+      Icon: CircleHelpIcon,
+    },
+    {
+      href: "/spaces/mindmaps",
+      labelKey: "spaceHub.mindmaps",
+      Icon: WaypointsIcon,
+    },
+    {
+      href: "/spaces/slides",
+      labelKey: "spaceHub.slides",
+      Icon: PresentationIcon,
+    },
+    {
+      href: "/spaces/reports",
+      labelKey: "spaceHub.reports",
+      Icon: FileTextIcon,
+    },
+    {
+      href: "/spaces/infographics",
+      labelKey: "spaceHub.infographics",
+      Icon: ChartColumnIcon,
+    },
+    {
+      href: "/spaces/notes",
+      labelKey: "spaceHub.notes",
+      Icon: StickyNoteIcon,
+    },
+  ];
+
   const navItems: ShellNavItem[] = [
-    ...(role === "kpm"
-      ? ([
-          {
-            href: "/kpm",
-            labelKey: "shell.kpm",
-            Icon: KpmIcon,
-            FillIcon: KpmFillIcon,
-            active: pathname.startsWith("/kpm"),
-          },
-        ] as ShellNavItem[])
-      : []),
-    ...(role === "superadmin"
-      ? ([
-          {
-            href: "/admin",
-            labelKey: "shell.admin",
-            Icon: AdminIcon,
-            FillIcon: AdminFillIcon,
-            active: pathname.startsWith("/admin"),
-          },
-        ] as ShellNavItem[])
-      : []),
     {
       href: "/spaces/all",
-      labelKey: "shell.hub",
-      Icon: HubIcon,
-      FillIcon: HubFillIcon,
-      active: view === "space",
+      labelKey: "spaceHub.all",
+      Icon: LayoutGridIcon,
+      FillIcon: LayoutGridIcon,
+      active:
+        view === "space" &&
+        !MODULE_NAV.some((item) => pathname.startsWith(item.href)),
     },
+    ...MODULE_NAV.map((item) => ({
+      href: item.href,
+      labelKey: item.labelKey,
+      Icon: item.Icon,
+      FillIcon: item.Icon,
+      active: pathname.startsWith(item.href),
+    })),
     ...(role === "teacher" || role === "student" || role === "superadmin"
       ? ([
           {
@@ -321,6 +356,28 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
       FillIcon: ScheduleFillIcon,
       active: view === "scheduled",
     },
+    ...(role === "kpm"
+      ? ([
+          {
+            href: "/kpm",
+            labelKey: "shell.kpm",
+            Icon: KpmIcon,
+            FillIcon: KpmFillIcon,
+            active: pathname.startsWith("/kpm"),
+          },
+        ] as ShellNavItem[])
+      : []),
+    ...(role === "superadmin"
+      ? ([
+          {
+            href: "/admin",
+            labelKey: "shell.admin",
+            Icon: AdminIcon,
+            FillIcon: AdminFillIcon,
+            active: pathname.startsWith("/admin"),
+          },
+        ] as ShellNavItem[])
+      : []),
   ];
 
   const navigation = (
