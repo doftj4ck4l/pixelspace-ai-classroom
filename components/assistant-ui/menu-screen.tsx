@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FC, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FC,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -57,9 +63,7 @@ const MenuSpaceDetail: FC<{ spaceId: string; role: string }> = ({
       .then((res) => res.json())
       .then((data: { spaces?: SpaceRow[] }) => {
         if (cancelled) return;
-        setRow(
-          (data.spaces ?? []).find((space) => space.id === spaceId) ?? null,
-        );
+        setRow((data.spaces ?? []).find((space) => space.id === spaceId) ?? null);
       })
       .catch(() => {
         if (!cancelled) setRow(null);
@@ -243,9 +247,9 @@ export const MenuScreen: FC<{
       <div
         role="dialog"
         aria-modal="true"
-        className="bg-card fixed inset-2 z-50 flex overflow-hidden rounded-2xl border shadow-2xl md:inset-3"
+        className="bg-card fixed inset-3 z-50 flex overflow-hidden rounded-3xl border shadow-2xl md:inset-10"
       >
-        <aside className="flex w-72 shrink-0 flex-col border-r">
+        <aside className="flex w-64 shrink-0 flex-col border-r">
           <div className="flex items-center gap-3 px-4 py-3.5">
             <span className="size-9 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
             <p className="min-w-0 flex-1 truncate text-sm font-medium">
