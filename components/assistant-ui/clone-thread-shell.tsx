@@ -139,9 +139,9 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   showSearch = true,
   wrapNewThreadTooltip = false,
 }) => {
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(true);
   /** Second panel next to the collapsed rail (currently only the chat history). */
-  const [railPanel, setRailPanel] = useState<"chat" | null>(null);
+  const [railPanel, setRailPanel] = useState<"chat" | null>("chat");
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
@@ -435,8 +435,12 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
                 teacherStyles.brandHeader,
               )}
             >
-              <span className="min-w-0 flex-1 truncate ps-2 text-sm font-semibold">
-                {t("shell.newChat")}
+              <span className={cn(teacherStyles.brand, "flex-1")}>
+                <SchoolIcon />
+                <span className={teacherStyles.brandWords}>
+                  <strong>Pixelspace</strong>
+                  <small>AI CLASSROOM</small>
+                </span>
               </span>
               <TooltipIconButton
                 variant="ghost"
