@@ -247,7 +247,7 @@ export const MenuScreen: FC<{
       <div
         role="dialog"
         aria-modal="true"
-        className="bg-card fixed inset-3 z-50 flex overflow-hidden rounded-3xl border shadow-2xl md:inset-10"
+        className="bg-card fixed inset-3 z-50 flex overflow-hidden rounded-3xl border shadow-2xl md:inset-[30px]"
       >
         <aside className="flex w-64 shrink-0 flex-col border-r">
           <div className="flex items-center gap-3 px-4 py-3.5">
