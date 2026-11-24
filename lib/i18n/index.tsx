@@ -30,6 +30,7 @@ const en = {
   "common.search": "Search",
 
   "shell.newChat": "New chat",
+  "shell.addAgent": "Add agent",
   "shell.home": "Home",
   "shell.hub": "Hub",
   "shell.scheduled": "Scheduled",
@@ -400,6 +401,7 @@ const ms: Record<TranslationKey, string> = {
   "common.search": "Cari",
 
   "shell.newChat": "Sembang Baharu",
+  "shell.addAgent": "Tambah ejen",
   "shell.home": "Utama",
   "shell.hub": "Hub",
   "shell.scheduled": "Berjadual",

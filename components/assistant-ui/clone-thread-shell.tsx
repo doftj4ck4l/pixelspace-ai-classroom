@@ -388,7 +388,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             <TooltipIconButton
               variant="ghost"
               size="icon"
-              tooltip={t("spaces.add")}
+              tooltip={t("shell.addAgent")}
               side="right"
               onClick={() => router.push("/community")}
               className="size-8"
