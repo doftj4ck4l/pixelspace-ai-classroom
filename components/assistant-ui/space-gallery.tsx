@@ -42,7 +42,7 @@ import {
   WaypointsIcon,
   type LucideIcon,
 } from "@/components/icons";
-import { useT } from "@/lib/i18n";
+import { useT, type TranslationKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -647,7 +647,17 @@ const SECTION_TABS: { id: string; label: string; Icon: LucideIcon }[] = [
   { id: "notes", label: "Notes", Icon: StickyNoteIcon },
 ];
 
-export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
+export const SpaceGallery: FC<{
+  mode: "all" | ModuleKind;
+  hideTabs?: boolean;
+}> = ({ mode, hideTabs = false }) => {
+  const moduleTab =
+    hideTabs && mode !== "all"
+      ? SECTION_TABS.find((item) => item.id === mode)
+      : undefined;
+  const moduleTitleKey = moduleTab
+    ? (`spaceHub.${mode}` as TranslationKey)
+    : null;
   const { setView } = useSidebarNav();
   const aui = useAui();
   const router = useRouter();
@@ -1147,8 +1157,8 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
     <div className="bg-background flex h-full flex-col overflow-y-auto">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-6 sm:px-8 sm:py-8">
         <AppPageHeader
-          icon={LayoutGridIcon}
-          title={t("hub.title")}
+          icon={moduleTab ? moduleTab.Icon : LayoutGridIcon}
+          title={moduleTitleKey ? t(moduleTitleKey) : t("hub.title")}
           subtitle={t("hub.subtitle")}
           actions={
             <>
@@ -1182,24 +1192,31 @@ export const SpaceGallery: FC<{ mode: "all" | ModuleKind }> = ({ mode }) => {
           }
         />
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="scrollbar-subtle -mx-1 flex max-w-full items-center gap-1.5 overflow-x-auto px-1 pb-1">
-            {SECTION_TABS.map((item) => (
-              <Link
-                key={item.id}
-                href={`/spaces/${item.id}`}
-                className={cn(
-                  "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors sm:px-4",
-                  mode === item.id
-                    ? "bg-muted text-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                )}
-              >
-                <item.Icon className="size-3.5 shrink-0" />
-                <span className="whitespace-nowrap">{item.label}</span>
-              </Link>
-            ))}
-          </div>
+        <div
+          className={cn(
+            "mt-6 flex flex-wrap items-center gap-3",
+            hideTabs ? "justify-end" : "justify-between",
+          )}
+        >
+          {hideTabs ? null : (
+            <div className="scrollbar-subtle -mx-1 flex max-w-full items-center gap-1.5 overflow-x-auto px-1 pb-1">
+              {SECTION_TABS.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/spaces/${item.id}`}
+                  className={cn(
+                    "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm transition-colors sm:px-4",
+                    mode === item.id
+                      ? "bg-muted text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  )}
+                >
+                  <item.Icon className="size-3.5 shrink-0" />
+                  <span className="whitespace-nowrap">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center gap-1">
             <DropdownMenu>

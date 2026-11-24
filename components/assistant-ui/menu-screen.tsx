@@ -121,7 +121,7 @@ const MenuSpaceDetail: FC<{ spaceId: string; role: string }> = ({
     return role === "teacher" || role === "student" ? (
       <SpacesPage role={role} />
     ) : (
-      <SpaceGallery mode="all" />
+      <SpaceGallery mode="all" hideTabs />
     );
   }
   return (
@@ -249,7 +249,7 @@ const MenuScreenContent: FC<{
       return role === "teacher" || role === "student" ? (
         <SpacesPage role={role} onOpenSpace={onOpenSpace} />
       ) : (
-        <SpaceGallery mode="all" />
+        <SpaceGallery mode="all" hideTabs />
       );
     }
     if (screen.startsWith("/duties")) return <DutiesContent />;
@@ -261,9 +261,9 @@ const MenuScreenContent: FC<{
       ? (screen.split("/")[2] ?? "all")
       : "all";
     if (section !== "all" && !MODULES.has(section)) {
-      return <SpaceGallery mode="all" />;
+      return <SpaceGallery mode="all" hideTabs />;
     }
-    return <SpaceGallery mode={section as "all" | ModuleKind} />;
+    return <SpaceGallery mode={section as "all" | ModuleKind} hideTabs />;
   }, [screen, role, onOpenSpace]);
 
   return <div className="h-full min-w-0">{content}</div>;
