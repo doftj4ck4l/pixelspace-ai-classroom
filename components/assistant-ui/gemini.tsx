@@ -460,7 +460,7 @@ const MentionInput: FC<{ placeholder: string }> = ({ placeholder }) => {
         ref={inputRef}
         rows={1}
         placeholder={placeholder}
-        className="max-h-40 w-full resize-none bg-transparent px-2 py-1.5 text-[17px] leading-6 text-[#1f1f1f] outline-none placeholder:text-[#575b5f] dark:text-[#e3e3e3] dark:placeholder:text-[#9aa0a6]"
+        className="block max-h-40 w-full resize-none bg-transparent px-2 py-1.5 text-[17px] leading-6 text-[#1f1f1f] outline-none placeholder:text-[#575b5f] dark:text-[#e3e3e3] dark:placeholder:text-[#9aa0a6]"
       />
     </div>
   );
