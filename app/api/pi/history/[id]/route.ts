@@ -21,14 +21,15 @@ type HistoryRow = {
 const MAX_RESULT = 4000;
 
 /**
- * Deck-edit turns send the deck context as a preamble on the user message.
+ * Deck-edit and space-grounded turns prepend context to the user message.
  * The transcript stores it verbatim, but the chat should show only what the
  * user actually typed.
  */
 const stripDeckEditContext = (text: string) => {
   if (
     !text.startsWith("[Deck edit session]") &&
-    !text.startsWith("[Artifact edit session]")
+    !text.startsWith("[Artifact edit session]") &&
+    !text.startsWith("[Sumber rujukan buku teks]")
   ) {
     return text;
   }
