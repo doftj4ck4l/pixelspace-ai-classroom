@@ -140,6 +140,8 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   wrapNewThreadTooltip = false,
 }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
+  /** Second panel next to the collapsed rail (currently only the chat history). */
+  const [railPanel, setRailPanel] = useState<"chat" | null>(null);
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
@@ -371,12 +373,13 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             size="icon"
             tooltip={t("shell.newChat")}
             side="right"
-            onClick={() => {
-              setSidebarCollapsed(false);
-              void aui.threads.switchToNewThread();
-              router.push("/chat");
-            }}
-            className="size-8"
+            onClick={() =>
+              setRailPanel((open) => (open === "chat" ? null : "chat"))
+            }
+            className={cn(
+              "size-8",
+              railPanel === "chat" && "bg-muted text-foreground",
+            )}
           >
             <NewChatIcon className="size-5" />
           </TooltipIconButton>
@@ -387,10 +390,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               size="icon"
               tooltip={t(item.labelKey)}
               side="right"
-              onClick={() => {
-                setSidebarCollapsed(false);
-                router.push(item.href);
-              }}
+              onClick={() => router.push(item.href)}
               className={cn(
                 "size-8",
                 item.active && "bg-muted text-foreground",
@@ -409,10 +409,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
               size="icon"
               tooltip={t("shell.searchChats")}
               side="right"
-              onClick={() => {
-                setSidebarCollapsed(false);
-                setSearchOpen(true);
-              }}
+              onClick={() => setSearchOpen(true)}
               className="size-8"
             >
               <SearchIcon className="size-5" />
@@ -423,6 +420,70 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             <ProfileMenu showAppearance />
           </div>
         </div>
+
+        {sidebarCollapsed && railPanel === "chat" ? (
+          <aside
+            data-slot="aui-rail-panel"
+            className={cn(
+              "bg-muted/30 hidden h-full w-72 shrink-0 flex-col overflow-hidden border-r md:flex",
+              teacherStyles.sidebar,
+            )}
+          >
+            <div
+              className={cn(
+                "flex h-12 shrink-0 items-center gap-0.5 overflow-hidden px-2",
+                teacherStyles.brandHeader,
+              )}
+            >
+              <span className="min-w-0 flex-1 truncate ps-2 text-sm font-semibold">
+                {t("shell.newChat")}
+              </span>
+              <TooltipIconButton
+                variant="ghost"
+                size="icon"
+                tooltip={t("shell.hideSidebar")}
+                side="bottom"
+                onClick={() => setRailPanel(null)}
+                className="size-8"
+              >
+                <PanelLeftIcon className="size-4" />
+              </TooltipIconButton>
+            </div>
+
+            <ThreadListRoot
+              className={cn(
+                "relative flex min-h-0 flex-1 flex-col p-2",
+                teacherStyles.threadRoot,
+              )}
+            >
+              <div className="shrink-0">
+                {newThread}
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  className="text-muted-foreground hover:bg-muted/60 hover:text-foreground mt-1 flex h-9 w-full items-center gap-2.5 rounded-full px-4 text-sm transition-colors"
+                >
+                  <SearchIcon className="size-4 shrink-0" />
+                  {t("shell.searchChats")}
+                </button>
+              </div>
+
+              <div
+                className={cn(
+                  "scrollbar-subtle -mx-1 mt-1 min-h-0 flex-1 overflow-y-auto px-1",
+                  teacherStyles.recents,
+                )}
+              >
+                {hasThreads && (
+                  <span className="text-muted-foreground px-3 pt-4 pb-1 text-xs font-medium">
+                    {t("shell.recents")}
+                  </span>
+                )}
+                <ThreadListItems searchQuery="" />
+              </div>
+            </ThreadListRoot>
+          </aside>
+        ) : null}
 
         <aside
           inert={sidebarCollapsed}
