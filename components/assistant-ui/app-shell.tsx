@@ -130,11 +130,17 @@ const RunStatusSync = () => {
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
+  // The runtime provider re-renders on every thread switch; a ref keeps this
+  // poller mounted once. Restarting it would re-poll and reload the thread
+  // list on every click, which reads as the sidebar refreshing.
+  const auiRef = useRef(aui);
+  auiRef.current = aui;
 
   useEffect(() => {
     let disposed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let previous = new Map<string, string>();
+    let first = true;
 
     const poll = async () => {
       let next = previous;
@@ -158,10 +164,13 @@ const RunStatusSync = () => {
           openId !== undefined &&
           previous.get(openId) === "running" &&
           next.get(openId) !== "running";
-        if (changed) void aui.threads.reload();
-        if (openSettled && !aui.thread.getState().isRunning) {
-          void aui.threads.reloadMainThread();
+        // The first poll only seeds the baseline — the runtime just loaded
+        // the list, so reloading here is pure flicker.
+        if (changed && !first) void auiRef.current.threads.reload();
+        if (openSettled && !auiRef.current.thread.getState().isRunning) {
+          void auiRef.current.threads.reloadMainThread();
         }
+        first = false;
       } catch {
         // transient — try again sooner than the idle cadence
         if (!disposed) timer = setTimeout(poll, 15000);
@@ -177,7 +186,7 @@ const RunStatusSync = () => {
       disposed = true;
       if (timer) clearTimeout(timer);
     };
-  }, [aui]);
+  }, []);
 
   return null;
 };
