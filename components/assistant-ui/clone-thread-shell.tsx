@@ -11,6 +11,7 @@ import { useSession } from "@/lib/auth-client";
 import { coverEmoji } from "@/components/assistant-ui/flashcard-deck";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
 import { ProfileMenu } from "@/components/assistant-ui/profile-menu";
+import { MenuScreen } from "@/components/assistant-ui/menu-screen";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -22,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
   Plus as PlusIcon,
-  X as XIcon,
   BarChart3 as KpmIcon,
   BarChart3 as KpmFillIcon,
   BookOpen as TextbooksIcon,
@@ -425,56 +425,27 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
           </div>
         </div>
 
-        {menuOpen ? (
-          <>
-            <div
-              aria-hidden="true"
-              className="fixed inset-0 z-40"
-              onClick={() => setMenuOpen(false)}
-            />
-            <div className="bg-card fixed top-3 bottom-3 left-14 z-50 flex w-72 flex-col overflow-hidden rounded-2xl border shadow-2xl">
-              <div className="flex items-center gap-3 px-4 py-3">
-                <span className="size-9 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
-                <p className="min-w-0 flex-1 truncate text-sm font-medium">
+        <MenuScreen
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          navigation={navigation}
+          role={role ?? "student"}
+          userName={session?.user?.name ?? "Account"}
+          footer={
+            <div className="flex items-center gap-3 px-4 py-3">
+              <ProfileMenu showAppearance />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">
                   {session?.user?.name ?? "Account"}
                 </p>
-                <button
-                  type="button"
-                  aria-label="Tutup menu"
-                  onClick={() => setMenuOpen(false)}
-                  className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-full transition-colors"
-                >
-                  <XIcon className="size-4" />
-                </button>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto border-t p-2">
-                <p className="text-muted-foreground px-3 pt-2 pb-1 text-xs font-medium">
-                  Menu
+                <p className="text-muted-foreground truncate text-xs">
+                  {session?.user?.email ?? ""}
                 </p>
-                {navigation}
-                <Link
-                  href="/settings"
-                  className="text-muted-foreground hover:bg-muted/60 hover:text-foreground mt-4 flex h-9 items-center gap-2.5 rounded-full px-4 text-sm transition-colors"
-                >
-                  <SettingsIcon className="size-4 shrink-0" />
-                  {t("profile.settings")}
-                </Link>
               </div>
-              <div className="flex items-center gap-3 border-t px-4 py-3">
-                <ProfileMenu showAppearance />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {session?.user?.name ?? "Account"}
-                  </p>
-                  <p className="text-muted-foreground truncate text-xs">
-                    {session?.user?.email ?? ""}
-                  </p>
-                </div>
-                <ThemeToggle />
-              </div>
+              <ThemeToggle />
             </div>
-          </>
-        ) : null}
+          }
+        />
 
         {railPanel === "chat" ? (
           <aside
