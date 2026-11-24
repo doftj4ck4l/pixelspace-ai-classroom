@@ -9,12 +9,6 @@ import teacherStyles from "./teacher-sidebar.module.css";
 import { SearchDialog } from "@/components/assistant-ui/search-dialog";
 import { useSession } from "@/lib/auth-client";
 import { coverEmoji } from "@/components/assistant-ui/flashcard-deck";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { TooltipIconButton } from "@/components/assistant-ui/elements/tooltip-icon-button";
 import { ProfileMenu } from "@/components/assistant-ui/profile-menu";
 import { Button } from "@/components/ui/button";
@@ -28,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
   Plus as PlusIcon,
+  X as XIcon,
   BarChart3 as KpmIcon,
   BarChart3 as KpmFillIcon,
   BookOpen as TextbooksIcon,
@@ -135,6 +130,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
   const [spaceTiles, setSpaceTiles] = useState<
     { id: string; name: string; level: string }[]
   >([]);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
@@ -416,54 +412,69 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
             <NewChatIcon className="size-5" />
           </TooltipIconButton>
           <div className="mt-auto">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <TooltipIconButton
-                    variant="ghost"
-                    size="icon"
-                    tooltip="Menu"
-                    side="right"
-                    className="size-8"
-                  />
-                }
-              >
-                <MenuIcon className="size-5" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                side="right"
-                sideOffset={8}
-                className="max-h-[80vh] w-72 overflow-y-auto p-0"
-              >
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <span className="size-9 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {session?.user?.name ?? "Account"}
-                    </p>
-                    <p className="text-muted-foreground truncate text-xs">
-                      {session?.user?.email ?? ""}
-                    </p>
-                  </div>
-                  <ThemeToggle />
-                </div>
-                <DropdownMenuSeparator />
-                <div className="p-2">{navigation}</div>
-                <DropdownMenuSeparator />
-                <div className="px-2 py-2">
-                  <Link
-                    href="/settings"
-                    className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex h-9 items-center gap-2.5 rounded-full px-4 text-sm transition-colors"
-                  >
-                    <SettingsIcon className="size-4 shrink-0" />
-                    {t("profile.settings")}
-                  </Link>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <TooltipIconButton
+              variant="ghost"
+              size="icon"
+              tooltip="Menu"
+              side="right"
+              onClick={() => setMenuOpen((open) => !open)}
+              className={cn("size-8", menuOpen && "bg-muted text-foreground")}
+            >
+              <MenuIcon className="size-5" />
+            </TooltipIconButton>
           </div>
         </div>
+
+        {menuOpen ? (
+          <>
+            <div
+              aria-hidden="true"
+              className="fixed inset-0 z-40"
+              onClick={() => setMenuOpen(false)}
+            />
+            <div className="bg-card fixed top-3 bottom-3 left-14 z-50 flex w-72 flex-col overflow-hidden rounded-2xl border shadow-2xl">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="size-9 shrink-0 rounded-full bg-gradient-to-br from-[#177e89] to-[#8fd9c8]" />
+                <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {session?.user?.name ?? "Account"}
+                </p>
+                <button
+                  type="button"
+                  aria-label="Tutup menu"
+                  onClick={() => setMenuOpen(false)}
+                  className="text-muted-foreground hover:bg-muted/60 hover:text-foreground flex size-8 shrink-0 items-center justify-center rounded-full transition-colors"
+                >
+                  <XIcon className="size-4" />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto border-t p-2">
+                <p className="text-muted-foreground px-3 pt-2 pb-1 text-xs font-medium">
+                  Menu
+                </p>
+                {navigation}
+                <Link
+                  href="/settings"
+                  className="text-muted-foreground hover:bg-muted/60 hover:text-foreground mt-4 flex h-9 items-center gap-2.5 rounded-full px-4 text-sm transition-colors"
+                >
+                  <SettingsIcon className="size-4 shrink-0" />
+                  {t("profile.settings")}
+                </Link>
+              </div>
+              <div className="flex items-center gap-3 border-t px-4 py-3">
+                <ProfileMenu showAppearance />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {session?.user?.name ?? "Account"}
+                  </p>
+                  <p className="text-muted-foreground truncate text-xs">
+                    {session?.user?.email ?? ""}
+                  </p>
+                </div>
+                <ThemeToggle />
+              </div>
+            </div>
+          </>
+        ) : null}
 
         {railPanel === "chat" ? (
           <aside
