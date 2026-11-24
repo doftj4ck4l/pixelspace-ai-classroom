@@ -27,26 +27,26 @@ import {
 import { cn } from "@/lib/utils";
 import { useAui, useAuiState } from "@assistant-ui/react";
 import {
-  AdminPanelSettings as AdminIcon,
-  AdminPanelSettingsFill as AdminFillIcon,
-  Checklist as DutiesIcon,
-  ChecklistFill as DutiesFillIcon,
-  DarkMode as MoonIcon,
-  Group as SpacesIcon,
-  GroupFill as SpacesFillIcon,
-  MenuBook as TextbooksIcon,
-  MenuBookFill as TextbooksFillIcon,
-  LeftPanelClose as PanelLeftIcon,
-  LightMode as SunIcon,
+  BarChart3 as KpmIcon,
+  BarChart3 as KpmFillIcon,
+  BookOpen as TextbooksIcon,
+  BookOpen as TextbooksFillIcon,
+  ClipboardList as DutiesIcon,
+  ClipboardList as DutiesFillIcon,
+  Clock as ScheduleIcon,
+  Clock as ScheduleFillIcon,
+  GraduationCap as SchoolIcon,
   Menu as MenuIcon,
-  Monitoring as KpmIcon,
-  MonitoringFill as KpmFillIcon,
-  Schedule as ScheduleIcon,
-  ScheduleFill as ScheduleFillIcon,
+  Moon as MoonIcon,
+  PanelLeft as PanelLeftIcon,
   Search as SearchIcon,
-  SchoolFill as SchoolIcon,
   Settings as SettingsIcon,
-} from "@material-symbols-svg/react/rounded/w600";
+  ShieldCheck as AdminIcon,
+  ShieldCheck as AdminFillIcon,
+  Sun as SunIcon,
+  Users as SpacesIcon,
+  Users as SpacesFillIcon,
+} from "lucide-react";
 import { useT, type TranslationKey } from "@/lib/i18n";
 import {
   HubMark as HubIcon,

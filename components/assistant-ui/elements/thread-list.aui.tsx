@@ -15,14 +15,14 @@ import {
   useAuiState,
 } from "@assistant-ui/react";
 import {
-  ArchiveIcon,
-  Loader2Icon,
-  MoreHorizontalIcon,
-  PencilIcon,
-  SquarePenIcon,
-  SearchIcon,
-  TrashIcon,
-} from "@/components/icons";
+  Archive as ArchiveIcon,
+  Ellipsis as MoreHorizontalIcon,
+  Loader2 as Loader2Icon,
+  Pencil as PencilIcon,
+  Search as SearchIcon,
+  SquarePen as SquarePenIcon,
+  Trash2 as TrashIcon,
+} from "lucide-react";
 import {
   forwardRef,
   Fragment,
