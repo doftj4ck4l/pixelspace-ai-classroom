@@ -428,7 +428,7 @@ export const CloneThreadShell: FC<CloneThreadShellProps> = ({
         <MenuScreen
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
-          navigation={navigation}
+          navItems={navItems}
           role={role ?? "student"}
           userName={session?.user?.name ?? "Account"}
           footer={

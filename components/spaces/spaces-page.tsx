@@ -88,7 +88,10 @@ const ACCENT_DOT: Record<string, string> = {
   emerald: "bg-emerald-500",
 };
 
-export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
+export const SpacesPage: FC<{
+  role: "teacher" | "student";
+  onOpenSpace?: (id: string) => void;
+}> = ({ role, onOpenSpace }) => {
   const isTeacher = role === "teacher";
   const t = useT();
   const router = useRouter();
@@ -351,7 +354,11 @@ export const SpacesPage: FC<{ role: "teacher" | "student" }> = ({ role }) => {
               return (
                 <div
                   key={row.id}
-                  onClick={() => router.push(`/community/${row.id}`)}
+                  onClick={() =>
+                    onOpenSpace
+                      ? onOpenSpace(row.id)
+                      : router.push(`/community/${row.id}`)
+                  }
                   className={cn(
                     "group relative overflow-hidden rounded-3xl border border-white/60 p-2.5 transition-shadow hover:shadow-lg dark:border-white/10",
                     theme.cover,

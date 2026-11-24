@@ -1,14 +1,17 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
+  type ComponentType,
   type FC,
+  type MouseEvent,
   type ReactNode,
 } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bot as BotIcon,
   ClipboardList as DutiesIcon,
@@ -25,7 +28,8 @@ import { SpacesPage } from "@/components/spaces/spaces-page";
 import { SpaceDetail } from "@/components/spaces/space-detail";
 import { BuddyMascot } from "@/components/student/buddy-mascot";
 import { AppPageHeader } from "@/components/app-page-header";
-import { useT } from "@/lib/i18n";
+import { useT, type TranslationKey } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 const MODULES = new Set<string>([
   "flashcards",
@@ -38,6 +42,35 @@ const MODULES = new Set<string>([
   "notes",
   "transformations",
 ]);
+
+export type MenuNavItem = {
+  href: string;
+  labelKey: TranslationKey;
+  Icon: ComponentType<{ className?: string }>;
+  FillIcon: ComponentType<{ className?: string }>;
+};
+
+/** Pages the menu screen can render on its own (no main-app navigation). */
+const renderable = (href: string) => {
+  if (href.startsWith("/textbooks")) return true;
+  if (href === "/community" || href.startsWith("/community/")) return true;
+  if (
+    href === "/duties" ||
+    href === "/scheduled" ||
+    href === "/settings" ||
+    href === "/buddy"
+  ) {
+    return true;
+  }
+  if (href.startsWith("/spaces/")) {
+    const parts = href.split("/");
+    if (parts.length === 3) {
+      const section = parts[2] ?? "";
+      return section === "all" || MODULES.has(section);
+    }
+  }
+  return false;
+};
 
 type SpaceRow = {
   id: string;
@@ -63,7 +96,9 @@ const MenuSpaceDetail: FC<{ spaceId: string; role: string }> = ({
       .then((res) => res.json())
       .then((data: { spaces?: SpaceRow[] }) => {
         if (cancelled) return;
-        setRow((data.spaces ?? []).find((space) => space.id === spaceId) ?? null);
+        setRow(
+          (data.spaces ?? []).find((space) => space.id === spaceId) ?? null,
+        );
       })
       .catch(() => {
         if (!cancelled) setRow(null);
@@ -181,50 +216,75 @@ const SettingsContent: FC = () => {
   );
 };
 
-const MenuScreenContent: FC<{ role: string }> = ({ role }) => {
-  const pathname = usePathname();
+const MenuScreenContent: FC<{
+  screen: string;
+  role: string;
+  onOpenSpace: (id: string) => void;
+}> = ({ screen, role, onOpenSpace }) => {
   const content = useMemo(() => {
-    if (pathname.startsWith("/textbooks")) return <TextbooksPage />;
-    if (pathname.startsWith("/community/")) {
-      const spaceId = pathname.split("/")[2] ?? "";
+    if (!screen) return null;
+    if (screen.startsWith("/textbooks")) return <TextbooksPage />;
+    if (screen.startsWith("/community/")) {
+      const spaceId = screen.split("/")[2] ?? "";
       return <MenuSpaceDetail spaceId={spaceId} role={role} />;
     }
-    if (pathname.startsWith("/community")) {
+    if (screen.startsWith("/community")) {
       return role === "teacher" || role === "student" ? (
-        <SpacesPage role={role} />
+        <SpacesPage role={role} onOpenSpace={onOpenSpace} />
       ) : (
         <SpaceGallery mode="all" />
       );
     }
-    if (pathname.startsWith("/duties")) return <DutiesContent />;
-    if (pathname.startsWith("/scheduled")) return <ScheduledContent />;
-    if (pathname.startsWith("/buddy")) return <BuddyContent />;
-    if (pathname.startsWith("/settings")) return <SettingsContent />;
-    const section = pathname.startsWith("/spaces/")
-      ? (pathname.split("/")[2] ?? "all")
+    if (screen.startsWith("/duties")) return <DutiesContent />;
+    if (screen.startsWith("/scheduled")) return <ScheduledContent />;
+    if (screen.startsWith("/buddy")) return <BuddyContent />;
+    if (screen.startsWith("/settings")) return <SettingsContent />;
+    const section = screen.startsWith("/spaces/")
+      ? (screen.split("/")[2] ?? "all")
       : "all";
     if (section !== "all" && !MODULES.has(section)) {
       return <SpaceGallery mode="all" />;
     }
     return <SpaceGallery mode={section as "all" | ModuleKind} />;
-  }, [pathname, role]);
+  }, [screen, role, onOpenSpace]);
 
   return <div className="h-full min-w-0">{content}</div>;
 };
 
 /**
- * The menu screen: a floating window that renders the current page inside it,
- * with the navigation sidebar on the left (like a screen popping up).
+ * The menu screen: a floating window that renders the pages inside it. The
+ * navigation never touches the app behind — the main area keeps the chat.
  */
 export const MenuScreen: FC<{
   open: boolean;
   onClose: () => void;
-  navigation: ReactNode;
+  navItems: MenuNavItem[];
   footer: ReactNode;
   role: string;
   userName: string;
-}> = ({ open, onClose, navigation, footer, role, userName }) => {
+}> = ({ open, onClose, navItems, footer, role, userName }) => {
   const t = useT();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [screen, setScreen] = useState("");
+  const openedAt = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      openedAt.current = null;
+      return;
+    }
+    if (openedAt.current === null) {
+      openedAt.current = pathname;
+      setScreen(pathname);
+    } else if (pathname !== openedAt.current) {
+      onClose();
+    }
+  }, [open, pathname, onClose]);
+
+  const openSpace = useCallback((id: string) => {
+    setScreen(`/community/${id}`);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -236,6 +296,49 @@ export const MenuScreen: FC<{
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const go = (href: string) => {
+    if (renderable(href)) {
+      setScreen(href);
+      return;
+    }
+    onClose();
+    router.push(href);
+  };
+
+  const onContentClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (
+      event.defaultPrevented ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    const target = event.target as HTMLElement;
+    if (target.closest("button, [role='button']")) return;
+    const anchor = target.closest("a");
+    if (!anchor) return;
+    const href = anchor.getAttribute("href");
+    if (!href || !href.startsWith("/")) return;
+    if (anchor.target && anchor.target !== "_self") return;
+    if (renderable(href)) {
+      event.preventDefault();
+      event.stopPropagation();
+      setScreen(href);
+    } else {
+      onClose();
+    }
+  };
+
+  const itemClass = (isActive: boolean) =>
+    cn(
+      "flex h-10 w-full items-center gap-2.5 rounded-full px-4 text-sm transition-colors",
+      isActive
+        ? "bg-muted text-foreground"
+        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+    );
 
   return (
     <>
@@ -260,14 +363,38 @@ export const MenuScreen: FC<{
             <p className="text-muted-foreground px-3 pt-2 pb-1 text-xs font-medium">
               Menu
             </p>
-            {navigation}
-            <Link
-              href="/settings"
-              className="text-muted-foreground hover:bg-muted/60 hover:text-foreground mt-4 flex h-9 items-center gap-2.5 rounded-full px-4 text-sm transition-colors"
+            <nav className="mt-2 flex flex-col gap-0.5">
+              {navItems.map((item) => {
+                const isActive =
+                  item.href === "/spaces/all"
+                    ? screen.startsWith("/spaces")
+                    : screen.startsWith(item.href);
+                return (
+                  <button
+                    key={item.href}
+                    type="button"
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={() => go(item.href)}
+                    className={itemClass(isActive)}
+                  >
+                    {isActive ? (
+                      <item.FillIcon className="size-4 shrink-0" />
+                    ) : (
+                      <item.Icon className="size-4 shrink-0" />
+                    )}
+                    <span className="truncate">{t(item.labelKey)}</span>
+                  </button>
+                );
+              })}
+            </nav>
+            <button
+              type="button"
+              onClick={() => setScreen("/settings")}
+              className={cn("mt-4", itemClass(screen.startsWith("/settings")))}
             >
               <SettingsIcon className="size-4 shrink-0" />
               {t("profile.settings")}
-            </Link>
+            </button>
           </div>
           <div className="border-t">{footer}</div>
         </aside>
@@ -280,8 +407,12 @@ export const MenuScreen: FC<{
           >
             <XIcon className="size-4" />
           </button>
-          <div className="h-full pt-12">
-            <MenuScreenContent role={role} />
+          <div className="h-full pt-12" onClickCapture={onContentClick}>
+            <MenuScreenContent
+              screen={screen}
+              role={role}
+              onOpenSpace={openSpace}
+            />
           </div>
         </div>
       </div>
